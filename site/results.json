@@ -627,5 +627,52 @@
         "ratio": 1.4866484758224934
       }
     ]
+  },
+  "compilerComparison": {
+    "schemaVersion": 1,
+    "objective": "brotli11",
+    "runs": [
+      {
+        "id": "published-before",
+        "role": "before",
+        "label": "Frozen packaged core before compiler work",
+        "recordedAt": "2026-08-24T00:00:00.000Z",
+        "source": {
+          "revision": "81a1f08bb0eaa24c81700c105d4055127460cdb6",
+          "tree": "506d6e01b11caafa231b109c4466bd538bfa1898",
+          "entrySha256": "a836c4e2150fb699c51e16e98b6522f97037f3c28af5df66a67f9a0f169cc7b7",
+          "packageLockSha256": "107ad056b4b0f4de7806f8b1628a773cf72ac5fe0824307963546ae9c8aef0eb"
+        },
+        "config": {
+          "path": "src/lilscript.toml",
+          "sha256": "dd32efa99d7316e0471bfcd98dad69138f30c122522bbc3c4e3165d5ccd96ddf",
+          "derivation": { "kind": "identity" }
+        },
+        "compiler": {
+          "revision": null,
+          "binarySha256": null
+        },
+        "codec": {
+          "binarySha256": "b3d93da88e4516f3b22e5e67b288bb2504868f1c438010e0ac9492ec33de2063",
+          "gzipLevel": 9,
+          "brotliQuality": 11
+        },
+        "artifact": {
+          "path": "dist/core.js",
+          "sha256": "43d16ab858adf61bbd7cfb2043ab533430636c02a083fe27bea42558b2322371",
+          "sizes": { "raw": 8179, "gzip9": 3250, "brotli11": 2909 }
+        },
+        "timing": {
+          "scope": "compile",
+          "samples": [],
+          "unavailableReason": "published artifact has no reproducible compiler timing"
+        },
+        "semantic": {
+          "status": "not-run",
+          "command": null,
+          "summary": "published artifact was size-audited but not used as fresh semantic evidence"
+        }
+      }
+    ]
   }
 }

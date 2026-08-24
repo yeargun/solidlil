@@ -42,6 +42,18 @@ test("performance metrics are published next to the size tables", () => {
   assert.ok(results.performance.nodeMs.solidlil.effect10k > 0)
 })
 
+test("the frozen compiler artifact remains available for before/after history", () => {
+  const comparison = results.compilerComparison
+  const before = comparison.runs.find((run) => run.role === "before")
+  assert.equal(comparison.schemaVersion, 1)
+  assert.equal(comparison.objective, "brotli11")
+  assert.deepEqual(before.artifact.sizes, { raw: 8179, gzip9: 3250, brotli11: 2909 })
+  assert.match(before.source.revision, /^[0-9a-f]{40}$/)
+  assert.match(before.config.sha256, /^[0-9a-f]{64}$/)
+  assert.match(before.artifact.sha256, /^[0-9a-f]{64}$/)
+  assert.deepEqual(before.timing.samples, [])
+})
+
 test("every API used by the live recreations exists in solidlil", () => {
   for (const name of [
     "createSignal", "createMemo", "createEffect", "flush", "createRoot", "createStore",
@@ -73,7 +85,7 @@ test("the lab app script parses", () => {
 
 test("the generated Pages artifact includes demos, sizes, and performance", async () => {
   for (const path of [
-    "_site/index.html", "_site/app.js", "_site/styles.css", "_site/demo.css",
+    "_site/index.html", "_site/app.js", "_site/compiler-comparison.js", "_site/styles.css", "_site/demo.css",
     "_site/results.json", ".nojekyll",
   ]) {
     const target = path === ".nojekyll" ? "_site/.nojekyll" : path
@@ -90,6 +102,7 @@ test("the generated Pages artifact includes demos, sizes, and performance", asyn
   assert.match(html, /id="why"/)
   assert.match(html, /Why smaller/)
   assert.match(html, /Same flush, same pending/)
+  assert.match(html, /id="compiler-comparison"/)
   assert.match(html, /Tree-shaking is the fair size/)
   assert.match(html, /Owned fields become slots/)
   assert.match(html, /data-filter="async"/)
@@ -108,4 +121,9 @@ test("the generated Pages artifact includes demos, sizes, and performance", asyn
     assert.ok((await stat(join(root, "_site", "apps", app.id, "solidlil.html"))).size > 0)
     assert.ok((await stat(join(root, "_site", "apps", app.id, "compare.html"))).size > 0)
   }
+})
+
+test("the compiler comparison renderer parses", () => {
+  const checked = spawnSync(process.execPath, ["--check", join(root, "site", "compiler-comparison.js")], { encoding: "utf8" })
+  assert.equal(checked.status, 0, checked.stderr)
 })

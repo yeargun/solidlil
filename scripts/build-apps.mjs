@@ -274,6 +274,7 @@ const summary = {
   examples: results,
   ...(previous?.performance ? { performance: previous.performance } : {}),
   ...(previous?.jsFrameworkBenchmark ? { jsFrameworkBenchmark: previous.jsFrameworkBenchmark } : {}),
+  ...(previous?.compilerComparison ? { compilerComparison: previous.compilerComparison } : {}),
 }
 
 await writeFile(join(root, "site", "results.json"), JSON.stringify(summary, null, 2) + "\n")

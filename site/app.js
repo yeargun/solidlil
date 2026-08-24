@@ -1,3 +1,5 @@
+import { renderCompilerComparison } from "./compiler-comparison.js"
+
 const data = await fetch("./results.json?v=cpu2").then((response) => {
   if (!response.ok) throw new Error(`Unable to load results: ${response.status}`)
   return response.json()
@@ -240,6 +242,7 @@ function renderPerf() {
 renderDemos()
 renderResults()
 renderPerf()
+renderCompilerComparison(data)
 
 document.querySelector(".filters").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-filter]")
