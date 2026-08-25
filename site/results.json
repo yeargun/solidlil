@@ -44,24 +44,24 @@
   },
   "artifacts": {
     "core": {
-      "raw": 7645,
-      "gzip": 3016,
-      "brotli": 2740
+      "raw": 8249,
+      "gzip": 3334,
+      "brotli": 3013
     },
     "web": {
-      "raw": 36286,
-      "gzip": 12728,
-      "brotli": 11369
+      "raw": 38081,
+      "gzip": 13213,
+      "brotli": 11847
     },
     "full": {
-      "raw": 16688,
-      "gzip": 6189,
-      "brotli": 5535
+      "raw": 17722,
+      "gzip": 6617,
+      "brotli": 5934
     },
     "index.bundle": {
-      "raw": 17931,
-      "gzip": 6568,
-      "brotli": 5998
+      "raw": 18606,
+      "gzip": 6854,
+      "brotli": 6266
     }
   },
   "examples": [
@@ -523,7 +523,7 @@
       "cpuSameApp": 0.9427913397952339
     },
     "notes": {
-      "cpuSameApp": "Geometric mean of all nine keyed workloads. Both sides read selected() on every row — same algorithm as official Solid 2.0.",
+      "cpuSameApp": "Geometric mean of all nine keyed workloads. Both sides read selected() on every row \u2014 same algorithm as official Solid 2.0.",
       "select": "04_select1k reads selected() on every row on both sides."
     },
     "selectSameApp": true,
@@ -556,7 +556,7 @@
       },
       {
         "id": "03_update10th1k_x16",
-        "name": "Update every 10th row ×16",
+        "name": "Update every 10th row \u00d716",
         "solid": 20.868,
         "solidlil": 19.564,
         "ratio": 0.9375119800651717
@@ -591,14 +591,14 @@
       },
       {
         "id": "08_create1k-after1k_x2",
-        "name": "Append 1,000 rows ×2",
+        "name": "Append 1,000 rows \u00d72",
         "solid": 32.128,
         "solidlil": 31.706,
         "ratio": 0.9868650398406374
       },
       {
         "id": "09_clear1k_x8",
-        "name": "Clear 1,000 rows ×8",
+        "name": "Clear 1,000 rows \u00d78",
         "solid": 12.912,
         "solidlil": 12.11,
         "ratio": 0.9378872366790582
@@ -646,7 +646,9 @@
         "config": {
           "path": "src/lilscript.toml",
           "sha256": "dd32efa99d7316e0471bfcd98dad69138f30c122522bbc3c4e3165d5ccd96ddf",
-          "derivation": { "kind": "identity" }
+          "derivation": {
+            "kind": "identity"
+          }
         },
         "compiler": {
           "revision": null,
@@ -660,7 +662,11 @@
         "artifact": {
           "path": "dist/core.js",
           "sha256": "43d16ab858adf61bbd7cfb2043ab533430636c02a083fe27bea42558b2322371",
-          "sizes": { "raw": 8179, "gzip9": 3250, "brotli11": 2909 }
+          "sizes": {
+            "raw": 8179,
+            "gzip9": 3250,
+            "brotli11": 2909
+          }
         },
         "timing": {
           "scope": "compile",
