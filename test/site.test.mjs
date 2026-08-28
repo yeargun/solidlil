@@ -11,6 +11,8 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const read = (path) => readFile(join(root, path), "utf8")
 const results = JSON.parse(await read("site/results.json"))
 const upstreamPort = JSON.parse(await read("site/upstream-port.json"))
+const demoE2e = JSON.parse(await read("site/demo-e2e.json"))
+const demoDelta = JSON.parse(await read("site/demo-size-delta.json"))
 
 test("the Pages lab contains every paired Solid 2.0 demo", () => {
   assert.equal(results.examples.length, apps.length)
@@ -24,6 +26,18 @@ test("the Pages lab contains every paired Solid 2.0 demo", () => {
     assert.ok(example.solidlil.gzip <= example.solidlil.raw)
     assert.ok(example.solidlil.brotli <= example.solidlil.raw)
   }
+})
+
+test("every paired demo has a passing browser scenario", () => {
+  assert.equal(demoE2e.complete, true)
+  assert.deepEqual(demoE2e.counts, { expected: apps.length, verified: apps.length })
+  assert.deepEqual(demoE2e.apps.map(({ id }) => id).sort(), apps.map(({ id }) => id).sort())
+})
+
+test("demo size changes are retained as non-qualifying diagnostics", () => {
+  assert.equal(demoDelta.comparisonStatus, "diagnostic-only-non-exact-runtime")
+  assert.equal(demoDelta.counts.apps, apps.length)
+  assert.equal(demoDelta.apps.length, apps.length)
 })
 
 test("size summaries are derived from raw/gzip/brotli case data", () => {
@@ -117,7 +131,7 @@ test("the lab app script parses", () => {
 test("the generated Pages artifact includes demos, sizes, and performance", async () => {
   for (const path of [
     "_site/index.html", "_site/app.js", "_site/compiler-comparison.js", "_site/styles.css", "_site/demo.css",
-    "_site/results.json", "_site/upstream-port.json", ".nojekyll",
+    "_site/results.json", "_site/upstream-port.json", "_site/demo-e2e.json", "_site/demo-size-delta.json", ".nojekyll",
   ]) {
     const target = path === ".nojekyll" ? "_site/.nojekyll" : path
     assert.ok((await stat(join(root, target))).size >= 0, `${path} is missing`)

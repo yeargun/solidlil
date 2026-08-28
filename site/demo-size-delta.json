@@ -1,0 +1,676 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-28T21:35:37.259Z",
+  "beforeRevision": "d51127a",
+  "comparisonStatus": "diagnostic-only-non-exact-runtime",
+  "counts": {
+    "apps": 21
+  },
+  "totals": {
+    "previous": {
+      "gzip": 67464,
+      "brotli": 59673
+    },
+    "current": {
+      "gzip": 67255,
+      "brotli": 59474
+    },
+    "deltaBytes": {
+      "gzip": -209,
+      "brotli": -199
+    }
+  },
+  "apps": [
+    {
+      "id": "counter",
+      "previous": {
+        "gzip": {
+          "baseline": 10375,
+          "candidate": 2226,
+          "reductionPercent": 78.54457831325301
+        },
+        "brotli": {
+          "baseline": 9434,
+          "candidate": 1952,
+          "reductionPercent": 79.30888276446895
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 10375,
+          "candidate": 2226,
+          "reductionPercent": 78.54457831325301
+        },
+        "brotli": {
+          "baseline": 9434,
+          "candidate": 1952,
+          "reductionPercent": 79.30888276446895
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "effects",
+      "previous": {
+        "gzip": {
+          "baseline": 10516,
+          "candidate": 2367,
+          "reductionPercent": 77.49144161278052
+        },
+        "brotli": {
+          "baseline": 9527,
+          "candidate": 2058,
+          "reductionPercent": 78.3982365907421
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 10516,
+          "candidate": 2367,
+          "reductionPercent": 77.49144161278052
+        },
+        "brotli": {
+          "baseline": 9534,
+          "candidate": 2058,
+          "reductionPercent": 78.41409691629956
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "form-binding",
+      "previous": {
+        "gzip": {
+          "baseline": 10431,
+          "candidate": 2261,
+          "reductionPercent": 78.32422586520947
+        },
+        "brotli": {
+          "baseline": 9477,
+          "candidate": 1982,
+          "reductionPercent": 79.08620871583835
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 10431,
+          "candidate": 2261,
+          "reductionPercent": 78.32422586520947
+        },
+        "brotli": {
+          "baseline": 9477,
+          "candidate": 1982,
+          "reductionPercent": 79.08620871583835
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "context-theme",
+      "previous": {
+        "gzip": {
+          "baseline": 10731,
+          "candidate": 2512,
+          "reductionPercent": 76.59118441897307
+        },
+        "brotli": {
+          "baseline": 9759,
+          "candidate": 2220,
+          "reductionPercent": 77.25176759913926
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 10731,
+          "candidate": 2515,
+          "reductionPercent": 76.5632280309384
+        },
+        "brotli": {
+          "baseline": 9759,
+          "candidate": 2221,
+          "reductionPercent": 77.24152064760735
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 3,
+        "brotli": 1
+      }
+    },
+    {
+      "id": "async-profile",
+      "previous": {
+        "gzip": {
+          "baseline": 13092,
+          "candidate": 3210,
+          "reductionPercent": 75.48120989917507
+        },
+        "brotli": {
+          "baseline": 11854,
+          "candidate": 2835,
+          "reductionPercent": 76.08402227096339
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 13092,
+          "candidate": 3210,
+          "reductionPercent": 75.48120989917507
+        },
+        "brotli": {
+          "baseline": 11854,
+          "candidate": 2835,
+          "reductionPercent": 76.08402227096339
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "optimistic-save",
+      "previous": {
+        "gzip": {
+          "baseline": 11776,
+          "candidate": 2701,
+          "reductionPercent": 77.06351902173914
+        },
+        "brotli": {
+          "baseline": 10658,
+          "candidate": 2399,
+          "reductionPercent": 77.49108650778757
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 11776,
+          "candidate": 2694,
+          "reductionPercent": 77.12296195652173
+        },
+        "brotli": {
+          "baseline": 10658,
+          "candidate": 2383,
+          "reductionPercent": 77.64120848189154
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": -7,
+        "brotli": -16
+      }
+    },
+    {
+      "id": "reveal-feed",
+      "previous": {
+        "gzip": {
+          "baseline": 12146,
+          "candidate": 3261,
+          "reductionPercent": 73.15165486579944
+        },
+        "brotli": {
+          "baseline": 11029,
+          "candidate": 2883,
+          "reductionPercent": 73.85982410009973
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 12146,
+          "candidate": 3261,
+          "reductionPercent": 73.15165486579944
+        },
+        "brotli": {
+          "baseline": 11029,
+          "candidate": 2883,
+          "reductionPercent": 73.85982410009973
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "projection-filter",
+      "previous": {
+        "gzip": {
+          "baseline": 17580,
+          "candidate": 3757,
+          "reductionPercent": 78.62912400455062
+        },
+        "brotli": {
+          "baseline": 15918,
+          "candidate": 3360,
+          "reductionPercent": 78.89182058047494
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 17580,
+          "candidate": 3762,
+          "reductionPercent": 78.60068259385665
+        },
+        "brotli": {
+          "baseline": 15918,
+          "candidate": 3336,
+          "reductionPercent": 79.0425932906144
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 5,
+        "brotli": -24
+      }
+    },
+    {
+      "id": "show-switch",
+      "previous": {
+        "gzip": {
+          "baseline": 11105,
+          "candidate": 3020,
+          "reductionPercent": 72.80504277352544
+        },
+        "brotli": {
+          "baseline": 10076,
+          "candidate": 2650,
+          "reductionPercent": 73.69988090512108
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 11105,
+          "candidate": 3020,
+          "reductionPercent": 72.80504277352544
+        },
+        "brotli": {
+          "baseline": 10076,
+          "candidate": 2650,
+          "reductionPercent": 73.69988090512108
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "repeat-grid",
+      "previous": {
+        "gzip": {
+          "baseline": 10910,
+          "candidate": 2559,
+          "reductionPercent": 76.54445462878094
+        },
+        "brotli": {
+          "baseline": 9910,
+          "candidate": 2227,
+          "reductionPercent": 77.52774974772957
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 10910,
+          "candidate": 2559,
+          "reductionPercent": 76.54445462878094
+        },
+        "brotli": {
+          "baseline": 9910,
+          "candidate": 2227,
+          "reductionPercent": 77.52774974772957
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "nested-tree",
+      "previous": {
+        "gzip": {
+          "baseline": 11738,
+          "candidate": 3488,
+          "reductionPercent": 70.28454591923668
+        },
+        "brotli": {
+          "baseline": 10648,
+          "candidate": 3114,
+          "reductionPercent": 70.75507137490608
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 11738,
+          "candidate": 3488,
+          "reductionPercent": 70.28454591923668
+        },
+        "brotli": {
+          "baseline": 10648,
+          "candidate": 3114,
+          "reductionPercent": 70.75507137490608
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "error-reset",
+      "previous": {
+        "gzip": {
+          "baseline": 11196,
+          "candidate": 2836,
+          "reductionPercent": 74.66952483029654
+        },
+        "brotli": {
+          "baseline": 10179,
+          "candidate": 2512,
+          "reductionPercent": 75.32174083898222
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 11232,
+          "candidate": 2608,
+          "reductionPercent": 76.78062678062678
+        },
+        "brotli": {
+          "baseline": 10222,
+          "candidate": 2309,
+          "reductionPercent": 77.41146546664058
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": -228,
+        "brotli": -203
+      }
+    },
+    {
+      "id": "todolist",
+      "previous": {
+        "gzip": {
+          "baseline": 11738,
+          "candidate": 3522,
+          "reductionPercent": 69.99488839666041
+        },
+        "brotli": {
+          "baseline": 10627,
+          "candidate": 3136,
+          "reductionPercent": 70.49026065681754
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 11738,
+          "candidate": 3522,
+          "reductionPercent": 69.99488839666041
+        },
+        "brotli": {
+          "baseline": 10627,
+          "candidate": 3136,
+          "reductionPercent": 70.49026065681754
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "store-cart",
+      "previous": {
+        "gzip": {
+          "baseline": 17492,
+          "candidate": 3233,
+          "reductionPercent": 81.51726503544478
+        },
+        "brotli": {
+          "baseline": 15813,
+          "candidate": 2863,
+          "reductionPercent": 81.8946436476317
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 17492,
+          "candidate": 3233,
+          "reductionPercent": 81.51726503544478
+        },
+        "brotli": {
+          "baseline": 15813,
+          "candidate": 2863,
+          "reductionPercent": 81.8946436476317
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "kanban",
+      "previous": {
+        "gzip": {
+          "baseline": 11916,
+          "candidate": 4322,
+          "reductionPercent": 63.72943940919772
+        },
+        "brotli": {
+          "baseline": 10835,
+          "candidate": 3842,
+          "reductionPercent": 64.54083987078911
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 11911,
+          "candidate": 4318,
+          "reductionPercent": 63.74779615481487
+        },
+        "brotli": {
+          "baseline": 10797,
+          "candidate": 3842,
+          "reductionPercent": 64.41604149300731
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": -4,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "inbox",
+      "previous": {
+        "gzip": {
+          "baseline": 12555,
+          "candidate": 4491,
+          "reductionPercent": 64.22939068100358
+        },
+        "brotli": {
+          "baseline": 11361,
+          "candidate": 3990,
+          "reductionPercent": 64.87985212569316
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 12549,
+          "candidate": 4483,
+          "reductionPercent": 64.27603793130928
+        },
+        "brotli": {
+          "baseline": 11370,
+          "candidate": 3991,
+          "reductionPercent": 64.89885664028144
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": -8,
+        "brotli": 1
+      }
+    },
+    {
+      "id": "marketplace",
+      "previous": {
+        "gzip": {
+          "baseline": 12982,
+          "candidate": 5097,
+          "reductionPercent": 60.737944846710825
+        },
+        "brotli": {
+          "baseline": 11750,
+          "candidate": 4502,
+          "reductionPercent": 61.68510638297873
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 12975,
+          "candidate": 5108,
+          "reductionPercent": 60.63198458574182
+        },
+        "brotli": {
+          "baseline": 11772,
+          "candidate": 4496,
+          "reductionPercent": 61.80767923887189
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 11,
+        "brotli": -6
+      }
+    },
+    {
+      "id": "keyed",
+      "previous": {
+        "gzip": {
+          "baseline": 12019,
+          "candidate": 4424,
+          "reductionPercent": 63.191613278974955
+        },
+        "brotli": {
+          "baseline": 10916,
+          "candidate": 3949,
+          "reductionPercent": 63.82374496152436
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 12019,
+          "candidate": 4443,
+          "reductionPercent": 63.03353024378069
+        },
+        "brotli": {
+          "baseline": 10916,
+          "candidate": 3997,
+          "reductionPercent": 63.38402345181385
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 19,
+        "brotli": 48
+      }
+    },
+    {
+      "id": "spreadsheet",
+      "previous": {
+        "gzip": {
+          "baseline": 11331,
+          "candidate": 3165,
+          "reductionPercent": 72.06777866031243
+        },
+        "brotli": {
+          "baseline": 10281,
+          "candidate": 2806,
+          "reductionPercent": 72.7069351230425
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 11331,
+          "candidate": 3165,
+          "reductionPercent": 72.06777866031243
+        },
+        "brotli": {
+          "baseline": 10281,
+          "candidate": 2806,
+          "reductionPercent": 72.7069351230425
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "svg-clock",
+      "previous": {
+        "gzip": {
+          "baseline": 10772,
+          "candidate": 2336,
+          "reductionPercent": 78.31414779056813
+        },
+        "brotli": {
+          "baseline": 9827,
+          "candidate": 2050,
+          "reductionPercent": 79.13910654319731
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 10772,
+          "candidate": 2336,
+          "reductionPercent": 78.31414779056813
+        },
+        "brotli": {
+          "baseline": 9827,
+          "candidate": 2050,
+          "reductionPercent": 79.13910654319731
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    },
+    {
+      "id": "portal-modal",
+      "previous": {
+        "gzip": {
+          "baseline": 10964,
+          "candidate": 2676,
+          "reductionPercent": 75.59284932506385
+        },
+        "brotli": {
+          "baseline": 9979,
+          "candidate": 2343,
+          "reductionPercent": 76.52069345625814
+        }
+      },
+      "current": {
+        "gzip": {
+          "baseline": 10964,
+          "candidate": 2676,
+          "reductionPercent": 75.59284932506385
+        },
+        "brotli": {
+          "baseline": 9979,
+          "candidate": 2343,
+          "reductionPercent": 76.52069345625814
+        }
+      },
+      "candidateDeltaBytes": {
+        "gzip": 0,
+        "brotli": 0
+      }
+    }
+  ]
+}

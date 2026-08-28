@@ -1,0 +1,209 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-28T21:35:58.094Z",
+  "complete": true,
+  "counts": {
+    "expected": 21,
+    "verified": 21
+  },
+  "contract": "Each Solid and SolidLil page completes the same user scenario with matching observable state and no browser errors. Runtime marker nodes are intentionally excluded.",
+  "apps": [
+    {
+      "id": "counter",
+      "snapshot": {
+        "button": "Count 3"
+      }
+    },
+    {
+      "id": "effects",
+      "snapshot": {
+        "button": "Tick 1",
+        "result": "Apply phase wrote: ticks 1"
+      }
+    },
+    {
+      "id": "form-binding",
+      "snapshot": {
+        "value": "",
+        "greeting": "Hello, "
+      }
+    },
+    {
+      "id": "context-theme",
+      "snapshot": {
+        "button": "Theme light",
+        "child": "Child sees light"
+      }
+    },
+    {
+      "id": "async-profile",
+      "snapshot": {
+        "status": "ready · latest Ada Lovelace #2",
+        "profile": "Ada Lovelace #2",
+        "stale": false
+      }
+    },
+    {
+      "id": "optimistic-save",
+      "snapshot": {
+        "shown": "Shown as Ada",
+        "status": "saved"
+      }
+    },
+    {
+      "id": "reveal-feed",
+      "snapshot": {
+        "articles": [
+          "Headline #2",
+          "Comments for #2"
+        ]
+      }
+    },
+    {
+      "id": "projection-filter",
+      "snapshot": {
+        "names": [
+          "Ada Lovelace",
+          "Grace Hopper",
+          "Alan Turing",
+          "Margaret Hamilton"
+        ]
+      }
+    },
+    {
+      "id": "show-switch",
+      "snapshot": {
+        "panel": "Home: fine-grained updates, no VDOM."
+      }
+    },
+    {
+      "id": "repeat-grid",
+      "snapshot": {
+        "count": "4 cells",
+        "cells": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ]
+      }
+    },
+    {
+      "id": "nested-tree",
+      "snapshot": {
+        "names": [
+          "src",
+          "reactive.lil",
+          "web.lil",
+          "apps",
+          "counter",
+          "keyed"
+        ]
+      }
+    },
+    {
+      "id": "error-reset",
+      "snapshot": {
+        "status": "All clear"
+      }
+    },
+    {
+      "id": "todolist",
+      "snapshot": {
+        "titles": [
+          "Write tests",
+          "Ship demo"
+        ],
+        "remaining": "1 left"
+      }
+    },
+    {
+      "id": "store-cart",
+      "snapshot": {
+        "quantities": [
+          "0",
+          "3",
+          "2"
+        ],
+        "total": "Total $72"
+      }
+    },
+    {
+      "id": "kanban",
+      "snapshot": {
+        "todo": [
+          "Port For",
+          "Selector notify",
+          "JFB clear",
+          "Card 6"
+        ],
+        "doing": [
+          "Dispose leak"
+        ],
+        "done": [
+          "Package graph"
+        ]
+      }
+    },
+    {
+      "id": "inbox",
+      "snapshot": {
+        "summary": "1 unread. Selecting a message marks it read. Filter is a memo over per-row unread signals.",
+        "subjects": [
+          "Solid 2.0 rc",
+          "JFB keyed table",
+          "LSX templates",
+          "Dispose recycle",
+          "Paired demos"
+        ],
+        "detail": "JFB keyed table"
+      }
+    },
+    {
+      "id": "marketplace",
+      "snapshot": {
+        "products": [
+          "Signals core",
+          "LSX templates",
+          "For / Repeat",
+          "Piece tree",
+          "JFB harness",
+          "Closed-world cfg",
+          "Selector notify",
+          "Store draft"
+        ],
+        "cart": "Cart · 3",
+        "total": "Total $33"
+      }
+    },
+    {
+      "id": "keyed",
+      "snapshot": {
+        "selectedId": "2",
+        "cleared": 0
+      }
+    },
+    {
+      "id": "spreadsheet",
+      "snapshot": {
+        "label": "R3C4 = 11",
+        "value": "11",
+        "selected": 1
+      }
+    },
+    {
+      "id": "svg-clock",
+      "snapshot": {
+        "namespace": "http://www.w3.org/2000/svg",
+        "transform": "rotate(6 50 50)"
+      }
+    },
+    {
+      "id": "portal-modal",
+      "snapshot": {
+        "heading": "Portaled overlay",
+        "overlays": 0
+      }
+    }
+  ]
+}

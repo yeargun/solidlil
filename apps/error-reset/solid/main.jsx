@@ -1,9 +1,12 @@
-import { Errored, createSignal } from "solid-js"
+import { Errored, createMemo, createSignal } from "solid-js"
 import { render } from "@solidjs/web"
 
 function Boom(props) {
-  if (props.boom() > 0) throw new Error("Boom")
-  return <p>All clear</p>
+  const label = createMemo(() => {
+    if (props.boom() > 0) throw new Error("Boom")
+    return "All clear"
+  })
+  return <p>{label()}</p>
 }
 
 function App() {

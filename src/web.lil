@@ -185,9 +185,12 @@ void wipeAfterMarker(Element marker) {
   if (host == null) {
     return;
   }
-  host.removeChild(marker);
-  host.textContent = "";
-  host.appendChild(marker);
+  Element? cursor = marker.nextSibling;
+  while (cursor != null) {
+    Element current = cursor;
+    cursor = current.nextSibling;
+    host.removeChild(current);
+  }
 }
 
 void appendNodes(Element parent, Element marker, Element[] nodes) {

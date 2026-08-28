@@ -1,46 +1,46 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-28T20:01:39.536Z",
+  "generatedAt": "2026-08-28T21:35:37.063Z",
   "compression": {
     "gzip": 9,
     "brotli": 11
   },
   "solid": "solid-js@2.0.0-rc.0 + @solidjs/web@2.0.0-rc.0",
-  "solidlil": "official JFB keyed table versus Solid 2.0, plus closed-world LSX demos",
+  "solidlil": "compatibility-prototype demos; exact runtime comparison is ineligible",
   "cases": 21,
   "metrics": {
     "raw": {
-      "solid": 660785,
-      "solidlil": 158454,
-      "weightedReduction": 76.02033944475131,
-      "medianReduction": 78.24170048760548,
-      "minimumReduction": 62.36648716194103,
+      "solid": 660807,
+      "solidlil": 158416,
+      "weightedReduction": 76.02688833502067,
+      "medianReduction": 78.24846820198606,
+      "minimumReduction": 62.26511732129709,
       "maximumReduction": 84.16802316977781,
       "wins": 21
     },
     "gzip": {
-      "solid": 253365,
-      "solidlil": 67464,
-      "weightedReduction": 73.37280208395003,
-      "medianReduction": 75.48120989917507,
-      "minimumReduction": 60.737944846710825,
+      "solid": 253383,
+      "solidlil": 67255,
+      "weightedReduction": 73.4571774744162,
+      "medianReduction": 75.59284932506385,
+      "minimumReduction": 60.63198458574182,
       "maximumReduction": 81.51726503544478,
       "wins": 21
     },
     "brotli": {
-      "solid": 229858,
-      "solidlil": 59673,
-      "weightedReduction": 74.03918941259387,
-      "medianReduction": 76.08402227096339,
-      "minimumReduction": 61.68510638297873,
+      "solid": 229901,
+      "solidlil": 59474,
+      "weightedReduction": 74.13060404260965,
+      "medianReduction": 76.52069345625814,
+      "minimumReduction": 61.80767923887189,
       "maximumReduction": 81.8946436476317,
       "wins": 21
     }
   },
   "keyedPerformance": {
-    "raw": 10834,
-    "gzip": 4423,
-    "brotli": 3956
+    "raw": 10871,
+    "gzip": 4439,
+    "brotli": 3996
   },
   "artifacts": {
     "core": {
@@ -49,14 +49,14 @@
       "brotli": 2979
     },
     "web": {
-      "raw": 38216,
-      "gzip": 13447,
-      "brotli": 12050
+      "raw": 38285,
+      "gzip": 13589,
+      "brotli": 12090
     },
     "full": {
-      "raw": 17912,
-      "gzip": 6675,
-      "brotli": 5967
+      "raw": 17910,
+      "gzip": 6705,
+      "brotli": 5984
     },
     "index.bundle": {
       "raw": 18588,
@@ -90,9 +90,9 @@
       "title": "Split effects",
       "group": "reactive",
       "solid": {
-        "raw": 27098,
+        "raw": 27100,
         "gzip": 10516,
-        "brotli": 9527
+        "brotli": 9534
       },
       "solidlil": {
         "raw": 5107,
@@ -100,9 +100,9 @@
         "brotli": 2058
       },
       "reduction": {
-        "raw": 81.15359067089823,
+        "raw": 81.1549815498155,
         "gzip": 77.49144161278052,
-        "brotli": 78.3982365907421
+        "brotli": 78.41409691629956
       }
     },
     {
@@ -135,14 +135,14 @@
         "brotli": 9759
       },
       "solidlil": {
-        "raw": 5563,
-        "gzip": 2512,
-        "brotli": 2220
+        "raw": 5595,
+        "gzip": 2515,
+        "brotli": 2221
       },
       "reduction": {
-        "raw": 80.02226531638297,
-        "gzip": 76.59118441897307,
-        "brotli": 77.25176759913926
+        "raw": 79.90734755440639,
+        "gzip": 76.5632280309384,
+        "brotli": 77.24152064760735
       }
     },
     {
@@ -175,14 +175,14 @@
         "brotli": 10658
       },
       "solidlil": {
-        "raw": 5995,
-        "gzip": 2701,
-        "brotli": 2399
+        "raw": 6008,
+        "gzip": 2694,
+        "brotli": 2383
       },
       "reduction": {
-        "raw": 80.52116840497774,
-        "gzip": 77.06351902173914,
-        "brotli": 77.49108650778757
+        "raw": 80.47892907040972,
+        "gzip": 77.12296195652173,
+        "brotli": 77.64120848189154
       }
     },
     {
@@ -215,14 +215,14 @@
         "brotli": 15918
       },
       "solidlil": {
-        "raw": 9117,
-        "gzip": 3757,
-        "brotli": 3360
+        "raw": 9139,
+        "gzip": 3762,
+        "brotli": 3336
       },
       "reduction": {
-        "raw": 80.84663865546219,
-        "gzip": 78.62912400455062,
-        "brotli": 78.89182058047494
+        "raw": 80.80042016806723,
+        "gzip": 78.60068259385665,
+        "brotli": 79.0425932906144
       }
     },
     {
@@ -290,19 +290,19 @@
       "title": "Error reset",
       "group": "control",
       "solid": {
-        "raw": 28987,
-        "gzip": 11196,
-        "brotli": 10179
+        "raw": 29091,
+        "gzip": 11232,
+        "brotli": 10222
       },
       "solidlil": {
-        "raw": 6481,
-        "gzip": 2836,
-        "brotli": 2512
+        "raw": 5947,
+        "gzip": 2608,
+        "brotli": 2309
       },
       "reduction": {
-        "raw": 77.6417014523752,
-        "gzip": 74.66952483029654,
-        "brotli": 75.32174083898222
+        "raw": 79.55725138358942,
+        "gzip": 76.78062678062678,
+        "brotli": 77.41146546664058
       }
     },
     {
@@ -350,19 +350,19 @@
       "title": "Kanban board",
       "group": "apps",
       "solid": {
-        "raw": 31281,
-        "gzip": 11916,
-        "brotli": 10835
+        "raw": 31239,
+        "gzip": 11911,
+        "brotli": 10797
       },
       "solidlil": {
-        "raw": 11416,
-        "gzip": 4322,
+        "raw": 11788,
+        "gzip": 4318,
         "brotli": 3842
       },
       "reduction": {
-        "raw": 63.505003036987304,
-        "gzip": 63.72943940919772,
-        "brotli": 64.54083987078911
+        "raw": 62.26511732129709,
+        "gzip": 63.74779615481487,
+        "brotli": 64.41604149300731
       }
     },
     {
@@ -370,19 +370,19 @@
       "title": "Inbox",
       "group": "apps",
       "solid": {
-        "raw": 32278,
-        "gzip": 12555,
-        "brotli": 11361
+        "raw": 32264,
+        "gzip": 12549,
+        "brotli": 11370
       },
       "solidlil": {
-        "raw": 11252,
-        "gzip": 4491,
-        "brotli": 3990
+        "raw": 11267,
+        "gzip": 4483,
+        "brotli": 3991
       },
       "reduction": {
-        "raw": 65.14034326786047,
-        "gzip": 64.22939068100358,
-        "brotli": 64.87985212569316
+        "raw": 65.07872551450534,
+        "gzip": 64.27603793130928,
+        "brotli": 64.89885664028144
       }
     },
     {
@@ -390,19 +390,19 @@
       "title": "Lil marketplace",
       "group": "apps",
       "solid": {
-        "raw": 33611,
-        "gzip": 12982,
-        "brotli": 11750
+        "raw": 33583,
+        "gzip": 12975,
+        "brotli": 11772
       },
       "solidlil": {
-        "raw": 12649,
-        "gzip": 5097,
-        "brotli": 4502
+        "raw": 12654,
+        "gzip": 5108,
+        "brotli": 4496
       },
       "reduction": {
-        "raw": 62.36648716194103,
-        "gzip": 60.737944846710825,
-        "brotli": 61.68510638297873
+        "raw": 62.320221540660455,
+        "gzip": 60.63198458574182,
+        "brotli": 61.80767923887189
       }
     },
     {
@@ -415,14 +415,14 @@
         "brotli": 10916
       },
       "solidlil": {
-        "raw": 10834,
-        "gzip": 4424,
-        "brotli": 3949
+        "raw": 10871,
+        "gzip": 4443,
+        "brotli": 3997
       },
       "reduction": {
-        "raw": 65.08315070259121,
-        "gzip": 63.191613278974955,
-        "brotli": 63.82374496152436
+        "raw": 64.96390357096816,
+        "gzip": 63.03353024378069,
+        "brotli": 63.38402345181385
       }
     },
     {
@@ -497,7 +497,7 @@
       "exactSourcePort": false,
       "reason": "The current SolidLil runtime is a compatibility implementation, not the required file-for-file port of the pinned Solid browser runtime."
     },
-    "generatedAt": "2026-08-28T20:28:02.460Z",
+    "generatedAt": "2026-08-28T21:30:42.320Z",
     "source": "https://github.com/krausest/js-framework-benchmark",
     "workloadContract": "jfb-keyed-v2-object-identity",
     "methodology": {
@@ -561,12 +561,12 @@
         "frontend": {
           "name": "lilscript",
           "version": "lilscript 0.1.0",
-          "binarySha256": "36f420798b32f788f6d0d1b2b72fad97a93ec2b63e18e63f2d531c4e4079dd67",
-          "revision": "bcef1c42efa5df287af76bfe1a7eca9bba9ccc46",
+          "binarySha256": "3b28d414c6db5ead40b9aee8a5110956345211e518d38c84acacf48b0dcda64a",
+          "revision": "2d2268ab651463631551bf7ca5a3187f418b8753",
           "dirty": true
         },
         "source": {
-          "revision": "a7ff1ffaf351b1c4413e5c4c311fc2df7b82dd15",
+          "revision": "d51127a4a0bfe4261749445e3df4ef4b9e19f4a3",
           "dirty": true
         },
         "bundler": {
@@ -731,12 +731,12 @@
         }
       },
       {
-        "id": "current-36f420798b32",
+        "id": "current-3b28d414c6db",
         "role": "current",
         "label": "Current compiler · rebuilt packaged core",
-        "recordedAt": "2026-08-28T20:28:02.471Z",
+        "recordedAt": "2026-08-28T21:30:42.330Z",
         "source": {
-          "revision": "a7ff1ffaf351b1c4413e5c4c311fc2df7b82dd15",
+          "revision": "d51127a4a0bfe4261749445e3df4ef4b9e19f4a3",
           "tree": null,
           "entrySha256": "a836c4e2150fb699c51e16e98b6522f97037f3c28af5df66a67f9a0f169cc7b7",
           "packageLockSha256": "1e34b7839a15e45394e75e3e761fc96461659d9eb566d66a692297e77f88350d"
@@ -749,8 +749,8 @@
           }
         },
         "compiler": {
-          "revision": "bcef1c42efa5df287af76bfe1a7eca9bba9ccc46",
-          "binarySha256": "36f420798b32f788f6d0d1b2b72fad97a93ec2b63e18e63f2d531c4e4079dd67",
+          "revision": "2d2268ab651463631551bf7ca5a3187f418b8753",
+          "binarySha256": "3b28d414c6db5ead40b9aee8a5110956345211e518d38c84acacf48b0dcda64a",
           "dirty": true
         },
         "codec": {

@@ -1,11 +1,11 @@
 import { renderCompilerComparison } from "./compiler-comparison.js"
 
 const [data, sourceParity] = await Promise.all([
-  fetch("./results.json?v=exact1").then((response) => {
+  fetch("./results.json?v=exact2").then((response) => {
     if (!response.ok) throw new Error(`Unable to load results: ${response.status}`)
     return response.json()
   }),
-  fetch("./upstream-port.json?v=exact1").then((response) => {
+  fetch("./upstream-port.json?v=exact2").then((response) => {
     if (!response.ok) throw new Error(`Unable to load source parity: ${response.status}`)
     return response.json()
   }),

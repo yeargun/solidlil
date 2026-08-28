@@ -94,7 +94,7 @@ function App() {
           </For>
         </div>
         <div class="market-grid">
-          <For each={visible()} keyed={(product) => product.id}>
+          <For each={visible()}>
             {(product) => (
               <div class="product">
                 <span class="muted">{product.category}</span>
@@ -112,7 +112,7 @@ function App() {
       <div class="card cart">
         <h3>Cart · {count()}</h3>
         <Show when={cart().length > 0} fallback={<p class="muted">Empty. Add a kit.</p>}>
-          <For each={cart()} keyed={(line) => line.id}>
+          <For each={cart()}>
             {(line) => (
               <div class="todo-item">
                 <span>{line.name}</span>

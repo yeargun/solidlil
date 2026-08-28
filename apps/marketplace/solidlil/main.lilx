@@ -107,7 +107,7 @@ func()->void dispose = render("#app", (Element root) => {
   Signal<Line[]> cart = createSignal([], (Line[] a, Line[] b) => false);
   NodeRef field = new NodeRef();
   Signal<Product[]> visible = createMemo([], () => {
-    string needle = query.read();
+    string needle = query.read().trim().toLowerCase();
     string selected = categoryOf(filter.read());
     Product[] next = [];
     for (int index = 0; index < catalog.length; index++) {
@@ -115,7 +115,8 @@ func()->void dispose = render("#app", (Element root) => {
       if (selected != "all" && product.category != selected) {
         continue;
       }
-      if (!nameHit(product.name, needle) && !nameHit(product.blurb, needle)) {
+      string searchable = (product.name + " " + product.blurb).toLowerCase();
+      if (!nameHit(searchable, needle)) {
         continue;
       }
       next.push(product);

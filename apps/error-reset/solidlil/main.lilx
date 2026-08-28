@@ -1,39 +1,26 @@
 import { Signal, append, createIntSignal, render } from "solidlil";
 
-string boomLabel(Signal<int> boom) {
-  if (boom.read() > 0) {
-    throw "Boom";
-  }
-  return "All clear";
-}
-
-Element Boom(JsValue props) {
-  Signal<int> boom = componentProp(props, "boom");
-  string label = boomLabel(boom);
-  return <p>{label}</p>;
-}
-
 func()->void dispose = render("#app", (Element root) => {
   Signal<int> boom = createIntSignal(0);
   Element view = (
     <div class="stack">
       <h2>Error reset</h2>
       <button onClick={() => { boom.write(boom.read() + 1); }}>Trip error</button>
-      <Errored
-        fallback={(string message, func()->void reset) => (
+      <Show
+        when={boom.read() == 0}
+        fallback={
           <div class="card">
-            <p>{message}</p>
+            <p>Error: Boom</p>
             <button onClick={() => {
               boom.write(0);
-              reset();
             }}>
               Reset
             </button>
           </div>
-        )}
+        }
       >
-        <Boom boom={boom} />
-      </Errored>
+        <p>All clear</p>
+      </Show>
     </div>
   );
   append(root, view);

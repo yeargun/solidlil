@@ -35,7 +35,7 @@ function App() {
       </div>
       <div class="inbox">
         <div>
-          <For each={visible()} keyed={(item) => item.id}>
+          <For each={visible()}>
             {(item) => (
               <button
                 class={`mail-row${selectedId() === item.id ? " sel" : ""}`}

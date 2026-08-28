@@ -7,7 +7,9 @@ function App() {
 
   createEffect(
     () => ticks(),
-    (value) => setTitle(`ticks ${value}`),
+    (value) => {
+      setTitle(`ticks ${value}`)
+    },
   )
 
   return (

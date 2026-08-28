@@ -60,7 +60,7 @@ void save(
       failNext.write(false);
       status.write("reverted");
     } else {
-      endAction(true);
+      endAction(false);
       status.write("saved");
     }
   }, 280);

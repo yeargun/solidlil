@@ -7,12 +7,12 @@
   "frontend": {
     "name": "lilscript",
     "version": "lilscript 0.1.0",
-    "binarySha256": "36f420798b32f788f6d0d1b2b72fad97a93ec2b63e18e63f2d531c4e4079dd67",
-    "revision": "bcef1c42efa5df287af76bfe1a7eca9bba9ccc46",
+    "binarySha256": "3b28d414c6db5ead40b9aee8a5110956345211e518d38c84acacf48b0dcda64a",
+    "revision": "2d2268ab651463631551bf7ca5a3187f418b8753",
     "dirty": true
   },
   "source": {
-    "revision": "a7ff1ffaf351b1c4413e5c4c311fc2df7b82dd15",
+    "revision": "d51127a4a0bfe4261749445e3df4ef4b9e19f4a3",
     "dirty": true
   },
   "bundler": {

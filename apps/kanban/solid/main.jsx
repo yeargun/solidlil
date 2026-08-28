@@ -23,7 +23,7 @@ function App() {
       <div class="board">
         <div class="lane">
           <h3>Todo</h3>
-          <For each={cards()} keyed={(entry) => entry.id}>
+          <For each={cards()}>
             {(entry) => (
               <Show when={entry.lane() === "todo"}>
                 <div class="card-item">
@@ -45,7 +45,7 @@ function App() {
         </div>
         <div class="lane">
           <h3>Doing</h3>
-          <For each={cards()} keyed={(entry) => entry.id}>
+          <For each={cards()}>
             {(entry) => (
               <Show when={entry.lane() === "doing"}>
                 <div class="card-item">
@@ -61,7 +61,7 @@ function App() {
         </div>
         <div class="lane">
           <h3>Done</h3>
-          <For each={cards()} keyed={(entry) => entry.id}>
+          <For each={cards()}>
             {(entry) => (
               <Show when={entry.lane() === "done"}>
                 <div class="card-item">

@@ -60,6 +60,11 @@ exact-runtime comparison.
 CPU and memory results are withheld until they are rerun against the exact
 current bundle hashes.
 
+All 21 paired development demos have Playwright scenarios that run the same
+user interactions against Solid and SolidLil, compare observable state, and
+reject browser errors. Passing those scenarios keeps the demos usable; it does
+not replace the strict upstream-runtime gate.
+
 ## Development
 
 Keep this checkout next to the LilScript checkout, or set

@@ -20,7 +20,8 @@ class ThemeBox {
 Context<ThemeBox> ThemeContext = createContext(new ThemeBox(createStringSignal("light")));
 
 Element ThemeChild(JsValue props) {
-  return <p>{`Child sees ${useContext(ThemeContext).value.read()}`}</p>;
+  ThemeBox theme = useContext(ThemeContext);
+  return <p>{`Child sees ${theme.value.read()}`}</p>;
 }
 
 func()->void dispose = render("#app", (Element root) => {
