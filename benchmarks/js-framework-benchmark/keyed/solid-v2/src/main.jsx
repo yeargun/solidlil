@@ -10,7 +10,7 @@ const random = (max) => Math.round(Math.random() * 1000) % max
 let nextId = 1
 
 const buildData = (count) => {
-  const data = new Array(count)
+  const data = []
   for (let i = 0; i < count; i++) {
     const [label, setLabel] = createSignal(
       `${adjectives[random(adjectives.length)]} ${colors[random(colors.length)]} ${nouns[random(nouns.length)]}`,
@@ -23,8 +23,10 @@ const buildData = (count) => {
 render(() => {
   const [data, setData] = createSignal([])
   const [selected, setSelected] = createSignal(0)
-  const run = () => setData(buildData(1000))
-  const runLots = () => setData(buildData(10000))
+  const replaceRows = (count) => {
+    setSelected(0)
+    setData(buildData(count))
+  }
   const add = () => setData((d) => d.concat(buildData(1000)))
   const update = () => {
     const rows = data()
@@ -56,12 +58,22 @@ render(() => {
           <div class="col-md-6">
             <div class="row">
               <div class="col-sm-6 smallpad">
-                <button id="run" class="btn btn-primary btn-block" type="button" onClick={run}>
+                <button
+                  id="run"
+                  class="btn btn-primary btn-block"
+                  type="button"
+                  onClick={() => replaceRows(1000)}
+                >
                   Create 1,000 rows
                 </button>
               </div>
               <div class="col-sm-6 smallpad">
-                <button id="runlots" class="btn btn-primary btn-block" type="button" onClick={runLots}>
+                <button
+                  id="runlots"
+                  class="btn btn-primary btn-block"
+                  type="button"
+                  onClick={() => replaceRows(10000)}
+                >
                   Create 10,000 rows
                 </button>
               </div>
@@ -101,7 +113,12 @@ render(() => {
                     <a onClick={() => setSelected(rowId)} textContent={row.label()} />
                   </td>
                   <td class="col-md-1">
-                    <a onClick={() => setData((rows) => rows.filter((item) => item.id !== rowId))}>
+                    <a
+                      onClick={() => {
+                        if (selected() === rowId) setSelected(0)
+                        setData((rows) => rows.filter((item) => item.id !== rowId))
+                      }}
+                    >
                       <span class="glyphicon glyphicon-remove" aria-hidden="true" />
                     </a>
                   </td>

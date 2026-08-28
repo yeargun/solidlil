@@ -272,7 +272,6 @@ const summary = {
   keyedPerformance: keyedPerf,
   artifacts,
   examples: results,
-  ...(previous?.performance ? { performance: previous.performance } : {}),
   ...(previous?.jsFrameworkBenchmark ? { jsFrameworkBenchmark: previous.jsFrameworkBenchmark } : {}),
   ...(previous?.compilerComparison ? { compilerComparison: previous.compilerComparison } : {}),
 }

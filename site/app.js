@@ -1,6 +1,6 @@
 import { renderCompilerComparison } from "./compiler-comparison.js"
 
-const data = await fetch("./results.json?v=cpu2").then((response) => {
+const data = await fetch("./results.json?v=fair1").then((response) => {
   if (!response.ok) throw new Error(`Unable to load results: ${response.status}`)
   return response.json()
 })
@@ -43,10 +43,11 @@ const jfbRaw = jfb
 document.querySelector("#score-jfb-main").textContent = pct(jfbBrotli)
 document.querySelector("#score-jfb-bytes").textContent = jfb
   ? `${formatter.format(jfb.sizes.solid.brotli)} B → ${formatter.format(jfb.sizes.solidlil.brotli)} B vs Solid 2.0`
-  : "official keyed table vs @itslil/solidjs"
+  : "keyed app vs @itslil/solidjs"
 document.querySelector("#score-jfb-gzip").textContent = pct(jfbGzip)
 document.querySelector("#score-jfb-raw").textContent = pct(jfbRaw)
-const select = jfb?.cpu?.find((row) => row.id === "04_select1k")
+const currentCpu = jfb?.status?.cpu === "current" ? jfb.cpu : null
+const select = currentCpu?.find((row) => row.id === "04_select1k")
 const selectSameApp = jfb?.selectSameApp
   ?? (select != null && select.ratio >= 0.7 && select.ratio <= 1.4)
 document.querySelector("#score-jfb-select").textContent = select
@@ -54,14 +55,16 @@ document.querySelector("#score-jfb-select").textContent = select
   : "—"
 const selectLabel = document.querySelector("#score-jfb-select")?.parentElement?.querySelector("span")
 if (selectLabel) {
-  selectLabel.textContent = selectSameApp ? "select · same app" : "select · not same app"
+  selectLabel.textContent = select
+    ? selectSameApp ? "select · same app" : "select · not same app"
+    : "current select pending"
 }
 
 const createRatio = jfb?.geomean?.cpuSameApp
   ?? jfb?.geomean?.cpu
-  ?? data.performance?.browserMs?.ratio?.create1k
+  ?? (jfb ? null : data.performance?.browserMs?.ratio?.create1k)
 document.querySelector("#score-jfb-cpu").textContent = createRatio == null
-  ? (data.performance?.browserMs?.skipped ? "node only" : "—")
+  ? (jfb ? "pending" : data.performance?.browserMs?.skipped ? "node only" : "—")
   : `${createRatio.toFixed(2)}×`
 
 function renderDemos(filter = "all") {
@@ -103,7 +106,7 @@ function renderResults() {
     const jfbReduction = (1 - jfb.sizes.solidlil.brotli / jfb.sizes.solid.brotli) * 100
     lead.push(`
     <tr>
-      <th scope="row">JFB keyed table</th>
+      <th scope="row">Keyed app · same Terser</th>
       <td>${formatter.format(jfb.sizes.solid.raw)}</td>
       <td>${formatter.format(jfb.sizes.solidlil.raw)}</td>
       <td>${formatter.format(jfb.sizes.solid.gzip)}</td>
@@ -128,7 +131,7 @@ function renderResults() {
   `))
   rows.push(`
     <tr>
-      <th scope="row">Total</th>
+      <th scope="row">Demo total · not a framework payload</th>
       <td>${formatter.format(raw.solid)}</td>
       <td>${formatter.format(raw.solidlil)}</td>
       <td>${formatter.format(gzip.solid)}</td>
@@ -147,12 +150,12 @@ function renderResults() {
   const solidRaw = sizes ? sizes.solid.raw : raw.solid
   const lilRaw = sizes ? sizes.solidlil.raw : raw.solidlil
   document.querySelector("#total-bar").innerHTML = `
-    <div class="bar-solid"><span>Solid 2.0 JFB Brotli</span><strong>${formatter.format(solidBrotli)} B</strong></div>
-    <div class="bar-lil" style="width:${Math.max(18, Math.min(100, (lilBrotli / solidBrotli) * 100))}%"><span>@itslil/solidjs JFB Brotli</span><strong>${formatter.format(lilBrotli)} B</strong></div>
-    <div class="bar-solid"><span>Solid 2.0 JFB gzip-9</span><strong>${formatter.format(solidGzip)} B</strong></div>
-    <div class="bar-lil" style="width:${Math.max(18, Math.min(100, (lilGzip / solidGzip) * 100))}%"><span>@itslil/solidjs JFB gzip-9</span><strong>${formatter.format(lilGzip)} B</strong></div>
-    <div class="bar-solid"><span>Solid 2.0 JFB raw</span><strong>${formatter.format(solidRaw)} B</strong></div>
-    <div class="bar-lil" style="width:${Math.max(18, Math.min(100, (lilRaw / solidRaw) * 100))}%"><span>@itslil/solidjs JFB raw</span><strong>${formatter.format(lilRaw)} B</strong></div>
+    <div class="bar-solid"><span>Solid 2.0 canonical Brotli</span><strong>${formatter.format(solidBrotli)} B</strong></div>
+    <div class="bar-lil" style="width:${Math.max(18, Math.min(100, (lilBrotli / solidBrotli) * 100))}%"><span>@itslil/solidjs canonical Brotli</span><strong>${formatter.format(lilBrotli)} B</strong></div>
+    <div class="bar-solid"><span>Solid 2.0 canonical gzip-9</span><strong>${formatter.format(solidGzip)} B</strong></div>
+    <div class="bar-lil" style="width:${Math.max(18, Math.min(100, (lilGzip / solidGzip) * 100))}%"><span>@itslil/solidjs canonical gzip-9</span><strong>${formatter.format(lilGzip)} B</strong></div>
+    <div class="bar-solid"><span>Solid 2.0 canonical raw</span><strong>${formatter.format(solidRaw)} B</strong></div>
+    <div class="bar-lil" style="width:${Math.max(18, Math.min(100, (lilRaw / solidRaw) * 100))}%"><span>@itslil/solidjs canonical raw</span><strong>${formatter.format(lilRaw)} B</strong></div>
   `
 }
 
@@ -170,6 +173,7 @@ function row(name, solid, lil, ratioValue) {
 function renderPerf() {
   const perf = data.performance
   const jfb = data.jsFrameworkBenchmark
+  const currentCpu = jfb?.status?.cpu === "current" ? jfb.cpu : null
   const cards = document.querySelector("#perf-cards")
   if (!perf && !jfb) {
     if (cards) cards.innerHTML = ""
@@ -178,9 +182,9 @@ function renderPerf() {
     return
   }
   const rows = []
-  if (jfb?.cpu) {
+  if (currentCpu?.length) {
     if (cards) {
-      const items = jfb.cpu.map((item) => `
+      const items = currentCpu.map((item) => `
         <article class="perf-card${item.ratio < 1 ? " win" : ""}">
           <span>${item.name}</span>
           <strong>${times(item.ratio)}</strong>
@@ -199,7 +203,7 @@ function renderPerf() {
       }
       cards.innerHTML = items.join("")
     }
-    for (const item of jfb.cpu) {
+    for (const item of currentCpu) {
       rows.push(row(item.name, ms(item.solid), ms(item.solidlil), times(item.ratio)))
     }
     if (jfb.geomean?.cpuSameApp != null) {
@@ -208,18 +212,42 @@ function renderPerf() {
     if (jfb.geomean?.cpu != null) {
       rows.push(row("JFB CPU geomean · all nine", "1.00×", times(jfb.geomean.cpu), times(jfb.geomean.cpu)))
     }
-    if (jfb.memory) {
+    if (jfb.status?.memory === "current" && jfb.memory?.length) {
       for (const item of jfb.memory) {
         rows.push(row(item.name, `${item.solid.toFixed(2)} MB`, `${item.solidlil.toFixed(2)} MB`, times(item.ratio)))
       }
     }
+  } else if (jfb?.diagnostics) {
+    const native = jfb.diagnostics.nativeProduction
+    const properties = jfb.diagnostics.sharedPrivatePropertyMangle
+    const noTree = jfb.diagnostics.solidWithoutTreeShaking.solid
+    const canonicalRatio = jfb.sizes.solidlil.brotli / jfb.sizes.solid.brotli
+    const nativeRatio = native.solidlil.brotli / native.solid.brotli
+    const propertyRatio = properties.solidlil.brotli / properties.solid.brotli
+    if (cards) {
+      cards.innerHTML = `
+        <article class="perf-card win"><span>Canonical · same Terser</span><strong>${times(canonicalRatio)}</strong><span>${formatter.format(jfb.sizes.solidlil.brotli)} / ${formatter.format(jfb.sizes.solid.brotli)} B Brotli</span></article>
+        <article class="perf-card win"><span>Native production</span><strong>${times(nativeRatio)}</strong><span>${formatter.format(native.solidlil.brotli)} / ${formatter.format(native.solid.brotli)} B Brotli</span></article>
+        <article class="perf-card win"><span>Same private-property rule</span><strong>${times(propertyRatio)}</strong><span>${formatter.format(properties.solidlil.brotli)} / ${formatter.format(properties.solid.brotli)} B Brotli</span></article>`
+    }
+    rows.push(
+      row("Canonical · same Terser", `${formatter.format(jfb.sizes.solid.brotli)} B`, `${formatter.format(jfb.sizes.solidlil.brotli)} B`, times(canonicalRatio)),
+      row("Native production", `${formatter.format(native.solid.brotli)} B`, `${formatter.format(native.solidlil.brotli)} B`, times(nativeRatio)),
+      row("Same /^_/ property mangle", `${formatter.format(properties.solid.brotli)} B`, `${formatter.format(properties.solidlil.brotli)} B`, times(propertyRatio)),
+      row("Solid with tree shaking disabled", `${formatter.format(noTree.brotli)} B`, "diagnostic only", "—"),
+    )
   } else if (cards) {
     cards.innerHTML = ""
   }
-  if (jfb?.cpu) {
+  if (currentCpu?.length) {
     document.querySelector("#perf-note").textContent =
       jfb.notes?.cpuSameApp
       ?? `Official js-framework-benchmark, Chrome with CPU throttling, ${jfb.blocks ?? 15} blocks. Ratio is @itslil/solidjs / Solid 2.0 (lower is faster). Same-app geomean excludes select.`
+  } else if (jfb?.diagnostics) {
+    const noTree = jfb.diagnostics.solidWithoutTreeShaking.solid.brotli
+    const shaken = jfb.sizes.solid.brotli
+    document.querySelector("#perf-note").textContent =
+      `CPU and memory are withheld until the current artifact hashes are measured. Disabling Solid's Vite tree shaking changes ${formatter.format(shaken)} B to ${formatter.format(noTree)} B Brotli (+${formatter.format(noTree - shaken)} B). The remaining gap combines LilScript's whole-program DCE with runtime representation.`
   } else {
     const browser = perf?.browserMs
     if (browser && !browser.skipped) {
@@ -236,7 +264,9 @@ function renderPerf() {
         `Node ${perf?.node ?? ""}. Browser benches were skipped${browser?.error ? `: ${browser.error}` : "."}`
     }
   }
-  perfBody.innerHTML = rows.join("")
+  perfBody.innerHTML = rows.length
+    ? rows.join("")
+    : row("Current runtime measurements pending", "—", "—", "—")
 }
 
 renderDemos()

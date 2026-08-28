@@ -26,7 +26,7 @@ class Row {
 }
 
 int nextId = 1;
-Signal<Row[]> rows = createSignal([], (Row[] a, Row[] b) => false);
+Signal<Row[]> rows = createSignal([], (Row[] previous, Row[] next) => previous == next);
 Signal<int> selected = createIntSignal(0);
 
 int randomIndex(int maximum) {
@@ -87,15 +87,7 @@ void removeRow(int id) {
   if (selected.read() == id) {
     selected.write(0);
   }
-  Row[] current = rows.read();
-  Row[] next = [];
-  for (int index = 0; index < current.length; index++) {
-    Row row = current[index];
-    if (row.id != id) {
-      next.push(row);
-    }
-  }
-  rows.write(next);
+  rows.write(rows.read().filter((Row row) => row.id != id));
 }
 
 render("#main", (Element root) => {
@@ -104,7 +96,7 @@ render("#main", (Element root) => {
       <div class="jumbotron">
         <div class="row">
           <div class="col-md-6">
-            <h1>solidlil</h1>
+            <h1>Solid 2.0</h1>
           </div>
           <div class="col-md-6">
             <div class="row">
@@ -144,7 +136,7 @@ render("#main", (Element root) => {
       </div>
       <table class="table table-hover table-striped test-data">
         <tbody>
-          <For each={rows} keyed={(Row row) => row.id}>
+          <For each={rows}>
             {(Row row) => (
               <tr class={{ danger: selected.read() == row.id }}>
                 <td class="col-md-1" textContent={row.id} />

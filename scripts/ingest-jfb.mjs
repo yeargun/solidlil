@@ -1,4 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises"
+import { createHash } from "node:crypto"
 import { dirname, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -30,6 +31,26 @@ const solid = official.frameworks.find((row) => row.id === "solid-v2")
 const lil = official.frameworks.find((row) => row.id === "solidlil-v2")
 if (!solid || !lil) throw new Error("results.json is missing solid-v2 or solidlil-v2")
 
+async function assertCurrentArtifact(framework, path) {
+  const files = framework.size?.files ?? []
+  if (files.length !== 1 || files[0].file !== "main.js") {
+    throw new Error(`${framework.id} must contain exactly one measured main.js`)
+  }
+  const digest = createHash("sha256").update(await readFile(path)).digest("hex")
+  if (files[0].sha256 !== digest) {
+    throw new Error(`${framework.id} results belong to a different bundle hash`)
+  }
+}
+
+await assertCurrentArtifact(
+  solid,
+  resolve(root, "benchmarks/js-framework-benchmark/keyed/solid-v2/dist/main.js"),
+)
+await assertCurrentArtifact(
+  lil,
+  resolve(root, "benchmarks/js-framework-benchmark/keyed/solidlil/dist/main.js"),
+)
+
 function median(framework, section, id, metric) {
   const row = framework[section][id]
   const value = metric ? row?.[metric] : row
@@ -41,34 +62,40 @@ function geomean(values) {
   return Math.exp(values.reduce((sum, value) => sum + Math.log(value), 0) / values.length)
 }
 
-const cpu = Object.entries(CPU).map(([id, name]) => {
-  const solidMs = median(solid, "cpu", id, "total")
-  const lilMs = median(lil, "cpu", id, "total")
-  return { id, name, solid: solidMs, solidlil: lilMs, ratio: lilMs / solidMs }
-})
-const memory = Object.entries(MEMORY).map(([id, name]) => {
-  const solidMb = solid.memory?.[id]?.median
-  const lilMb = lil.memory?.[id]?.median
-  if (solidMb == null || lilMb == null) {
-    const previous = site.jsFrameworkBenchmark?.memory?.find((row) => row.id === id)
-    if (previous) return previous
-    throw new Error(`missing ${id} memory`)
-  }
-  return { id, name, solid: solidMb, solidlil: lilMb, ratio: lilMb / solidMb }
-})
+const cpu = official.status?.cpu?.complete
+  ? Object.entries(CPU).map(([id, name]) => {
+      const solidMs = median(solid, "cpu", id, "total")
+      const lilMs = median(lil, "cpu", id, "total")
+      return { id, name, solid: solidMs, solidlil: lilMs, ratio: lilMs / solidMs }
+    })
+  : []
+const memory = official.status?.memory?.complete
+  ? Object.entries(MEMORY).map(([id, name]) => {
+      const solidMb = median(solid, "memory", id)
+      const lilMb = median(lil, "memory", id)
+      return { id, name, solid: solidMb, solidlil: lilMb, ratio: lilMb / solidMb }
+    })
+  : []
 const allRatios = cpu.map((row) => row.ratio)
-const selectSameApp = true
-const sameApp = allRatios
+const selectSameApp = cpu.length === Object.keys(CPU).length
 
 site.jsFrameworkBenchmark = {
+  ...site.jsFrameworkBenchmark,
+  status: {
+    size: official.status?.size?.complete ? "current" : "incomplete",
+    cpu: official.status?.cpu?.complete ? "current" : "not-measured-for-current-artifacts",
+    memory: official.status?.memory?.complete
+      ? "current"
+      : "not-measured-for-current-artifacts",
+  },
   source: official.upstream?.repository ?? "https://github.com/krausest/js-framework-benchmark",
   commit: official.upstream?.commit ?? official.provenance?.upstreamCommit,
   browser: official.provenance?.chrome,
   blocks: official.configuration?.blocks ?? 15,
   cpuThrottling: official.configuration?.cpuThrottling ?? true,
   geomean: {
-    cpu: geomean(allRatios),
-    cpuSameApp: geomean(sameApp),
+    cpu: allRatios.length ? geomean(allRatios) : null,
+    cpuSameApp: selectSameApp ? geomean(allRatios) : null,
   },
   notes: {
     cpuSameApp:

@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "implementation": "solidlil-v2",
+  "workloadContract": "jfb-keyed-v2-object-identity",
+  "target": "es2022",
+  "moduleFormat": "esm",
+  "frontend": {
+    "name": "lilscript",
+    "version": "lilscript 0.1.0",
+    "binarySha256": "36f420798b32f788f6d0d1b2b72fad97a93ec2b63e18e63f2d531c4e4079dd67",
+    "revision": "bcef1c42efa5df287af76bfe1a7eca9bba9ccc46",
+    "dirty": true
+  },
+  "source": {
+    "revision": "a7ff1ffaf351b1c4413e5c4c311fc2df7b82dd15",
+    "dirty": true
+  },
+  "bundler": {
+    "name": "lilscript",
+    "mode": "single"
+  },
+  "postMinifier": {
+    "name": "terser",
+    "version": "5.43.1",
+    "compressPasses": 3,
+    "toplevelMangling": true,
+    "propertyMangling": false
+  },
+  "treeShaking": true,
+  "sourceSha256": "d009b0079149105e01d2e3d269378f72e0a174b84780776a4330363b9c72e2c3",
+  "artifactSha256": "9aed5d82980ffc45b0f78e48bfebd0bfa0ed8b3b9a9fe3915e2c045c5dedcd49"
+}

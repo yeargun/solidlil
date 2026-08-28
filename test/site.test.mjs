@@ -35,11 +35,38 @@ test("size summaries are derived from raw/gzip/brotli case data", () => {
   }
 })
 
-test("performance metrics are published next to the size tables", () => {
-  assert.ok(results.performance)
-  assert.ok(results.performance.nodeMs.solidlil.signal50k > 0)
-  assert.ok(results.performance.nodeMs.solidlil.memo50k > 0)
-  assert.ok(results.performance.nodeMs.solidlil.effect10k > 0)
+test("stale performance metrics are not mixed with current bundles", () => {
+  assert.equal(results.performance, undefined)
+  assert.equal(results.jsFrameworkBenchmark.status.cpu, "not-measured-for-current-artifacts")
+  assert.equal(results.jsFrameworkBenchmark.status.memory, "not-measured-for-current-artifacts")
+})
+
+test("the keyed comparison is source-aligned and does not recycle runtime data", async () => {
+  const comparison = results.jsFrameworkBenchmark
+  assert.equal(comparison.status.size, "current")
+  assert.equal(comparison.status.cpu, "not-measured-for-current-artifacts")
+  assert.equal(comparison.status.memory, "not-measured-for-current-artifacts")
+  assert.deepEqual(comparison.cpu, [])
+  assert.deepEqual(comparison.memory, [])
+  assert.deepEqual(
+    comparison.provenance.solid.postMinifier,
+    comparison.provenance.solidlil.postMinifier,
+  )
+  assert.equal(comparison.provenance.solid.treeShaking, true)
+  assert.equal(comparison.provenance.solidlil.treeShaking, true)
+  assert.ok(
+    comparison.diagnostics.solidWithoutTreeShaking.solid.brotli > comparison.sizes.solid.brotli,
+  )
+  assert.match(comparison.methodology.limitation, /does not attribute the full delta/i)
+
+  const solidSource = await read("benchmarks/js-framework-benchmark/keyed/solid-v2/src/main.jsx")
+  const solidlilSource = await read("benchmarks/js-framework-benchmark/keyed/solidlil/src/main.lilx")
+  assert.match(solidSource, /setSelected\(0\)/)
+  assert.match(solidlilSource, /selected\.write\(0\)/)
+  assert.match(solidSource, /\.filter\(/)
+  assert.match(solidlilSource, /\.filter\(/)
+  assert.doesNotMatch(solidSource, /<For[^>]+keyed=/)
+  assert.doesNotMatch(solidlilSource, /<For[^>]+keyed=/)
 })
 
 test("the frozen compiler artifact remains available for before/after history", () => {
@@ -65,16 +92,16 @@ test("every API used by the live recreations exists in solidlil", () => {
   }
 })
 
-test("the README leads with size and performance evidence", async () => {
+test("the README leads with aligned size evidence and its tree-shaking audit", async () => {
   const readme = await read("README.md")
   const jfb = readme.indexOf("js-framework-benchmark")
-  const evidence = readme.indexOf("paired browser demos")
+  const evidence = readme.indexOf("tree-shaking ablation")
   const install = readme.indexOf("npm install @itslil/solidjs")
   assert.ok(jfb > 0 && jfb < evidence && evidence < install)
   assert.match(readme, /## Why smaller/)
   assert.match(readme, /Same flush, same pending/)
   assert.doesNotMatch(readme, /We did not port Solid/)
-  assert.match(readme, /raw \/ gzip-9 \/ Brotli-11/)
+  assert.match(readme, /raw JS/)
   assert.match(readme, /https:\/\/yeargun\.github\.io\/solidlil\//)
 })
 

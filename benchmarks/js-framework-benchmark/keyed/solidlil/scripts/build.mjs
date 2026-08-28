@@ -1,9 +1,10 @@
-import { createRequire } from "node:module"
 import { spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import { existsSync } from "node:fs"
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { dirname, join, relative, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import { minify } from "terser"
 
 const frameworkRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 
@@ -37,7 +38,13 @@ const compiler = compilerCandidates.find((candidate) => {
   return spawnSync(candidate, ["--version"], { stdio: "ignore" }).status === 0
 })
 if (!compiler) throw new Error("LilScript compiler not found")
-const { minify } = createRequire(join(solidlilRoot, "package.json"))("terser")
+const packageDefinition = JSON.parse(await readFile(join(frameworkRoot, "package.json"), "utf8"))
+const terserOptions = {
+  module: true,
+  compress: { passes: 3 },
+  mangle: { toplevel: true },
+  format: { comments: false },
+}
 
 function lilImport(fromFile, target) {
   let value = relative(dirname(fromFile), target).replaceAll("\\", "/")
@@ -60,7 +67,9 @@ compileLilxFile(entry, generated, {
 })
 
 const dist = join(frameworkRoot, "dist")
+const artifacts = join(frameworkRoot, "artifacts")
 await mkdir(dist, { recursive: true })
+await mkdir(artifacts, { recursive: true })
 const out = join(dist, "main.js")
 const result = spawnSync(
   compiler,
@@ -82,12 +91,64 @@ if (result.status !== 0) {
   throw new Error(`solidlil jsfb compile failed\n${result.stderr || result.stdout}`)
 }
 
-const minified = await minify(await readFile(out, "utf8"), {
-  module: true,
-  compress: { passes: 3 },
-  mangle: { toplevel: true },
-  format: { comments: false },
-})
+const native = `${(await readFile(out, "utf8")).trim()}\n`
+await writeFile(join(artifacts, "native.js"), native)
+const minified = await minify(native, terserOptions)
 if (!minified.code) throw new Error("Terser produced no code")
-await writeFile(out, `${minified.code}\n`)
-console.log(`built ${out} (${Buffer.byteLength(minified.code)} bytes)`)
+const code = `${minified.code}\n`
+await writeFile(out, code)
+const privateMinified = await minify(native, {
+  ...terserOptions,
+  mangle: {
+    ...terserOptions.mangle,
+    properties: { regex: /^_/, keep_quoted: true },
+  },
+})
+if (!privateMinified.code) throw new Error("Terser property-mangle lane produced no code")
+await writeFile(join(artifacts, "private-properties.js"), `${privateMinified.code}\n`)
+const commandOutput = (command, args, cwd) => {
+  const value = spawnSync(command, args, { cwd, encoding: "utf8" })
+  return value.status === 0 ? value.stdout.trim() : null
+}
+const compilerRoot = commandOutput("git", ["rev-parse", "--show-toplevel"], dirname(compiler))
+await writeFile(
+  join(dist, "build-meta.json"),
+  `${JSON.stringify(
+    {
+      schemaVersion: 1,
+      implementation: "solidlil-v2",
+      workloadContract: "jfb-keyed-v2-object-identity",
+      target: "es2022",
+      moduleFormat: "esm",
+      frontend: {
+        name: "lilscript",
+        version: commandOutput(compiler, ["--version"], solidlilRoot),
+        binarySha256: createHash("sha256").update(await readFile(compiler)).digest("hex"),
+        revision: compilerRoot
+          ? commandOutput("git", ["rev-parse", "HEAD"], compilerRoot)
+          : null,
+        dirty: compilerRoot
+          ? Boolean(commandOutput("git", ["status", "--porcelain"], compilerRoot))
+          : null,
+      },
+      source: {
+        revision: commandOutput("git", ["rev-parse", "HEAD"], solidlilRoot),
+        dirty: Boolean(commandOutput("git", ["status", "--porcelain"], solidlilRoot)),
+      },
+      bundler: { name: "lilscript", mode: "single" },
+      postMinifier: {
+        name: "terser",
+        version: packageDefinition.devDependencies.terser,
+        compressPasses: 3,
+        toplevelMangling: true,
+        propertyMangling: false,
+      },
+      treeShaking: true,
+      sourceSha256: createHash("sha256").update(await readFile(entry)).digest("hex"),
+      artifactSha256: createHash("sha256").update(code).digest("hex"),
+    },
+    null,
+    2,
+  )}\n`,
+)
+console.log(`built ${out} (${Buffer.byteLength(code)} bytes)`)

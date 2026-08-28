@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "implementation": "solid-v2",
+  "workloadContract": "jfb-keyed-v2-object-identity",
+  "target": "es2022",
+  "moduleFormat": "esm",
+  "frontend": {
+    "name": "@solidjs/vite-plugin",
+    "version": "3.0.0-next.30"
+  },
+  "bundler": {
+    "name": "vite",
+    "version": "8.2.1"
+  },
+  "postMinifier": {
+    "name": "terser",
+    "version": "5.43.1",
+    "compressPasses": 3,
+    "toplevelMangling": true,
+    "propertyMangling": false
+  },
+  "treeShaking": true,
+  "retainedModules": {
+    "node_modules/@solidjs/signals/dist/prod/core/error.js": 1607,
+    "node_modules/@solidjs/signals/dist/prod/core/constants.js": 1509,
+    "node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1662,
+    "node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11959,
+    "node_modules/@solidjs/signals/dist/prod/core/heap.js": 2594,
+    "node_modules/@solidjs/signals/dist/prod/core/owner.js": 4390,
+    "node_modules/@solidjs/signals/dist/prod/core/graph.js": 1363,
+    "node_modules/@solidjs/signals/dist/prod/core/async.js": 8050,
+    "node_modules/@solidjs/signals/dist/prod/core/core.js": 12883,
+    "node_modules/@solidjs/signals/dist/prod/core/effect.js": 1659,
+    "node_modules/@solidjs/signals/dist/prod/signals.js": 1612,
+    "node_modules/@solidjs/signals/dist/prod/store/store.js": 254,
+    "node_modules/@solidjs/signals/dist/prod/map.js": 4096,
+    "node_modules/@solidjs/signals/dist/prod/boundaries.js": 2040,
+    "node_modules/solid-js/dist/solid.js": 655,
+    "node_modules/@solidjs/web/dist/web.js": 15277,
+    "src/main.jsx": 4559
+  },
+  "sourceSha256": "3eca46cf7881f1184507fac0b5d475b9a718bd2b7da810bc995a195a30740d75",
+  "artifactSha256": "8a7e084437435fa86ca3e06c43b5761aa0aba489eb91c5444417ac36583b1e39"
+}
