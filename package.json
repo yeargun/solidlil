@@ -1,7 +1,7 @@
 {
   "name": "@itslil/solidjs",
   "version": "0.1.1",
-  "description": "Solid 2.0's client runtime, compiled with LilScript. Same queued writes, split effects, and LSX templates, shipped as a dependency-free package.",
+  "description": "Experimental Solid 2.0 compatibility runtime and in-progress file-for-file LilScript port.",
   "keywords": [
     "solid",
     "solidjs",
@@ -66,6 +66,9 @@
     "build:site": "node scripts/build-site.mjs",
     "build:jfb": "npm --prefix benchmarks/js-framework-benchmark/keyed/solid-v2 run build-prod && npm --prefix benchmarks/js-framework-benchmark/keyed/solidlil run build-prod",
     "measure:jfb": "node scripts/measure-jfb-size.mjs",
+    "setup:upstream": "node scripts/setup-upstream-source.mjs",
+    "audit:upstream": "node scripts/audit-upstream-port.mjs",
+    "audit:upstream:strict": "node scripts/audit-upstream-port.mjs --strict",
     "build:all": "npm run build && npm run build:apps && npm run build:jfb && npm run measure:jfb && npm run bench:perf && npm run build:site",
     "bench:perf": "node scripts/measure-perf.mjs",
     "check": "npm run test && npm run check:types && npm run check:site && npm run check:pack",

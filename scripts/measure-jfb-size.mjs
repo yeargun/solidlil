@@ -76,9 +76,15 @@ const site = await readJson(resultsPath)
 delete site.performance
 site.jsFrameworkBenchmark = {
   status: {
-    size: "current",
+    size: "diagnostic-only",
     cpu: "not-measured-for-current-artifacts",
     memory: "not-measured-for-current-artifacts",
+  },
+  eligibility: {
+    comparison: false,
+    exactSourcePort: false,
+    reason:
+      "The current SolidLil runtime is a compatibility implementation, not the required file-for-file port of the pinned Solid browser runtime.",
   },
   generatedAt: new Date().toISOString(),
   source: "https://github.com/krausest/js-framework-benchmark",

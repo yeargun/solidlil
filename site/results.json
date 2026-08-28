@@ -488,11 +488,16 @@
   ],
   "jsFrameworkBenchmark": {
     "status": {
-      "size": "current",
+      "size": "diagnostic-only",
       "cpu": "not-measured-for-current-artifacts",
       "memory": "not-measured-for-current-artifacts"
     },
-    "generatedAt": "2026-08-28T20:01:48.557Z",
+    "eligibility": {
+      "comparison": false,
+      "exactSourcePort": false,
+      "reason": "The current SolidLil runtime is a compatibility implementation, not the required file-for-file port of the pinned Solid browser runtime."
+    },
+    "generatedAt": "2026-08-28T20:28:02.460Z",
     "source": "https://github.com/krausest/js-framework-benchmark",
     "workloadContract": "jfb-keyed-v2-object-identity",
     "methodology": {
@@ -581,7 +586,7 @@
       },
       "codec": {
         "path": "../lilscript/target/release/lilscript-codec",
-        "sha256": "0f513400726aa335a4e8588e623af3afae74976d02cd63fc8a28745be3c02e7d",
+        "sha256": "153057be25c1dc2c2c2943c39e637ce62233464eed840e10b15cebcdeee126da",
         "gzip9": {
           "encoder": "upstream-stock-zlib-c",
           "libraryVersion": "1.3.1",
@@ -729,7 +734,7 @@
         "id": "current-36f420798b32",
         "role": "current",
         "label": "Current compiler · rebuilt packaged core",
-        "recordedAt": "2026-08-28T20:01:48.573Z",
+        "recordedAt": "2026-08-28T20:28:02.471Z",
         "source": {
           "revision": "a7ff1ffaf351b1c4413e5c4c311fc2df7b82dd15",
           "tree": null,
@@ -749,7 +754,7 @@
           "dirty": true
         },
         "codec": {
-          "binarySha256": "0f513400726aa335a4e8588e623af3afae74976d02cd63fc8a28745be3c02e7d",
+          "binarySha256": "153057be25c1dc2c2c2943c39e637ce62233464eed840e10b15cebcdeee126da",
           "gzipLevel": 9,
           "brotliQuality": 11
         },

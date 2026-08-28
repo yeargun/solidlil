@@ -10,6 +10,7 @@ import { apps } from "../scripts/apps.mjs"
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const read = (path) => readFile(join(root, path), "utf8")
 const results = JSON.parse(await read("site/results.json"))
+const upstreamPort = JSON.parse(await read("site/upstream-port.json"))
 
 test("the Pages lab contains every paired Solid 2.0 demo", () => {
   assert.equal(results.examples.length, apps.length)
@@ -41,9 +42,11 @@ test("stale performance metrics are not mixed with current bundles", () => {
   assert.equal(results.jsFrameworkBenchmark.status.memory, "not-measured-for-current-artifacts")
 })
 
-test("the keyed comparison is source-aligned and does not recycle runtime data", async () => {
+test("the keyed diagnostic is ineligible until the exact source port passes", async () => {
   const comparison = results.jsFrameworkBenchmark
-  assert.equal(comparison.status.size, "current")
+  assert.equal(comparison.status.size, "diagnostic-only")
+  assert.equal(comparison.eligibility.comparison, false)
+  assert.equal(comparison.eligibility.exactSourcePort, false)
   assert.equal(comparison.status.cpu, "not-measured-for-current-artifacts")
   assert.equal(comparison.status.memory, "not-measured-for-current-artifacts")
   assert.deepEqual(comparison.cpu, [])
@@ -67,6 +70,9 @@ test("the keyed comparison is source-aligned and does not recycle runtime data",
   assert.match(solidlilSource, /\.filter\(/)
   assert.doesNotMatch(solidSource, /<For[^>]+keyed=/)
   assert.doesNotMatch(solidlilSource, /<For[^>]+keyed=/)
+  assert.equal(upstreamPort.complete, false)
+  assert.equal(upstreamPort.counts.total, 47)
+  assert.equal(upstreamPort.counts.verified, 0)
 })
 
 test("the frozen compiler artifact remains available for before/after history", () => {
@@ -92,16 +98,14 @@ test("every API used by the live recreations exists in solidlil", () => {
   }
 })
 
-test("the README leads with aligned size evidence and its tree-shaking audit", async () => {
+test("the README leads with the exact-port gate", async () => {
   const readme = await read("README.md")
-  const jfb = readme.indexOf("js-framework-benchmark")
-  const evidence = readme.indexOf("tree-shaking ablation")
+  const status = readme.indexOf("Exact-port status")
+  const withdrawn = readme.indexOf("old comparison was withdrawn")
   const install = readme.indexOf("npm install @itslil/solidjs")
-  assert.ok(jfb > 0 && jfb < evidence && evidence < install)
-  assert.match(readme, /## Why smaller/)
-  assert.match(readme, /Same flush, same pending/)
-  assert.doesNotMatch(readme, /We did not port Solid/)
-  assert.match(readme, /raw JS/)
+  assert.ok(status > 0 && status < withdrawn && withdrawn < install)
+  assert.match(readme, /not yet an\s+exact or drop-in Solid implementation/)
+  assert.match(readme, /47 browser-runtime source modules/)
   assert.match(readme, /https:\/\/yeargun\.github\.io\/solidlil\//)
 })
 
@@ -113,7 +117,7 @@ test("the lab app script parses", () => {
 test("the generated Pages artifact includes demos, sizes, and performance", async () => {
   for (const path of [
     "_site/index.html", "_site/app.js", "_site/compiler-comparison.js", "_site/styles.css", "_site/demo.css",
-    "_site/results.json", ".nojekyll",
+    "_site/results.json", "_site/upstream-port.json", ".nojekyll",
   ]) {
     const target = path === ".nojekyll" ? "_site/.nojekyll" : path
     assert.ok((await stat(join(root, target))).size >= 0, `${path} is missing`)
@@ -127,17 +131,18 @@ test("the generated Pages artifact includes demos, sizes, and performance", asyn
   assert.match(html, /@itslil\/solidjs/)
   assert.match(html, /js-framework-benchmark/)
   assert.match(html, /id="why"/)
-  assert.match(html, /Why smaller/)
-  assert.match(html, /Same flush, same pending/)
+  assert.match(html, /Exact before/)
+  assert.match(html, /Behavior before bytes/)
   assert.match(html, /id="compiler-comparison"/)
-  assert.match(html, /Tree-shaking is the fair size/)
-  assert.match(html, /Owned fields become slots/)
+  assert.match(html, /Same boundaries/)
+  assert.match(html, /No façade credit/)
   assert.match(html, /data-filter="async"/)
   assert.match(html, /closed-world/)
   assert.doesNotMatch(html, /We never compiled SSR/)
   assert.doesNotMatch(html, /unused @solidjs\/signals/)
   assert.doesNotMatch(html, /ours <code>host\.lil<\/code>/)
   assert.ok(results.jsFrameworkBenchmark)
+  assert.equal(results.jsFrameworkBenchmark.eligibility.comparison, false)
   assert.ok(results.jsFrameworkBenchmark.sizes.solid.brotli > results.jsFrameworkBenchmark.sizes.solidlil.brotli)
   assert.ok(
     results.jsFrameworkBenchmark.sizes.solid.brotli < 20000,

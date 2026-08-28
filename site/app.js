@@ -1,9 +1,15 @@
 import { renderCompilerComparison } from "./compiler-comparison.js"
 
-const data = await fetch("./results.json?v=fair1").then((response) => {
-  if (!response.ok) throw new Error(`Unable to load results: ${response.status}`)
-  return response.json()
-})
+const [data, sourceParity] = await Promise.all([
+  fetch("./results.json?v=exact1").then((response) => {
+    if (!response.ok) throw new Error(`Unable to load results: ${response.status}`)
+    return response.json()
+  }),
+  fetch("./upstream-port.json?v=exact1").then((response) => {
+    if (!response.ok) throw new Error(`Unable to load source parity: ${response.status}`)
+    return response.json()
+  }),
+])
 
 const demoGrid = document.querySelector("#demo-grid")
 const resultsBody = document.querySelector("#results-body")
@@ -31,6 +37,8 @@ const gzip = data.metrics.gzip
 const raw = data.metrics.raw
 
 const jfb = data.jsFrameworkBenchmark
+const eligibleComparison =
+  jfb?.eligibility?.comparison === true && sourceParity.complete === true
 const jfbBrotli = jfb
   ? (1 - jfb.sizes.solidlil.brotli / jfb.sizes.solid.brotli) * 100
   : brotli.weightedReduction
@@ -40,12 +48,14 @@ const jfbGzip = jfb
 const jfbRaw = jfb
   ? (1 - jfb.sizes.solidlil.raw / jfb.sizes.solid.raw) * 100
   : raw.weightedReduction
-document.querySelector("#score-jfb-main").textContent = pct(jfbBrotli)
-document.querySelector("#score-jfb-bytes").textContent = jfb
+document.querySelector("#score-jfb-main").textContent = eligibleComparison
+  ? pct(jfbBrotli)
+  : "withheld"
+document.querySelector("#score-jfb-bytes").textContent = eligibleComparison
   ? `${formatter.format(jfb.sizes.solid.brotli)} B → ${formatter.format(jfb.sizes.solidlil.brotli)} B vs Solid 2.0`
-  : "keyed app vs @itslil/solidjs"
-document.querySelector("#score-jfb-gzip").textContent = pct(jfbGzip)
-document.querySelector("#score-jfb-raw").textContent = pct(jfbRaw)
+  : `${sourceParity.counts.verified}/${sourceParity.counts.total} upstream runtime modules verified`
+document.querySelector("#score-jfb-gzip").textContent = eligibleComparison ? pct(jfbGzip) : "not ranked"
+document.querySelector("#score-jfb-raw").textContent = eligibleComparison ? pct(jfbRaw) : "not ranked"
 const currentCpu = jfb?.status?.cpu === "current" ? jfb.cpu : null
 const select = currentCpu?.find((row) => row.id === "04_select1k")
 const selectSameApp = jfb?.selectSameApp
@@ -79,7 +89,7 @@ function renderDemos(filter = "all") {
           <span class="case-number">${String(data.examples.indexOf(example) + 1).padStart(2, "0")}</span>
           <h3>${example.title}</h3>
         </div>
-        <strong class="saving">${pct(example.reduction.brotli)}</strong>
+        <strong class="saving">prototype</strong>
       </header>
       <div class="demo-frame-wrap">
         <iframe
@@ -89,7 +99,7 @@ function renderDemos(filter = "all") {
         ></iframe>
       </div>
       <footer>
-        <span>raw ${formatter.format(example.solidlil.raw)} · gzip ${formatter.format(example.solidlil.gzip)} · brotli ${formatter.format(example.solidlil.brotli)}</span>
+        <span>behavior demo only · not exact parity evidence</span>
         <div>
           <a href="./apps/${encodeURIComponent(example.id)}/solid.html">Solid</a>
           <a href="./apps/${encodeURIComponent(example.id)}/solidlil.html">solidlil</a>
@@ -101,6 +111,11 @@ function renderDemos(filter = "all") {
 }
 
 function renderResults() {
+  if (!eligibleComparison) {
+    resultsBody.innerHTML = `<tr><th scope="row">Size comparison withheld</th><td colspan="7">${formatter.format(sourceParity.counts.verified)} of ${formatter.format(sourceParity.counts.total)} upstream runtime modules are verified as typed .lil ports.</td></tr>`
+    document.querySelector("#total-bar").innerHTML = `<div class="bar-solid"><span>Exact source-port gate</span><strong>${formatter.format(sourceParity.counts.verified)} / ${formatter.format(sourceParity.counts.total)}</strong></div>`
+    return
+  }
   const lead = []
   if (jfb?.sizes) {
     const jfbReduction = (1 - jfb.sizes.solidlil.brotli / jfb.sizes.solid.brotli) * 100
@@ -217,7 +232,7 @@ function renderPerf() {
         rows.push(row(item.name, `${item.solid.toFixed(2)} MB`, `${item.solidlil.toFixed(2)} MB`, times(item.ratio)))
       }
     }
-  } else if (jfb?.diagnostics) {
+  } else if (jfb?.diagnostics && eligibleComparison) {
     const native = jfb.diagnostics.nativeProduction
     const properties = jfb.diagnostics.sharedPrivatePropertyMangle
     const noTree = jfb.diagnostics.solidWithoutTreeShaking.solid
@@ -243,11 +258,18 @@ function renderPerf() {
     document.querySelector("#perf-note").textContent =
       jfb.notes?.cpuSameApp
       ?? `Official js-framework-benchmark, Chrome with CPU throttling, ${jfb.blocks ?? 15} blocks. Ratio is @itslil/solidjs / Solid 2.0 (lower is faster). Same-app geomean excludes select.`
-  } else if (jfb?.diagnostics) {
+  } else if (jfb?.diagnostics && eligibleComparison) {
     const noTree = jfb.diagnostics.solidWithoutTreeShaking.solid.brotli
     const shaken = jfb.sizes.solid.brotli
     document.querySelector("#perf-note").textContent =
       `CPU and memory are withheld until the current artifact hashes are measured. Disabling Solid's Vite tree shaking changes ${formatter.format(shaken)} B to ${formatter.format(noTree)} B Brotli (+${formatter.format(noTree - shaken)} B). The remaining gap combines LilScript's whole-program DCE with runtime representation.`
+  } else if (jfb && !eligibleComparison) {
+    if (cards) {
+      cards.innerHTML = `
+        <article class="perf-card"><span>Exact source modules</span><strong>${formatter.format(sourceParity.counts.verified)} / ${formatter.format(sourceParity.counts.total)}</strong><span>verified typed .lil ports</span></article>
+        <article class="perf-card"><span>Comparison status</span><strong>withheld</strong><span>current runtime is not source-equivalent</span></article>`
+    }
+    document.querySelector("#perf-note").textContent = jfb.eligibility.reason
   } else {
     const browser = perf?.browserMs
     if (browser && !browser.skipped) {

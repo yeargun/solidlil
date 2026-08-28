@@ -5,6 +5,7 @@ dist/apps/
 dist/demo.css
 coverage/
 test-output/
+upstream/
 *.tgz
 .DS_Store
 **/.generated*.lil

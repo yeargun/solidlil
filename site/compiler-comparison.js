@@ -110,7 +110,7 @@ export function renderCompilerComparison(data, selector = "#compiler-comparison"
       </article>
       <div class="compiler-arrow" aria-hidden="true">→</div>
       <article class="${current ? "current" : "pending"}">
-        <span>Current · verified compiler</span>
+        <span>Current · prototype rebuild</span>
         <strong>${formatBytes(brotliBytes(current))}</strong>
         <small>${escapeHtml(current?.label ?? "Final compiler run has not been published yet")}</small>
       </article>
