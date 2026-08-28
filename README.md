@@ -19,6 +19,9 @@ Run `npm run setup:upstream` to clone both pinned repositories locally. Run
 `npm run audit:upstream:strict` to fail unless the port is complete. The current
 compatibility prototype under `src/` does not satisfy this gate.
 
+The complete design and release criteria are in
+[`docs/exact-port-contract.md`](docs/exact-port-contract.md).
+
 ## Why the old comparison was withdrawn
 
 The earlier package matched many export names and selected tests, but it
