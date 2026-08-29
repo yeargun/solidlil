@@ -234,12 +234,11 @@ Every upstream filename still exists and all runtime logic remains in `.lil`.
 
 - Repository: `/Users/yeargun/solidlil`
 - Branch: `main`
-- Last committed/pushed revision: `448ada0 Exercise every demo in Playwright`
-- The entire exact-port tranche is currently uncommitted.
-- Some early DOM/Web additions are staged while later work is unstaged.
-- Do not reset or discard the mixed staging state. Inspect and stage the intended
-  complete tranche before committing.
-- `site/upstream-port.json` and some generated evidence files have changed.
+- Exact-port checkpoint: `6652dd1 Add source-aligned Solid runtime checkpoint`
+- The checkpoint is committed and pushed to `origin/main`.
+- The worktree was clean immediately after that push.
+- GitHub repository: `https://github.com/yeargun/solidlil`
+- A VM can clone the repository or pull `main`, then read this file to continue.
 
 Always inspect first:
 
@@ -279,7 +278,9 @@ git diff --cached --stat
 - [ ] Rebuild all 21 app pairs and rerun Playwright E2E.
 - [ ] Rebuild package, JFB, size, and performance artifacts.
 - [ ] Publish compression/performance rankings only after the exact gate passes.
-- [ ] Commit, push, deploy, and verify GitHub Pages.
+- [x] Commit and push the current source-aligned checkpoint.
+- [x] Deploy and verify the current `0/47 verified, 47/47 present` Pages status.
+- [ ] Commit, push, and deploy the final exact runtime after the strict gate passes.
 
 ## Immediate Next Steps
 
@@ -297,8 +298,9 @@ git diff --cached --stat
 
 ## GitHub Pages Refresh
 
-The live site currently reflects commit `448ada0`; the exact-port source and
-latest corpus progress are not deployed yet.
+The checkpoint is deployed from `main`. The live audit reports 47 source files
+present, 0 missing, and 0 verified. Corpus counts are documented here but are not
+yet rendered as a dedicated card on the page.
 
 Before deployment:
 
