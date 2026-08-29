@@ -1,0 +1,129 @@
+import { createMemo, untrack } from "../../../solid-signals/src/index";
+import { $DEVCOMP, IS_DEV, devComponent } from "./core";
+import { _lazyHydrationLookup, sharedConfig } from "./hydration";
+
+JsValue undefinedValue() {
+  return JS.undefined();
+}
+
+JsValue call0(JsValue fn) {
+  return JS.call(fn, undefinedValue());
+}
+
+JsValue call1(JsValue fn, JsValue value) {
+  return JS.call(fn, undefinedValue(), value);
+}
+
+JsValue call2(JsValue fn, JsValue first, JsValue second) {
+  return JS.call(fn, undefinedValue(), first, second);
+}
+
+/**
+ * Invokes a component without subscribing the parent computation to reads in
+ * the component body. Props remain a JavaScript object because their property
+ * descriptors and getter timing are part of Solid's public component ABI.
+ */
+export JsValue createComponent = JS.method2(
+  (JsValue _self, JsValue component, JsValue props) => {
+    JsValue resolved = if (props.truthy()) { props } else { JS.object() };
+    if (IS_DEV) return call2(devComponent, component, resolved);
+    return call1(untrack, JS.method0((JsValue _ignored) => call1(component, resolved)));
+  }
+);
+
+/**
+ * Defines a code-split component. The import task is shared while the memo
+ * which owns the pending read remains local to each rendered instance.
+ */
+export JsValue lazy = JS.method2(
+  (JsValue _self, JsValue loader, JsValue moduleUrl) => {
+    JsValue component = undefinedValue();
+    JsValue promise = undefinedValue();
+    JsValue wrap = undefinedValue();
+
+    wrap = JS.method1((JsValue _wrapSelf, JsValue props) => {
+      if (sharedConfig["hydrating"].truthy()) {
+        component = JS.call(
+          _lazyHydrationLookup,
+          undefinedValue(),
+          component,
+          moduleUrl
+        );
+      }
+
+      JsValue local = component;
+      if (!local.truthy()) {
+        if (!promise.truthy()) promise = call0(loader);
+        JS.invoke(
+          promise,
+          "then",
+          JS.method1((JsValue _thenSelf, JsValue module) => {
+            JsValue loaded = module["default"];
+            component = JS.method0((JsValue _componentSelf) => loaded);
+            return undefinedValue();
+          })
+        );
+        local = call2(
+          createMemo,
+          JS.method1((JsValue _memoSelf, JsValue _previous) =>
+            JS.invoke(
+              promise,
+              "then",
+              JS.method1((JsValue _loadSelf, JsValue module) => module["default"])
+            )
+          ),
+          undefinedValue()
+        );
+      }
+
+      JsValue localAccessor = local;
+      JsValue active = undefinedValue();
+      return call2(
+        createMemo,
+        JS.method1((JsValue _memoSelf, JsValue _previous) => {
+          JsValue source = if (component.truthy()) { component } else { localAccessor };
+          active = call0(source);
+          if (!active.truthy()) return "";
+          return call1(
+            untrack,
+            JS.method0((JsValue _untrackSelf) => {
+              if (IS_DEV) active[$DEVCOMP] = true;
+              return call1(active, props);
+            })
+          );
+        }),
+        JS.object("sync", true)
+      );
+    });
+
+    wrap["preload"] = JS.method0((JsValue _preloadSelf) => {
+      if (promise.truthy()) return promise;
+      promise = call0(loader);
+      JS.invoke(
+        promise,
+        "then",
+        JS.method1((JsValue _thenSelf, JsValue module) => {
+          JsValue loaded = module["default"];
+          component = JS.method0((JsValue _componentSelf) => loaded);
+          return component;
+        })
+      );
+      return promise;
+    });
+    wrap["moduleUrl"] = moduleUrl;
+    return wrap;
+  }
+);
+
+int uniqueIdCounter = 0;
+
+/** Returns a stable hydration id, or a client-local id outside hydration. */
+export string createUniqueId() {
+  if (sharedConfig["hydrating"].truthy()) {
+    JsValue next = sharedConfig["getNextContextId"];
+    return JS.string(call0(next));
+  }
+  string id = `cl-${uniqueIdCounter}`;
+  uniqueIdCounter += 1;
+  return id;
+}

@@ -1,0 +1,32 @@
+import { Error, Object, Symbol, globalThis } from "../_host";
+
+export JsValue SERVER_FUNCTION_METADATA = JS.invoke(Symbol, "for", "solid.ServerFunctionMetadata");
+JsValue SERVER_FUNCTION_RPC = JS.invoke(Symbol, "for", "solid.ServerFunctionRPC");
+
+export JsValue getServerFunctionMetadata(JsValue fn) {
+  if (JS.typeOf(fn) != "function") return JS.undefined();
+  JsValue metadata = fn[SERVER_FUNCTION_METADATA];
+  if (metadata.truthy()) return metadata;
+  return JS.undefined();
+}
+
+export bool isServerFunction(JsValue fn) {
+  if (JS.typeOf(fn) != "function") return false;
+  if (!fn[SERVER_FUNCTION_METADATA].truthy()) return false;
+  return true;
+}
+
+export JsValue withMeta(JsValue fn, JsValue meta) {
+  JsValue metadata = getServerFunctionMetadata(fn);
+  if (JS.isUndefined(metadata)) throw JS.construct(Error, "withMeta expects a server function reference");
+  JS.invoke(Object, "assign", metadata, meta);
+  return fn;
+}
+
+export void provideServerFunctionRPC(JsValue rpc) {
+  if (!globalThis[SERVER_FUNCTION_RPC].truthy()) globalThis[SERVER_FUNCTION_RPC] = rpc;
+}
+
+export JsValue getServerFunctionRPC() {
+  return globalThis[SERVER_FUNCTION_RPC];
+}

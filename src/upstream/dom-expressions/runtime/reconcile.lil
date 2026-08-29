@@ -1,0 +1,153 @@
+import { $$SLOT } from "./constants";
+
+int arrayLength(JsValue value) {
+  return JS.number(value["length"]).toInt();
+}
+
+JsValue slotOf(JsValue node) {
+  return node[$$SLOT];
+}
+
+bool same(JsValue left, JsValue right) {
+  return JS.strictEqual(left, right);
+}
+
+bool belongsTo(JsValue node, JsValue parent, JsValue marker) {
+  JsValue tag = slotOf(node);
+  return same(node["parentNode"], parent) && (!tag.truthy() || same(tag, marker));
+}
+
+export void reconcileArrays(JsValue parentNode, JsValue a, JsValue b, JsValue marker = JS.undefined()) {
+  int bLength = arrayLength(b);
+  int aEnd = arrayLength(a);
+  int bEnd = bLength;
+  int aStart = 0;
+  int bStart = 0;
+  JsValue tail = a[aEnd - 1];
+  JsValue after = null;
+  if (belongsTo(tail, parentNode, marker)) after = tail["nextSibling"];
+  else if (marker.truthy()) after = marker;
+  Map<JsValue, int>? map = null;
+
+  while (aStart < aEnd || bStart < bEnd) {
+    if (same(a[aStart], b[bStart])) {
+      aStart += 1;
+      bStart += 1;
+      continue;
+    }
+    while (same(a[aEnd - 1], b[bEnd - 1])) {
+      aEnd -= 1;
+      bEnd -= 1;
+    }
+    if (aEnd == aStart) {
+      JsValue node = after;
+      if (bEnd < bLength) {
+        if (bStart != 0) {
+          JsValue previous = b[bStart - 1];
+          if (belongsTo(previous, parentNode, marker)) node = previous["nextSibling"];
+          else node = after;
+        } else {
+          node = b[bEnd - bStart];
+        }
+      }
+      while (bStart < bEnd) {
+        JsValue next = b[bStart];
+        bStart += 1;
+        JS.invoke(parentNode, "insertBefore", next, node);
+        if (marker.truthy()) next[$$SLOT] = marker;
+      }
+    } else if (bEnd == bStart) {
+      while (aStart < aEnd) {
+        JsValue node = a[aStart];
+        aStart += 1;
+        if ((map == null || !map.has(node)) && belongsTo(node, parentNode, marker)) {
+          JS.invoke(node, "remove");
+        }
+      }
+    } else {
+      JsValue anchor = a[aStart];
+      bool swapped =
+        same(anchor, b[bEnd - 1]) &&
+        same(b[bStart], a[aEnd - 1]) &&
+        belongsTo(anchor, parentNode, marker);
+      if (swapped) {
+        if (marker.truthy()) {
+          while (true) {
+            aEnd -= 1;
+            JsValue node = a[aEnd];
+            JS.invoke(parentNode, "insertBefore", node, anchor);
+            node[$$SLOT] = marker;
+            bStart += 1;
+            if (aStart >= aEnd - 1 || bStart >= bEnd) break;
+            if (!(same(a[aStart], b[bEnd - 1]) && same(b[bStart], a[aEnd - 1]))) break;
+          }
+        } else {
+          while (true) {
+            aEnd -= 1;
+            JS.invoke(parentNode, "insertBefore", a[aEnd], anchor);
+            bStart += 1;
+            if (aStart >= aEnd - 1 || bStart >= bEnd) break;
+            if (!(same(a[aStart], b[bEnd - 1]) && same(b[bStart], a[aEnd - 1]))) break;
+          }
+        }
+        continue;
+      }
+      if (map == null) {
+        Map<JsValue, int> created = new Map<JsValue, int>();
+        int index = bStart;
+        while (index < bEnd) {
+          created.set(b[index], index);
+          index += 1;
+        }
+        map = created;
+      }
+      Map<JsValue, int> positions = map ?? new Map<JsValue, int>();
+      int? found = positions.get(a[aStart]);
+      if (found != null) {
+        int index = found;
+        if (bStart < index && index < bEnd) {
+          int cursor = aStart;
+          int sequence = 1;
+          int? nextIndex = null;
+          cursor += 1;
+          while (cursor < aEnd && cursor < bEnd) {
+            nextIndex = positions.get(a[cursor]);
+            if (nextIndex == null || nextIndex != index + sequence) break;
+            sequence += 1;
+            cursor += 1;
+          }
+          if (sequence > index - bStart) {
+            JsValue head = a[aStart];
+            JsValue node = after;
+            if (belongsTo(head, parentNode, marker)) node = head;
+            while (bStart < index) {
+              JsValue next = b[bStart];
+              bStart += 1;
+              JS.invoke(parentNode, "insertBefore", next, node);
+              if (marker.truthy()) next[$$SLOT] = marker;
+            }
+          } else {
+            JsValue oldNode = a[aStart];
+            JsValue newNode = b[bStart];
+            aStart += 1;
+            bStart += 1;
+            if (belongsTo(oldNode, parentNode, marker)) {
+              JS.invoke(parentNode, "replaceChild", newNode, oldNode);
+            } else {
+              JS.invoke(parentNode, "insertBefore", newNode, after);
+            }
+            if (marker.truthy()) newNode[$$SLOT] = marker;
+          }
+        } else {
+          aStart += 1;
+        }
+      } else {
+        JsValue node = a[aStart];
+        aStart += 1;
+        if (belongsTo(node, parentNode, marker)) JS.invoke(node, "remove");
+      }
+    }
+  }
+}
+
+export { reconcileArrays as default };

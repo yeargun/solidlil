@@ -1,0 +1,124 @@
+import { $REFRESH, DEV, flush, getOwner, untrack } from "../../src/upstream/solid-signals/src/core/index";
+import {
+  OptimisticLane,
+  Computed,
+  Signal,
+  computed,
+  createAsyncReporters,
+  beginAsyncReporterWrites,
+  devCheckActiveOverrides,
+  devCheckFlushStart,
+  devCheckMergedLaneEmpty,
+  devCheckQuiescent,
+  devTrackAffects,
+  devTrackHeldPending,
+  devTrackOptimistic,
+  endAsyncReporterWrites,
+  setPendingCheckActive,
+  signal
+} from "../../src/upstream/solid-signals/src/core/kernel";
+import {
+  clearSignals,
+  getSignals,
+  throwPendingUntrackedRead,
+  warnStrictReadUntracked
+} from "../../src/upstream/solid-signals/src/core/dev";
+import { createOwner, createRoot } from "../../src/upstream/solid-signals/src/core/owner";
+import { createMemo, createSignal } from "../../src/upstream/solid-signals/src/signals";
+import { createStore } from "../../src/upstream/solid-signals/src/store/store";
+
+export {
+  $REFRESH,
+  DEV,
+  clearSignals,
+  createMemo,
+  createOwner,
+  createRoot,
+  createSignal,
+  createStore,
+  flush,
+  getOwner,
+  getSignals,
+  throwPendingUntrackedRead,
+  untrack,
+  warnStrictReadUntracked
+};
+
+export void triggerPendingProbeInvariant() {
+  setPendingCheckActive(true);
+  try {
+    devCheckFlushStart();
+  } finally {
+    setPendingCheckActive(false);
+  }
+}
+
+export void triggerAsyncReporterInvariant() {
+  JsValue reporters = createAsyncReporters();
+  JS.invoke(reporters, "set", JS.object(), JS.object());
+}
+
+export int allowedAsyncReporterWrite() {
+  JsValue reporters = createAsyncReporters();
+  beginAsyncReporterWrites();
+  try {
+    JS.invoke(reporters, "set", JS.object(), JS.object());
+  } finally {
+    endAsyncReporterWrites();
+  }
+  return JS.number(reporters["size"]).toInt();
+}
+
+export void triggerHeldPendingInvariant() {
+  Signal<JsValue> node = signal(JS.assume(0));
+  node._hasPending = true;
+  node._queuedPending = false;
+  devTrackHeldPending(node);
+  try {
+    devCheckQuiescent();
+  } finally {
+    node._hasPending = false;
+    devCheckQuiescent();
+  }
+}
+
+export void triggerOptimisticInvariant() {
+  Signal<JsValue> node = signal(JS.assume(0));
+  node._overrideActive = true;
+  devTrackOptimistic(node);
+  try {
+    devCheckActiveOverrides();
+  } finally {
+    node._overrideActive = false;
+  }
+}
+
+export void triggerAffectsInvariant() {
+  Signal<JsValue> node = signal(JS.assume(0));
+  node._affectsCount = 1;
+  devTrackAffects(node);
+  try {
+    devCheckQuiescent();
+  } finally {
+    node._affectsCount = 0;
+    devCheckQuiescent();
+  }
+}
+
+export void triggerMergedLaneInvariant() {
+  Signal<JsValue> source = signal(JS.assume(0));
+  OptimisticLane root = new OptimisticLane(source, null, 0);
+  OptimisticLane merged = new OptimisticLane(source, null, 0);
+  merged._mergedInto = root;
+  func()->JsValue computeValue = () => {
+    JsValue value = JS.assume(1);
+    return value;
+  };
+  Computed<JsValue> pending = computed(computeValue);
+  merged._pendingAsyncValues.push(pending);
+  try {
+    devCheckMergedLaneEmpty(merged);
+  } finally {
+    merged._pendingAsyncValues = [];
+  }
+}

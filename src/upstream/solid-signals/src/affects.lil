@@ -1,0 +1,29 @@
+import { $REFRESH, Signal, markAffects } from "./core/kernel";
+import { $TARGET, getStoreAffectsNodes } from "./store/store";
+import { Error } from "../../_host";
+
+export void affects(JsValue target, JsValue _key = JS.undefined()) {
+  if (JS.isNullish(target)) {
+    throw JS.construct(Error, "[INVALID_AFFECTS_TARGET] affects() expects a Solid source accessor or a store node.");
+  }
+  JsValue storeTarget = target[$TARGET];
+  if (storeTarget.truthy()) {
+    JsValue nodes = getStoreAffectsNodes(storeTarget, _key);
+    int length = JS.number(nodes["length"]).toInt();
+    for (int index = 0; index < length; index++) {
+      Signal<JsValue> storeNode = JS.assume(nodes[index]);
+      markAffects(storeNode);
+    }
+    return;
+  }
+  JsValue refreshKey = JS.assume($REFRESH);
+  JsValue raw = target[refreshKey];
+  if (JS.isNullish(raw)) {
+    throw JS.construct(Error, "[INVALID_AFFECTS_TARGET] affects() expects a Solid source accessor or a store node.");
+  }
+  if (!JS.isUndefined(_key)) {
+    throw JS.construct(Error, "[INVALID_AFFECTS_TARGET] affects() keys are only valid on store targets.");
+  }
+  Signal<JsValue> node = JS.assume(raw);
+  markAffects(node);
+}

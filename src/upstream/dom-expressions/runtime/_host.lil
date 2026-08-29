@@ -1,0 +1,61 @@
+import {
+  Array,
+  Error,
+  Function,
+  Headers,
+  JSON,
+  Map,
+  Math,
+  Object,
+  Promise,
+  Reflect,
+  Response,
+  Set,
+  Symbol,
+  TypeError,
+  WeakMap,
+  arguments,
+  clearTimeout as clearTimeoutHost,
+  console,
+  decodeURIComponent,
+  document,
+  encodeURIComponent,
+  globalThis,
+  performance,
+  queueMicrotask,
+  setTimeout as setTimeoutHost
+} from "../../_host";
+
+export {
+  Array,
+  Error,
+  Function,
+  Headers,
+  JSON,
+  Map,
+  Math,
+  Object,
+  Promise,
+  Reflect,
+  Response,
+  Set,
+  Symbol,
+  TypeError,
+  WeakMap,
+  arguments,
+  console,
+  decodeURIComponent,
+  document,
+  encodeURIComponent,
+  globalThis,
+  performance,
+  queueMicrotask
+};
+
+export JsValue setTimeout(JsValue callback, int delay) {
+  return JS.call(setTimeoutHost, JS.undefined(), callback, delay);
+}
+
+export void clearTimeout(JsValue timer) {
+  JS.call(clearTimeoutHost, JS.undefined(), timer);
+}

@@ -1,0 +1,527 @@
+import {
+  ChildProperties,
+  DOMElements,
+  DOMWithState,
+  DelegatedEvents,
+  HydrationScript,
+  MathMLElements,
+  Namespaces,
+  RawTextElements,
+  RequestContext,
+  SVGElements,
+  VoidElements,
+  acquireAsset,
+  addEvent,
+  applyRef,
+  assign,
+  claimElement,
+  claimElementTree,
+  className,
+  clearFlashCookie,
+  createComponent,
+  delegateEvents,
+  dynamicProperty,
+  effect,
+  generateHydrationScript,
+  getDelegatedRoot,
+  getFirstChild,
+  getHydrationKey,
+  getNextElement,
+  getNextMarker,
+  getNextMatch,
+  getNextSibling,
+  getOwner,
+  getRequestEvent,
+  getServerFunctionMetadata,
+  getServerFunctionRPC,
+  hasFlashCookie,
+  hydrate as hydrateCore,
+  insert,
+  installHydrationRuntime,
+  isServerFunction,
+  memo as memoCore,
+  parseCookieHeader,
+  ref,
+  registerDelegatedContainer,
+  registerDelegatedRoot,
+  registerElementClaim,
+  render as renderCore,
+  runHydrationEvents,
+  scope as scopeCore,
+  serializeCookie,
+  setAttribute,
+  setAttributeNS,
+  setProperty,
+  setStyleProperty,
+  spread,
+  style,
+  template,
+  unregisterDelegatedContainer,
+  unregisterDelegatedRoot,
+  useHead,
+  warmAsset
+} from "./client";
+import {
+  HREF,
+  REVALIDATE_HEADER,
+  ResponseEnvelope,
+  SAFE_ERROR,
+  isHref,
+  isResponseEnvelope,
+  isSafeError,
+  markSafeError,
+  redirect,
+  reload,
+  respond
+} from "./response";
+import {
+  commitEventResponse,
+  composeMiddleware,
+  createRequestEvent,
+  createResponseStub,
+  createSSRResponse,
+  escape,
+  getExpectedRedirectStatus,
+  renderToStream,
+  renderToString,
+  resolveSSRNode,
+  ssr,
+  ssrAttribute,
+  ssrClassName,
+  ssrElement,
+  ssrGroup,
+  ssrHydrationKey,
+  ssrStyle,
+  ssrStyleProperty
+} from "./server-mock";
+import {
+  $DEVCOMP,
+  Errored,
+  For,
+  Hydration,
+  Loading,
+  Match,
+  NoHydration,
+  Repeat,
+  Reveal,
+  Show,
+  Switch,
+  createEffect,
+  createMemo,
+  createOwner,
+  createRenderEffect,
+  createRoot,
+  createSignal,
+  enableHydration,
+  enforceLoadingBoundary,
+  flush,
+  merge,
+  omit,
+  onCleanup,
+  runWithOwner,
+  sharedConfig,
+  untrack
+} from "./_solid";
+import { Array, Set, Symbol, arguments, document, queueMicrotask } from "../../dom-expressions/runtime/_host";
+
+export {
+  ChildProperties,
+  DOMElements,
+  DOMWithState,
+  DelegatedEvents,
+  Errored,
+  For,
+  HREF,
+  Hydration,
+  HydrationScript,
+  Loading,
+  Match,
+  MathMLElements,
+  Namespaces,
+  NoHydration,
+  REVALIDATE_HEADER,
+  RawTextElements,
+  Repeat,
+  RequestContext,
+  ResponseEnvelope,
+  Reveal,
+  SAFE_ERROR,
+  SVGElements,
+  Show,
+  Switch,
+  VoidElements,
+  acquireAsset,
+  addEvent,
+  applyRef,
+  assign,
+  claimElement,
+  claimElementTree,
+  className,
+  clearFlashCookie,
+  commitEventResponse,
+  composeMiddleware,
+  createComponent,
+  createRequestEvent,
+  createResponseStub,
+  createSSRResponse,
+  delegateEvents,
+  dynamicProperty,
+  effect,
+  escape,
+  generateHydrationScript,
+  getDelegatedRoot,
+  getExpectedRedirectStatus,
+  getFirstChild,
+  getHydrationKey,
+  getNextElement,
+  getNextMarker,
+  getNextMatch,
+  getNextSibling,
+  getOwner,
+  getRequestEvent,
+  getServerFunctionMetadata,
+  getServerFunctionRPC,
+  hasFlashCookie,
+  insert,
+  installHydrationRuntime,
+  isHref,
+  isResponseEnvelope,
+  isSafeError,
+  isServerFunction,
+  markSafeError,
+  parseCookieHeader,
+  redirect,
+  ref,
+  registerDelegatedContainer,
+  registerDelegatedRoot,
+  registerElementClaim,
+  reload,
+  renderToStream,
+  renderToString,
+  resolveSSRNode,
+  respond,
+  runHydrationEvents,
+  serializeCookie,
+  setAttribute,
+  setAttributeNS,
+  setProperty,
+  setStyleProperty,
+  spread,
+  ssr,
+  ssrAttribute,
+  ssrClassName,
+  ssrElement,
+  ssrGroup,
+  ssrHydrationKey,
+  ssrStyle,
+  ssrStyleProperty,
+  style,
+  template,
+  untrack,
+  unregisterDelegatedContainer,
+  unregisterDelegatedRoot,
+  useHead,
+  warmAsset
+};
+
+export { merge as mergeProps };
+// Test-only aliases keep browser differential scenarios on this exact linked
+// graph. The package entry filters names beginning with `__`.
+export { createRoot as __createRoot };
+export { createSignal as __createSignal };
+export { flush as __flush };
+export bool isServer = false;
+export bool isDev = false;
+
+export JsValue memo(JsValue fn) {
+  return memoCore(fn);
+}
+
+export JsValue scope(JsValue fn) {
+  return scopeCore(fn);
+}
+
+int lengthOf(JsValue value) {
+  return JS.number(value["length"]).toInt();
+}
+
+JsValue call0(JsValue fn) {
+  return JS.call(fn, JS.undefined());
+}
+
+JsValue call1(JsValue fn, JsValue value) {
+  return JS.call(fn, JS.undefined(), value);
+}
+
+bool isFunction(JsValue value) {
+  return JS.typeOf(value) == "function";
+}
+
+export JsValue render(JsValue code, JsValue element, JsValue initial) {
+  JsValue options = arguments[3];
+  if (JS.isUndefined(options)) options = JS.object();
+  JS.call(enforceLoadingBoundary, JS.undefined(), true);
+  try {
+    JsValue forwarded = JS.object();
+    for (string key in options) forwarded[key] = options[key];
+    forwarded["insertOptions"] = JS.object("schedule", true);
+    JsValue dispose = JS.call(
+      JS.assume(renderCore),
+      JS.undefined(),
+      code,
+      element,
+      initial,
+      forwarded
+    );
+    call0(flush);
+    return dispose;
+  } finally {
+    JS.call(enforceLoadingBoundary, JS.undefined(), false);
+  }
+}
+
+export JsValue hydrate = JS.staticRest((JsValue callArguments) => {
+  call0(enableHydration);
+  return JS.apply(JS.assume(hydrateCore), JS.undefined(), callArguments);
+});
+
+export JsValue Portal(JsValue props) {
+  return JS.call(
+    runWithOwner,
+    JS.undefined(),
+    call0(createOwner),
+    JS.method0((JsValue _self) => portalImpl(props))
+  );
+}
+
+JsValue portalImpl(JsValue props) {
+  JsValue treeMarker = JS.invoke(document, "createTextNode", "");
+  JsValue startMarker = JS.invoke(document, "createTextNode", "");
+  JsValue endMarker = JS.invoke(document, "createTextNode", "");
+  JsValue mount = JS.method0((JsValue _self) => {
+    if (props["mount"].truthy()) return props["mount"];
+    return document["body"];
+  });
+  JsValue content = JS.call(
+    createMemo,
+    JS.undefined(),
+    JS.method0((JsValue _self) => JS.array(startMarker, props["children"])),
+    JS.object("ssrSource", "client", "loadingValue", JS.undefined())
+  );
+  JS.call(
+    createRenderEffect,
+    JS.undefined(),
+    JS.method0((JsValue _self) => JS.array(call0(mount), call0(content), call0(JS.assume(getOwner)))),
+    JS.method1((JsValue _self, JsValue values) => {
+      JsValue target = call0(mount);
+      JS.invoke(target, "appendChild", endMarker);
+      JsValue dispose = JS.call(
+        runWithOwner,
+        JS.undefined(),
+        values[2],
+        JS.method0((JsValue _owner) => JS.call(
+          createRoot,
+          JS.undefined(),
+          JS.method1((JsValue _rootSelf, JsValue rootDispose) => {
+            insert(
+              target,
+              values[1],
+              endMarker,
+              JS.undefined(),
+              JS.object("host", JS.method0((JsValue _host) => treeMarker["parentNode"]))
+            );
+            return rootDispose;
+          })
+        ))
+      );
+      return JS.method0((JsValue _cleanup) => {
+        call0(dispose);
+        JsValue cursor = startMarker;
+        while (cursor.truthy()) {
+          JsValue next = cursor["nextSibling"];
+          JS.invoke(target, "removeChild", cursor);
+          if (JS.strictEqual(cursor, endMarker)) break;
+          cursor = next;
+        }
+        return JS.undefined();
+      });
+    }),
+    JS.object("schedule", true, "ssrSource", "client")
+  );
+  JS.call(
+    createEffect,
+    JS.undefined(),
+    mount,
+    JS.method0((JsValue _self) => {
+      JsValue target = call0(mount);
+      JsValue ownerRoot = getDelegatedRoot(treeMarker);
+      if (!ownerRoot.truthy() || JS.invoke(ownerRoot, "contains", target).truthy()) return JS.undefined();
+      JS.call(JS.assume(registerDelegatedContainer), JS.undefined(), target, ownerRoot);
+      return JS.method0((JsValue _cleanup) => {
+        JS.call(JS.assume(unregisterDelegatedContainer), JS.undefined(), target, ownerRoot);
+        return JS.undefined();
+      });
+    }),
+    JS.object("ssrSource", "client")
+  );
+  if (sharedConfig["hydrating"].truthy()) {
+    return JS.call(
+      createMemo,
+      JS.undefined(),
+      JS.method0((JsValue _self) => treeMarker),
+      JS.object("ssrSource", "client", "loadingValue", JS.undefined())
+    );
+  }
+  return treeMarker;
+}
+
+JsValue COMPONENT_BINDING = JS.invoke(Symbol, "for", "dom-expressions.component-binding");
+
+JsValue bindingOf(JsValue value) {
+  string kind = JS.typeOf(value);
+  if (!JS.isNullish(value) && (kind == "function" || kind == "object")) {
+    JsValue binding = value[COMPONENT_BINDING];
+    if (binding.truthy()) return binding;
+  }
+  return JS.undefined();
+}
+
+export JsValue dynamic(JsValue source) {
+  JsValue state = JS.object("latest", 0, "deliveredAddress", JS.undefined());
+  JsValue sites = JS.construct(Set);
+  JsValue resolveBinding = JS.method2((JsValue _self, JsValue next, JsValue previous) => {
+    JsValue binding = bindingOf(next);
+    if (!binding.truthy()) return next;
+    state["deliveredAddress"] = binding["address"];
+    JsValue previousBinding = bindingOf(previous);
+    if (previousBinding.truthy() && JS.strictEqual(previousBinding["component"], binding["component"])) {
+      JS.invoke(sites, "forEach", JS.method1((JsValue _each, JsValue deliver) => {
+        call1(deliver, binding["address"]);
+        return JS.undefined();
+      }));
+      return previous;
+    }
+    return next;
+  });
+  JsValue cached = JS.call(
+    createMemo,
+    JS.undefined(),
+    JS.method1((JsValue _self, JsValue previous) => {
+      JsValue next = call0(source);
+      if (!next.truthy() || !isFunction(next["then"])) return JS.call(resolveBinding, JS.undefined(), next, previous);
+      state["latest"] = JS.number(state["latest"]) + 1;
+      number token = JS.number(state["latest"]);
+      return JS.object("then", JS.method2((JsValue _thenSelf, JsValue onFulfilled, JsValue onRejected) =>
+        JS.invoke(
+          next,
+          "then",
+          JS.method1((JsValue _resolvedSelf, JsValue resolved) => {
+            JsValue selected = resolved;
+            if (token == JS.number(state["latest"])) {
+              selected = JS.call(resolveBinding, JS.undefined(), resolved, previous);
+            }
+            return call1(onFulfilled, selected);
+          }),
+          onRejected
+        )
+      ));
+    }),
+    JS.object("lazy", true)
+  );
+  return JS.method1((JsValue _componentSelf, JsValue props) =>
+    JS.call(createMemo, JS.undefined(), JS.method0((JsValue _memoSelf) => {
+      JsValue component = call0(cached);
+      string kind = JS.typeOf(component);
+      if (kind == "function") {
+        if (isDev) component[$DEVCOMP] = true;
+        JsValue binding = bindingOf(component);
+        if (binding.truthy()) {
+          JsValue initialAddress = state["deliveredAddress"];
+          if (JS.isUndefined(initialAddress)) initialAddress = binding["address"];
+          JsValue signal = JS.call(createSignal, JS.undefined(), initialAddress);
+          JsValue address = signal[0];
+          JsValue setAddress = signal[1];
+          JS.invoke(sites, "add", setAddress);
+          JS.call(onCleanup, JS.undefined(), JS.method0((JsValue _cleanup) => {
+            JS.invoke(sites, "delete", setAddress);
+            return JS.undefined();
+          }));
+          return JS.call(untrack, JS.undefined(), JS.method0((JsValue _untrack) =>
+            JS.call(binding["component"], JS.undefined(), props, address)
+          ));
+        }
+        return JS.call(untrack, JS.undefined(), JS.method0((JsValue _untrack) => call1(component, props)));
+      }
+      if (kind == "string") {
+        JsValue element = JS.undefined();
+        if (sharedConfig["hydrating"].truthy()) element = getNextElement(JS.undefined());
+        else element = createElement(JS.string(component), JS.call(untrack, JS.undefined(), JS.method0((JsValue _untrack) => props["is"])));
+        JS.call(JS.assume(spread), JS.undefined(), element, props);
+        return element;
+      }
+      return JS.undefined();
+    }))
+  );
+}
+
+
+export JsValue Dynamic(JsValue props) {
+  JsValue component = dynamic(JS.method0((JsValue _self) => props["component"]));
+  return JS.call(createComponent, JS.undefined(), component, JS.call(omit, JS.undefined(), props, "component"));
+}
+
+JsValue createElement(string tagName, JsValue isValue) {
+  if (SVGElements.has(tagName)) return JS.invoke(document, "createElementNS", Namespaces["svg"], tagName);
+  if (MathMLElements.has(tagName)) return JS.invoke(document, "createElementNS", Namespaces["mathml"], tagName);
+  return JS.invoke(document, "createElement", tagName, JS.object("is", isValue));
+}
+
+void loadClientOnly(JsValue loader, JsValue setComponent) {
+  JsValue task = call0(loader);
+  JS.invoke(task, "then", JS.method1((JsValue _self, JsValue moduleValue) => {
+    call1(setComponent, JS.method0((JsValue _setter) => moduleValue["default"]));
+    return JS.undefined();
+  }));
+}
+
+export JsValue clientOnly(JsValue loader) {
+  JsValue options = arguments[1];
+  if (JS.isUndefined(options)) options = JS.object();
+  JsValue signal = call0(createSignal);
+  JsValue componentAccessor = signal[0];
+  JsValue setComponent = signal[1];
+  JsValue state = JS.object("started", !options["lazy"].truthy());
+  if (state["started"].truthy()) loadClientOnly(loader, setComponent);
+  return JS.method1((JsValue _self, JsValue props) => {
+    JsValue rest = JS.call(omit, JS.undefined(), props, "fallback");
+    if (!state["started"].truthy()) {
+      state["started"] = true;
+      loadClientOnly(loader, setComponent);
+    }
+    JsValue component = JS.call(untrack, JS.undefined(), componentAccessor);
+    if (component.truthy() && !sharedConfig["hydrating"].truthy()) return call1(component, rest);
+    JsValue mountedSignal = JS.call(createSignal, JS.undefined(), !sharedConfig["hydrating"].truthy());
+    JsValue mounted = mountedSignal[0];
+    JsValue setMounted = mountedSignal[1];
+    JsValue gate = JS.call(createMemo, JS.undefined(), JS.method0((JsValue _memoSelf) => {
+      component = call0(componentAccessor);
+      bool isMounted = call0(mounted).truthy();
+      return JS.call(untrack, JS.undefined(), JS.method0((JsValue _untrack) => {
+        if (component.truthy() && isMounted) return call1(component, rest);
+        return props["fallback"];
+      }));
+    }));
+    JsValue release = JS.method0((JsValue _releaseSelf) => {
+      call1(setMounted, true);
+      return JS.undefined();
+    });
+    JsValue onHydrationEnd = sharedConfig["onHydrationEnd"];
+    if (onHydrationEnd.truthy()) call1(onHydrationEnd, release);
+    else queueMicrotask(() => { call0(release); });
+    return gate;
+  });
+}
+
+export void httpStatus(int _code, string? _text) {}
+
+export void httpHeader(string _name, string _value, JsValue _options) {}

@@ -1,0 +1,30 @@
+// Shared JavaScript host bindings used across source-aligned package roots.
+// Runtime behavior remains in typed .lil modules; this file only declares each
+// ambient platform identity once so linked packages do not redeclare it.
+export extern JsValue Array;
+export extern JsValue Error;
+export extern JsValue Function;
+export extern JsValue Headers;
+export extern JsValue JSON;
+export extern JsValue Map;
+export extern JsValue Math;
+export extern JsValue Object;
+export extern JsValue Promise;
+export extern JsValue Proxy;
+export extern JsValue Reflect;
+export extern JsValue Response;
+export extern JsValue Set;
+export extern JsValue Symbol;
+export extern JsValue TypeError;
+export extern JsValue WeakMap;
+export extern JsValue WeakSet;
+export extern JsValue arguments;
+export extern JsValue console;
+export extern JsValue document;
+export extern JsValue globalThis;
+export extern JsValue performance;
+export extern string decodeURIComponent(string value);
+export extern string encodeURIComponent(string value);
+export extern void queueMicrotask(func()->void callback);
+export extern JsValue setTimeout;
+export extern JsValue clearTimeout;

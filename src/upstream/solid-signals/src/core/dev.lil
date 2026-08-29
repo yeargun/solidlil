@@ -1,0 +1,107 @@
+import {
+  DEV,
+  DEV_ENABLED,
+  Computed,
+  Dev,
+  DiagnosticEvent,
+  Owner,
+  Signal,
+  assertInvariant,
+  callDevGraphHook,
+  clearDevSignals,
+  emitDiagnostic,
+  getChildren,
+  getObservers,
+  getParent,
+  getSources,
+  throwPendingUntrackedReadDiagnostic,
+  warnStrictReadUntrackedDiagnostic
+} from "./kernel";
+
+export {
+  DEV,
+  Dev,
+  DiagnosticEvent,
+  assertInvariant,
+  emitDiagnostic,
+  getChildren,
+  getObservers,
+  getParent,
+  getSources
+};
+
+export JsValue[] getSignals(Owner owner) {
+  JsValue rawOwner = JS.assume(owner);
+  JsValue values = rawOwner["_signals"];
+  JsValue[] signals = [];
+  if (JS.isNullish(values)) return signals;
+  int length = JS.number(values["length"]).toInt();
+  for (int index = 0; index < length; index++) signals.push(values[index]);
+  return signals;
+}
+
+export void registerGraph<T>(T value, Owner? owner) {
+  if (!DEV_ENABLED) return;
+  JsValue rawValue = JS.assume(value);
+  if (owner == null) {
+    rawValue["_owner"] = null;
+  } else {
+    rawValue["_owner"] = JS.assume(owner);
+    JsValue rawOwner = JS.assume(owner);
+    JsValue signals = rawOwner["_signals"];
+    if (JS.isNullish(signals)) {
+      signals = JS.array();
+      rawOwner["_signals"] = signals;
+    }
+    JS.invoke(signals, "push", rawValue);
+  }
+  callDevGraphHook(value, owner);
+}
+
+export void clearSignals(Owner owner) {
+  clearDevSignals(owner);
+}
+
+export void throwPendingUntrackedRead(string label) {
+  throwPendingUntrackedReadDiagnostic(label);
+}
+
+export void warnStrictReadUntracked(string label) {
+  warnStrictReadUntrackedDiagnostic(label);
+}
+
+void configureDevApi() {
+  DEV["getChildren"] = JS.method1((JsValue _self, JsValue owner) => {
+    Owner typedOwner = JS.assume(owner);
+    Owner[] children = getChildren(typedOwner);
+    JsValue result = JS.assume(children);
+    return result;
+  });
+  DEV["getSignals"] = JS.method1((JsValue _self, JsValue owner) => {
+    Owner typedOwner = JS.assume(owner);
+    JsValue[] signals = getSignals(typedOwner);
+    JsValue result = JS.assume(signals);
+    return result;
+  });
+  DEV["getParent"] = JS.method1((JsValue _self, JsValue owner) => {
+    Owner typedOwner = JS.assume(owner);
+    Owner? parent = getParent(typedOwner);
+    if (parent == null) return null;
+    JsValue result = JS.assume(parent);
+    return result;
+  });
+  DEV["getSources"] = JS.method1((JsValue _self, JsValue node) => {
+    Computed<JsValue> typedNode = JS.assume(node);
+    Signal<JsValue>[] sources = getSources(typedNode);
+    JsValue result = JS.assume(sources);
+    return result;
+  });
+  DEV["getObservers"] = JS.method1((JsValue _self, JsValue node) => {
+    Signal<JsValue> typedNode = JS.assume(node);
+    Computed<JsValue>[] observers = getObservers(typedNode);
+    JsValue result = JS.assume(observers);
+    return result;
+  });
+}
+
+if (DEV_ENABLED) configureDevApi();

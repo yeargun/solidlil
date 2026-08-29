@@ -1,0 +1,1911 @@
+import {
+  createMemo as hostCreateMemo,
+  createOptimistic as hostCreateOptimistic
+} from "../signals";
+import {
+  $REFRESH,
+  CONFIG_AUTO_DISPOSE,
+  Computed,
+  NodeOptions,
+  STATUS_ERROR,
+  STATUS_PENDING,
+  STATUS_UNINITIALIZED,
+  Signal,
+  getObserver as hostGetObserver,
+  getOwner as hostGetOwner,
+  read,
+  recompute,
+  setSignal,
+  signal,
+  suppressComputedRecompute,
+  untrack as hostUntrack
+} from "../core/index";
+import {
+  notifyDevStoreNodeUpdate,
+  markPendingProbeFound,
+  pendingCheckIsActive,
+  refresh as refreshProjectionNode,
+  refreshPendingState,
+  strictRead,
+  writeOptimisticNode
+} from "../core/kernel";
+import { throwPendingUntrackedRead } from "../core/dev";
+import { insertSubs, schedule, setProjectionWriteActive, trackOptimisticStore } from "../core/scheduler";
+import {
+  Array,
+  Error,
+  Map,
+  Object,
+  Proxy,
+  Reflect,
+  Set,
+  Symbol,
+  TypeError,
+  WeakMap,
+  WeakSet,
+  globalThis
+} from "../../../_host";
+
+
+export JsValue $TRACK_VALUE = JS.call(Symbol, JS.undefined(), "STORE_TRACK");
+export JsValue $TARGET_VALUE = JS.call(Symbol, JS.undefined(), "STORE_TARGET");
+export JsValue $PROXY_VALUE = JS.call(Symbol, JS.undefined(), "STORE_PROXY");
+export JsValue $DELETED_VALUE = JS.call(Symbol, JS.undefined(), "STORE_DELETED");
+export JsValue $PATH_DELETE_VALUE = JS.call(Symbol, JS.undefined(), "STORE_PATH_DELETE");
+JsValue $MERGE_SOURCES_VALUE = JS.call(Symbol, JS.undefined(), "MERGE_SOURCES");
+
+JsValue storeLookup = JS.construct(WeakMap);
+JsValue rawValues = JS.construct(WeakSet);
+int writeDepth = 0;
+int projectionDepth = 0;
+int reconcileDepth = 0;
+
+JsValue undef() {
+  return JS.undefined();
+}
+
+bool isUndefined(JsValue value) {
+  return JS.isUndefined(value);
+}
+
+bool same(JsValue left, JsValue right) {
+  return JS.invoke(Object, "is", left, right).truthy();
+}
+
+bool hasOwn(JsValue value, JsValue key) {
+  return JS.call(Object["prototype"]["hasOwnProperty"], value, key).truthy();
+}
+
+bool inValue(JsValue key, JsValue value) {
+  return JS.in(key, value);
+}
+
+int lengthOf(JsValue value) {
+  return JS.number(value["length"]).toInt();
+}
+
+JsValue newNullObject() {
+  return JS.invoke(Object, "create", null);
+}
+
+JsValue ownKeys(JsValue value) {
+  return JS.invoke(Reflect, "ownKeys", value);
+}
+
+JsValue descriptor(JsValue value, JsValue key) {
+  return JS.invoke(Reflect, "getOwnPropertyDescriptor", value, key);
+}
+
+JsValue getPrototype(JsValue value) {
+  return JS.invoke(Object, "getPrototypeOf", value);
+}
+
+JsValue weakGet(JsValue map, JsValue key) {
+  return JS.invoke(map, "get", key);
+}
+
+void weakSet(JsValue map, JsValue key, JsValue value) {
+  JS.invoke(map, "set", key, value);
+}
+
+bool weakHas(JsValue map, JsValue key) {
+  return JS.invoke(map, "has", key).truthy();
+}
+
+bool isObjectLike(JsValue value) {
+  if (JS.isNullish(value)) return false;
+  string kind = JS.typeOf(value);
+  return kind == "object" || kind == "function";
+}
+
+bool isUnsafeKey(JsValue key) {
+  if (JS.typeOf(key) != "string") return false;
+  return JS.strictEqual(key, "__proto__");
+}
+
+bool isUnsafePathKey(JsValue key) {
+  if (JS.typeOf(key) != "string") return false;
+  return JS.strictEqual(key, "__proto__") ||
+    JS.strictEqual(key, "constructor") ||
+    JS.strictEqual(key, "prototype");
+}
+
+bool isEnumerable(JsValue value, JsValue key) {
+  JsValue desc = descriptor(value, key);
+  return desc.truthy() && desc["enumerable"].truthy();
+}
+
+export JsValue ownEnumerableKeysKernel(JsValue value) {
+  JsValue keys = ownKeys(value);
+  JsValue result = JS.array();
+  for (int index = 0; index < lengthOf(keys); index++) {
+    JsValue key = keys[index];
+    if (isEnumerable(value, key)) JS.invoke(result, "push", key);
+  }
+  return result;
+}
+
+export bool isWrappableKernel(JsValue value) {
+  if (JS.isNullish(value) || JS.typeOf(value) != "object") return false;
+  if (JS.invoke(Object, "isFrozen", value).truthy()) return false;
+  if (JS.isArray(value)) return true;
+  JsValue proto = getPrototype(value);
+  if (JS.isNullish(proto) || JS.strictEqual(proto, Object["prototype"])) return true;
+  if (!JS.strictEqual(JS.call(Object["prototype"]["toString"], value), "[object Object]")) {
+    return false;
+  }
+  JsValue nodeConstructor = globalThis["Node"];
+  if (!JS.isUndefined(nodeConstructor) &&
+      JS.invoke(nodeConstructor["prototype"], "isPrototypeOf", value).truthy()) return false;
+  return true;
+}
+
+bool isRaw(JsValue value) {
+  return isObjectLike(value) && JS.invoke(rawValues, "has", value).truthy();
+}
+
+void markRaw(JsValue value) {
+  if (isWrappableKernel(value) && !value[$TARGET_VALUE].truthy()) JS.invoke(rawValues, "add", value);
+}
+
+export void markRawIngestKernel(JsValue value) {
+  if (!isWrappableKernel(value)) return;
+  JsValue keys = ownEnumerableKeysKernel(value);
+  for (int index = 0; index < lengthOf(keys); index++) markRaw(value[keys[index]]);
+}
+
+JsValue sourceValue(JsValue meta, JsValue key) {
+  JsValue overlays = meta["overlays"];
+  if (hasOwn(overlays, key)) return overlays[key];
+  return JS.invoke(Reflect, "get", meta["source"], key, meta["proxy"]);
+}
+
+bool sourceHas(JsValue meta, JsValue key) {
+  JsValue overlays = meta["overlays"];
+  if (hasOwn(overlays, key)) return !JS.strictEqual(overlays[key], $DELETED_VALUE);
+  return inValue(key, meta["source"]);
+}
+
+JsValue sourceOwnDescriptor(JsValue meta, JsValue key) {
+  JsValue descriptors = meta["descriptors"];
+  if (hasOwn(descriptors, key)) return descriptors[key];
+  if (hasOwn(meta["overlays"], key)) {
+    if (JS.strictEqual(meta["overlays"][key], $DELETED_VALUE)) {
+      if (meta["optimistic"].truthy()) {
+        JsValue hasNode = meta["hasNodes"][key];
+        if (hasNode.truthy() && nodeRead(hasNode).truthy()) {
+          return descriptor(meta["source"], key);
+        }
+      }
+      return undef();
+    }
+    JsValue base = descriptor(meta["source"], key);
+    if (base.truthy() && (base["get"].truthy() || base["set"].truthy())) return base;
+    if (base.truthy() && !base["get"].truthy() && !base["set"].truthy()) {
+      return JS.object(
+        "value", meta["overlays"][key],
+        "writable", true,
+        "enumerable", base["enumerable"],
+        "configurable", true
+      );
+    }
+    return JS.object(
+      "value", meta["overlays"][key],
+      "writable", true,
+      "enumerable", true,
+      "configurable", true
+    );
+  }
+  return descriptor(meta["source"], key);
+}
+
+JsValue nodeRead(JsValue node) {
+  if (JS.isArray(node)) {
+    JsValue accessor = node[0];
+    return JS.call(accessor, undef());
+  }
+  Signal<JsValue> signalNode = JS.assume(node);
+  return read(signalNode);
+}
+
+void observePendingBlockers(JsValue node) {
+  if (!pendingCheckIsActive()) return;
+  JsValue raw = node;
+  if (JS.isArray(node)) {
+    JsValue refreshKey = JS.assume($REFRESH);
+    raw = node[0][refreshKey];
+  }
+  if (raw["_hasPending"].truthy() && JS.number(raw["_pendingOwner"]).toInt() != 0) {
+    markPendingProbeFound();
+  }
+  JsValue link = raw["_subs"];
+  while (link.truthy()) {
+    JsValue dependent = link["_sub"];
+    if (dependent["_computed"].truthy() &&
+        (JS.number(dependent["_statusFlags"]).toInt() & STATUS_PENDING) != 0) {
+      JsValue pending = dependent["_pendingSignal"];
+      if (JS.isNullish(pending)) {
+        NodeOptions<bool> options = new NodeOptions<bool>();
+        options.ownedWrite = true;
+        options.noSnapshot = true;
+        Signal<bool> created = signal(true, options);
+        created._parentSource = JS.assume(dependent);
+        created._pendingCompanion = true;
+        dependent["_pendingSignal"] = JS.assume(created);
+        pending = JS.assume(created);
+      }
+      Signal<bool> pendingSignal = JS.assume(pending);
+      read(pendingSignal);
+    }
+    link = link["_nextSub"];
+  }
+}
+
+JsValue visibleNodeValue(JsValue node) {
+  JsValue raw = node;
+  if (JS.isArray(node)) {
+    JsValue accessor = node[0];
+    JsValue refreshKey = JS.assume($REFRESH);
+    raw = accessor[refreshKey];
+  }
+  if (raw["_overrideActive"].truthy()) return raw["_overrideValue"];
+  if (raw["_hasPending"].truthy()) return raw["_pendingValue"];
+  return raw["_value"];
+}
+
+void publishActionPending(JsValue raw) {
+  if (!raw["_hasPending"].truthy() || JS.number(raw["_pendingOwner"]).toInt() == 0) return;
+  JsValue pending = raw["_pendingSignal"];
+  if (JS.isNullish(pending)) {
+    NodeOptions<bool> options = new NodeOptions<bool>();
+    options.ownedWrite = true;
+    options.noSnapshot = true;
+    Signal<bool> created = signal(false, options);
+    created._parentSource = JS.assume(raw);
+    created._pendingCompanion = true;
+    raw["_pendingSignal"] = JS.assume(created);
+    pending = JS.assume(created);
+  }
+  Signal<JsValue> pendingSignal = JS.assume(pending);
+  writeOptimisticNode(pendingSignal, true);
+}
+
+void nodeWrite(JsValue meta, JsValue node, JsValue value) {
+  JsValue raw = node;
+  if (JS.isArray(node)) {
+    JsValue refreshKey = JS.assume($REFRESH);
+    raw = node[0][refreshKey];
+  }
+  if (meta["projection"].truthy() && meta["refresh"].truthy()) {
+    if (projectionDepth > 0) raw["_parentSource"] = meta["refresh"];
+    else raw["_parentSource"] = null;
+  }
+  if (projectionDepth > 0 && meta["refresh"].truthy()) {
+    meta["refresh"]["_reask"] = false;
+  }
+  if (JS.isArray(node)) {
+    JsValue next = value;
+    JS.call(node[1], undef(), JS.method0((JsValue _self) => next));
+    publishActionPending(raw);
+    return;
+  }
+  Signal<JsValue> signalNode = JS.assume(node);
+  if (meta["optimistic"].truthy() && projectionDepth == 0) {
+    writeOptimisticNode(signalNode, value);
+  } else {
+    setSignal(signalNode, value);
+  }
+  publishActionPending(raw);
+}
+
+JsValue createNode(JsValue meta, JsValue value) {
+  NodeOptions<JsValue> options = new NodeOptions<JsValue>();
+  Signal<JsValue> node = signal(value, options);
+  if (meta["optimistic"].truthy() && projectionDepth == 0) {
+    JsValue rawOptions = JS.object("_skipGraph", true);
+    if (JS.typeOf(value) == "function") {
+      JsValue functionValue = value;
+      value = JS.method0((JsValue _self) => functionValue);
+    }
+    JsValue optimisticNode = hostCreateOptimistic(value, rawOptions);
+    if (meta["refresh"].truthy()) {
+      JsValue optimisticAccessor = optimisticNode[0];
+      JsValue refreshKey = JS.assume($REFRESH);
+      Signal<JsValue> rawOptimisticNode = JS.assume(optimisticAccessor[refreshKey]);
+      rawOptimisticNode._parentSource = JS.assume(meta["refresh"]);
+    }
+    return optimisticNode;
+  }
+  if (meta["refresh"].truthy()) {
+    Signal<JsValue> parent = JS.assume(meta["refresh"]);
+    node._parentSource = parent;
+  }
+  return JS.assume(node);
+}
+
+void ensureChainedBridge(JsValue meta, JsValue key, JsValue node) {
+  if (
+    projectionDepth > 0 ||
+    !meta["optimistic"].truthy() ||
+    !meta["source"][$TARGET_VALUE].truthy() ||
+    JS.strictEqual(key, $TRACK_VALUE) ||
+    hasOwn(meta["bridges"], key)
+  ) return;
+  JsValue heldNode = node;
+  JsValue property = key;
+  bool initialized = false;
+  // Keep wrapper consumers off the inner store's graph so an outer optimistic
+  // overlay can hold the whole view until its transition settles.
+  JsValue bridge = hostCreateMemo(JS.method0((JsValue _self) => {
+    JsValue next = JS.invoke(Reflect, "get", meta["source"], property, meta["proxy"]);
+    if (initialized && lengthOf(ownKeys(meta["overlays"])) == 0) {
+      JsValue raw = heldNode;
+      if (JS.isArray(heldNode)) {
+        JsValue refreshKey = JS.assume($REFRESH);
+        raw = heldNode[0][refreshKey];
+      }
+      Signal<JsValue> signalNode = JS.assume(raw);
+      insertSubs(signalNode, true);
+      schedule();
+    }
+    initialized = true;
+    return next;
+  }), null);
+  JsValue refreshKey = JS.assume($REFRESH);
+  Computed<JsValue> bridgeNode = JS.assume(bridge[refreshKey]);
+  bridgeNode._config = bridgeNode._config ^ (bridgeNode._config & CONFIG_AUTO_DISPOSE);
+  meta["bridges"][key] = bridge;
+}
+
+JsValue getNode(JsValue meta, JsValue collection, JsValue key, JsValue value) {
+  JsValue node = collection[key];
+  if (node.truthy()) return node;
+  if (
+    projectionDepth == 0 &&
+    meta["optimistic"].truthy() &&
+    meta["source"][$TARGET_VALUE].truthy() &&
+    JS.strictEqual(collection, meta["nodes"]) &&
+    !JS.strictEqual(key, $TRACK_VALUE)
+  ) {
+    node = createNode(meta, value);
+    ensureChainedBridge(meta, key, node);
+  } else {
+    node = createNode(meta, value);
+  }
+  collection[key] = node;
+  JsValue current = meta;
+  while (current.truthy() && !current["descendant"].truthy()) {
+    current["descendant"] = true;
+    current = current["parent"];
+  }
+  return node;
+}
+
+bool hasObserver() {
+  return !JS.isNullish(hostGetObserver());
+}
+
+void ensureProjection(JsValue meta) {
+  JsValue projection = meta["projection"];
+  if (projection.truthy() && projectionDepth == 0 && writeDepth == 0) {
+    try {
+      JsValue projectionRef = projection;
+      JsValue refresh = meta["refresh"];
+      JsValue refreshKey = JS.assume($REFRESH);
+      Computed<JsValue> projectionNode = JS.assume(projectionRef[refreshKey]);
+      if (
+        !meta["initialized"].truthy() &&
+        refresh.truthy() &&
+        refresh["_initialized"].truthy() &&
+        (projectionNode._statusFlags & STATUS_UNINITIALIZED) != 0
+      ) {
+        recompute(projectionNode, false);
+      }
+      bool retryError = refresh.truthy() &&
+        (JS.number(refresh["_statusFlags"]).toInt() & STATUS_ERROR) != 0 &&
+        hasObserver();
+      if (retryError && !meta["errorRetryArmed"].truthy()) {
+        meta["errorRetryArmed"] = true;
+        Computed<JsValue> refreshNode = JS.assume(refresh);
+        refreshProjectionNode(refreshNode);
+      }
+      if (pendingCheckIsActive() || retryError) {
+        JS.call(projectionRef, undef());
+      } else {
+        hostUntrack(JS.method0((JsValue _self) => JS.call(projectionRef, undef())), undef());
+      }
+      if (meta["refresh"].truthy() && meta["refresh"]["_initialized"].truthy()) {
+        meta["initialized"] = true;
+      }
+    } catch (JsValue failure) {
+      bool initialized = meta["initialized"].truthy();
+      if (!initialized || !JS.strictEqual(failure["_kind"], "not-ready")) {
+        throw failure;
+      }
+    }
+  }
+}
+
+void guardProjectionRead(JsValue meta) {
+  if (projectionDepth > 0 || writeDepth > 0) return;
+  JsValue refresh = meta["refresh"];
+  if (!refresh.truthy()) return;
+  int status = JS.number(refresh["_statusFlags"]).toInt();
+  if (
+    strictRead != null &&
+    !pendingCheckIsActive() &&
+    (status & STATUS_PENDING) != 0
+  ) {
+    throwPendingUntrackedRead(JS.assume(strictRead));
+  }
+  if (
+    pendingCheckIsActive() &&
+    (status & STATUS_PENDING) != 0 &&
+    (status & STATUS_UNINITIALIZED) != 0
+  ) {
+    JsValue owner = JS.assume(hostGetOwner());
+    if (!JS.isNullish(owner) && !owner["_computed"].truthy()) throw refresh["_error"];
+  }
+}
+
+void trackSelf(JsValue meta) {
+  if (writeDepth > 0 || !hasObserver()) return;
+  JsValue nodes = meta["nodes"];
+  nodeRead(getNode(meta, nodes, $TRACK_VALUE, undef()));
+  if (
+    lengthOf(ownKeys(meta["overlays"])) == 0 &&
+    meta["source"][$TARGET_VALUE].truthy()
+  ) {
+    meta["source"][$TRACK_VALUE];
+  }
+}
+
+JsValue currentValue(JsValue meta, JsValue key, bool tracked) {
+  guardProjectionRead(meta);
+  ensureProjection(meta);
+  if (writeDepth > 0 && JS.strictEqual(key, "constructor") &&
+      !hasOwn(meta["source"], key) && !hasOwn(meta["overlays"], key)) return undef();
+  JsValue nodes = meta["nodes"];
+  JsValue node = nodes[key];
+  if (writeDepth == 0 && !hasObserver() && hasOwn(meta["direct"], key)) {
+    JsValue direct = sourceValue(meta, key);
+    if (JS.strictEqual(direct, $DELETED_VALUE)) direct = undef();
+    return wrapKernel(direct, meta);
+  }
+  if (writeDepth == 0 && meta["projection"].truthy() && !hasObserver()) {
+    JsValue projected = sourceValue(meta, key);
+    if (JS.strictEqual(projected, $DELETED_VALUE)) projected = undef();
+    return wrapKernel(projected, meta);
+  }
+  if (node.truthy() && (writeDepth == 0 || meta["optimistic"].truthy())) {
+    observePendingBlockers(node);
+    if (meta["source"][$TARGET_VALUE].truthy() && lengthOf(ownKeys(meta["overlays"])) == 0) {
+      if (writeDepth == 0 && meta["optimistic"].truthy()) {
+        ensureChainedBridge(meta, key, node);
+        nodeRead(node);
+        JsValue property = key;
+        JsValue chained = hostUntrack(
+          JS.method0((JsValue _self) => sourceValue(meta, property)),
+          undef()
+        );
+        return wrapKernel(chained, meta);
+      }
+      if (writeDepth == 0) nodeRead(node);
+      return wrapKernel(sourceValue(meta, key), meta);
+    }
+    if (writeDepth > 0) return wrapKernel(visibleNodeValue(node), meta);
+    return wrapKernel(nodeRead(node), meta);
+  }
+  JsValue value = undef();
+  if (
+    writeDepth == 0 &&
+    tracked &&
+    hasObserver() &&
+    meta["optimistic"].truthy() &&
+    meta["source"][$TARGET_VALUE].truthy() &&
+    lengthOf(ownKeys(meta["overlays"])) == 0
+  ) {
+    JsValue property = key;
+    value = hostUntrack(
+      JS.method0((JsValue _self) => sourceValue(meta, property)),
+      undef()
+    );
+  } else {
+    value = sourceValue(meta, key);
+  }
+  if (JS.strictEqual(value, $DELETED_VALUE)) value = undef();
+  if (writeDepth == 0 && tracked && hasObserver()) {
+    if (JS.typeOf(value) == "function" &&
+        !hasOwn(meta["source"], key) && !hasOwn(meta["overlays"], key)) return value;
+    value = wrapKernel(value, meta);
+    return nodeRead(getNode(meta, nodes, key, value));
+  }
+  return wrapKernel(value, meta);
+}
+
+bool currentHas(JsValue meta, JsValue key, bool tracked) {
+  guardProjectionRead(meta);
+  ensureProjection(meta);
+  JsValue nodes = meta["hasNodes"];
+  JsValue node = nodes[key];
+  if (writeDepth == 0 && !hasObserver() && hasOwn(meta["direct"], key)) {
+    return sourceHas(meta, key);
+  }
+  if (node.truthy() && (writeDepth == 0 || meta["optimistic"].truthy())) {
+    observePendingBlockers(node);
+    if (meta["source"][$TARGET_VALUE].truthy() && lengthOf(ownKeys(meta["overlays"])) == 0) {
+      if (writeDepth == 0) nodeRead(node);
+      return sourceHas(meta, key);
+    }
+    if (writeDepth > 0) return visibleNodeValue(node).truthy();
+    return nodeRead(node).truthy();
+  }
+  bool present = sourceHas(meta, key);
+  if (writeDepth == 0 && tracked && hasObserver()) {
+    return nodeRead(getNode(meta, nodes, key, present)).truthy();
+  }
+  return present;
+}
+
+bool isArrayIndex(JsValue key) {
+  if (JS.typeOf(key) != "string") return false;
+  if (JS.strictEqual(key, "")) return false;
+  float numeric = JS.number(key);
+  if (numeric < 0 || numeric > 4294967294.0) return false;
+  return numeric == numeric.toInt() && JS.strictEqual(JS.string(numeric.toInt()), key);
+}
+
+void notifyNode(JsValue meta, JsValue key, JsValue previous, JsValue next) {
+  JsValue nodes = meta["nodes"];
+  JsValue node = nodes[key];
+  if (!node.truthy() && projectionDepth > 0) {
+    getNode(meta, nodes, key, wrapKernel(next, meta));
+    return;
+  }
+  if (!node.truthy()) node = getNode(meta, nodes, key, wrapKernel(previous, meta));
+  nodeWrite(meta, node, wrapKernel(next, meta));
+}
+
+void notifyPresence(JsValue meta, JsValue key, bool previous, bool next) {
+  JsValue nodes = meta["hasNodes"];
+  JsValue node = nodes[key];
+  if (!node.truthy() && projectionDepth > 0) {
+    getNode(meta, nodes, key, next);
+    return;
+  }
+  if (!node.truthy() && previous != next) node = getNode(meta, nodes, key, previous);
+  if (node.truthy()) nodeWrite(meta, node, next);
+}
+
+void notifyStructure(JsValue meta) {
+  JsValue node = meta["nodes"][$TRACK_VALUE];
+  if (node.truthy()) nodeWrite(meta, node, JS.object());
+}
+
+void freezeChainedNodes(JsValue meta) {
+  if (!meta["source"][$TARGET_VALUE].truthy() || lengthOf(ownKeys(meta["overlays"])) > 0) return;
+  JsValue collections = JS.array(meta["nodes"], meta["hasNodes"]);
+  JsValue refreshKey = JS.assume($REFRESH);
+  for (int collectionIndex = 0; collectionIndex < lengthOf(collections); collectionIndex++) {
+    JsValue keys = ownKeys(collections[collectionIndex]);
+    for (int index = 0; index < lengthOf(keys); index++) {
+      JsValue entry = collections[collectionIndex][keys[index]];
+      JsValue raw = entry;
+      if (JS.isArray(entry)) raw = entry[0][refreshKey];
+      Signal<JsValue> signalNode = JS.assume(raw);
+      JsValue key = keys[index];
+      if (!JS.strictEqual(key, $TRACK_VALUE)) {
+        JsValue next = if (collectionIndex == 1) {
+          JS.assume(inValue(key, meta["source"]))
+        } else {
+          wrapKernel(
+            JS.invoke(Reflect, "get", meta["source"], key, meta["proxy"]),
+            meta
+          )
+        };
+        signalNode._value = next;
+        signalNode._pendingValue = next;
+        signalNode._hasPending = false;
+      }
+      bool equalsEnabled = signalNode._equalsEnabled;
+      signalNode._equalsEnabled = false;
+      writeOptimisticNode(signalNode, visibleNodeValue(entry));
+      signalNode._equalsEnabled = equalsEnabled;
+    }
+  }
+}
+
+void stageValue(JsValue meta, JsValue key, JsValue next, bool deleting) {
+  if (isUnsafeKey(key)) return;
+  JsValue previous = sourceValue(meta, key);
+  bool previousHas = sourceHas(meta, key);
+  JsValue optimisticBase = meta["optimisticBase"];
+  if (
+    meta["optimistic"].truthy() &&
+    projectionDepth > 0 &&
+    hasOwn(optimisticBase, key)
+  ) {
+    previous = optimisticBase[key];
+    previousHas = !JS.strictEqual(previous, $DELETED_VALUE);
+  } else if (meta["optimistic"].truthy()) {
+    previous = currentValue(meta, key, false);
+    previousHas = currentHas(meta, key, false);
+  }
+  bool nextHas = !deleting;
+  if (deleting && !previousHas) return;
+  if (!deleting && previousHas && same(previous, next)) return;
+  if (
+    meta["optimistic"].truthy() &&
+    projectionDepth > 0 &&
+    hasOwn(optimisticBase, key)
+  ) {
+    optimisticBase[key] = if (deleting) { $DELETED_VALUE } else { next };
+    JsValue previousValue = if (previousHas) { previous } else { undef() };
+    JsValue nextValue = if (deleting) { undef() } else { next };
+    notifyNode(meta, key, previousValue, nextValue);
+    notifyPresence(meta, key, previousHas, nextHas);
+    notifyStructure(meta);
+    notifyDevStoreNodeUpdate(meta["proxy"], key, nextValue, previousValue);
+    return;
+  }
+  if (meta["optimistic"].truthy() && projectionDepth == 0) {
+    freezeChainedNodes(meta);
+    trackOptimisticStore(meta);
+  }
+  if (meta["optimistic"].truthy() && projectionDepth == 0) {
+    JsValue optimisticBase = meta["optimisticBase"];
+    if (!hasOwn(optimisticBase, key)) {
+      optimisticBase[key] = if (previousHas) { previous } else { $DELETED_VALUE };
+    }
+  }
+  if (deleting) meta["overlays"][key] = $DELETED_VALUE;
+  else meta["overlays"][key] = next;
+  if (projectionDepth > 0 || reconcileDepth > 0) meta["direct"][key] = true;
+  else JS.delete(meta["direct"], key);
+  JS.delete(meta["descriptors"], key);
+  if (meta["shallow"].truthy() && !deleting) markRaw(next);
+  JsValue previousValue = undef();
+  if (previousHas) previousValue = previous;
+  JsValue nextValue = next;
+  if (deleting) nextValue = undef();
+  notifyNode(meta, key, previousValue, nextValue);
+  notifyPresence(meta, key, previousHas, nextHas);
+  notifyStructure(meta);
+  notifyDevStoreNodeUpdate(meta["proxy"], key, nextValue, previousValue);
+
+  if (JS.isArray(meta["source"]) && !JS.strictEqual(key, "length") && isArrayIndex(key)) {
+    int index = JS.number(key).toInt();
+    int currentLength = JS.number(sourceValue(meta, "length")).toInt();
+    if (!deleting && index >= currentLength) stageValue(meta, "length", index + 1, false);
+  }
+}
+
+void stageArrayLength(JsValue meta, int length) {
+  int previousLength = JS.number(sourceValue(meta, "length")).toInt();
+  if (length < previousLength) {
+    for (int index = length; index < previousLength; index++) stageValue(meta, index, undef(), true);
+  }
+  stageValue(meta, "length", length, false);
+}
+
+void stageDescriptor(JsValue meta, JsValue key, JsValue desc) {
+  if (isUnsafeKey(key)) return;
+  if (hasOwn(desc, "value")) {
+    stageValue(meta, key, desc["value"], false);
+  } else {
+    bool previousHas = sourceHas(meta, key);
+    JsValue previous = sourceValue(meta, key);
+    meta["descriptors"][key] = desc;
+    meta["overlays"][key] = undef();
+    JS.delete(meta["direct"], key);
+    JsValue previousValue = undef();
+    if (previousHas) previousValue = previous;
+    notifyNode(meta, key, previousValue, JS.object());
+    notifyPresence(meta, key, previousHas, true);
+    notifyStructure(meta);
+    JsValue next = undef();
+    if (desc["get"].truthy()) next = JS.call(desc["get"], meta["proxy"]);
+    notifyDevStoreNodeUpdate(meta["proxy"], key, next, previousValue);
+  }
+}
+
+JsValue mergedOwnKeysMode(JsValue meta, bool tracked) {
+  guardProjectionRead(meta);
+  ensureProjection(meta);
+  if (tracked) trackSelf(meta);
+  JsValue result = JS.array();
+  JsValue seen = JS.construct(Set);
+  JsValue base = ownKeys(meta["source"]);
+  if (meta["source"][$TARGET_VALUE].truthy()) {
+    JsValue source = meta["source"];
+    base = hostUntrack(
+      JS.method0((JsValue _self) => ownKeys(source)),
+      undef()
+    );
+  }
+  JsValue overlay = ownKeys(meta["overlays"]);
+  int arrayLength = -1;
+  if (JS.isArray(meta["source"])) {
+    arrayLength = JS.number(sourceValue(meta, "length")).toInt();
+    if (meta["optimistic"].truthy()) arrayLength = JS.number(currentValue(meta, "length", false)).toInt();
+  }
+  for (int index = 0; index < lengthOf(base); index++) {
+    JsValue key = base[index];
+    JS.invoke(seen, "add", key);
+    bool include = sourceHas(meta, key);
+    if (meta["optimistic"].truthy()) include = currentHas(meta, key, false);
+    if (arrayLength >= 0 && isArrayIndex(key) && JS.number(key).toInt() >= arrayLength) include = false;
+    if (include) JS.invoke(result, "push", key);
+  }
+  for (int index = 0; index < lengthOf(overlay); index++) {
+    JsValue key = overlay[index];
+    if (JS.invoke(seen, "has", key).truthy()) continue;
+    JS.invoke(seen, "add", key);
+    bool include = sourceHas(meta, key);
+    if (meta["optimistic"].truthy()) include = currentHas(meta, key, false);
+    if (arrayLength >= 0 && isArrayIndex(key) && JS.number(key).toInt() >= arrayLength) include = false;
+    if (include) JS.invoke(result, "push", key);
+  }
+  if (JS.isArray(meta["source"]) && !JS.invoke(seen, "has", "length").truthy()) {
+    JS.invoke(result, "push", "length");
+  }
+  return result;
+}
+
+JsValue mergedOwnKeys(JsValue meta) {
+  return mergedOwnKeysMode(meta, true);
+}
+
+JsValue proxyDescriptor(JsValue meta, JsValue actualTarget, JsValue key) {
+  bool present = sourceHas(meta, key);
+  if (meta["optimistic"].truthy()) present = currentHas(meta, key, false);
+  if (!present) return undef();
+  if (JS.isArray(meta["source"]) && JS.strictEqual(key, "length")) {
+    return descriptor(actualTarget, key);
+  }
+  JsValue desc = sourceOwnDescriptor(meta, key);
+  if (!desc.truthy()) {
+    return JS.object(
+      "value", currentValue(meta, key, false),
+      "writable", true,
+      "enumerable", true,
+      "configurable", true
+    );
+  }
+  if (desc["get"].truthy() || desc["set"].truthy()) {
+    return JS.object(
+      "get", desc["get"],
+      "set", desc["set"],
+      "enumerable", desc["enumerable"],
+      "configurable", true
+    );
+  }
+  return JS.object(
+    "value", currentValue(meta, key, false),
+    "writable", desc["writable"],
+    "enumerable", desc["enumerable"],
+    "configurable", true
+  );
+}
+
+JsValue makeHandler(JsValue meta) {
+  JsValue handler = JS.object();
+  JsValue refreshKey = JS.assume($REFRESH);
+  handler["get"] = JS.method3((JsValue _self, JsValue _actual, JsValue key, JsValue receiver) => {
+    if (JS.strictEqual(key, $TARGET_VALUE)) return meta;
+    if (JS.strictEqual(key, $PROXY_VALUE)) return receiver;
+    if (JS.strictEqual(key, refreshKey)) return meta["refresh"];
+    if (JS.strictEqual(key, $TRACK_VALUE)) {
+      trackSelf(meta);
+      return receiver;
+    }
+    JsValue desc = undef();
+    if (meta["source"][$TARGET_VALUE].truthy()) {
+      JsValue property = key;
+      desc = hostUntrack(
+        JS.method0((JsValue _untrackSelf) => sourceOwnDescriptor(meta, property)),
+        undef()
+      );
+    } else desc = sourceOwnDescriptor(meta, key);
+    if (desc.truthy() && desc["get"].truthy()) return JS.call(desc["get"], receiver);
+    JsValue current = getPrototype(meta["source"]);
+    while (current.truthy() && !JS.strictEqual(current, Object["prototype"])) {
+      JsValue inherited = descriptor(current, key);
+      if (inherited.truthy()) {
+        if (inherited["get"].truthy()) return JS.call(inherited["get"], receiver);
+        break;
+      }
+      current = getPrototype(current);
+    }
+    return currentValue(meta, key, true);
+  });
+  handler["has"] = JS.method2((JsValue _self, JsValue _actual, JsValue key) => {
+    if (JS.strictEqual(key, $TARGET_VALUE) || JS.strictEqual(key, $PROXY_VALUE) ||
+        JS.strictEqual(key, $TRACK_VALUE) || JS.strictEqual(key, "__proto__")) return true;
+    return currentHas(meta, key, true);
+  });
+  handler["set"] = JS.method3((JsValue _self, JsValue _actual, JsValue key, JsValue value) => {
+    if (writeDepth > 0) {
+      if (JS.isArray(meta["source"]) && JS.strictEqual(key, "length")) {
+        stageArrayLength(meta, JS.number(value).toInt());
+      } else stageValue(meta, key, value, false);
+    }
+    return true;
+  });
+  handler["deleteProperty"] = JS.method2((JsValue _self, JsValue _actual, JsValue key) => {
+    if (writeDepth > 0) stageValue(meta, key, undef(), true);
+    return true;
+  });
+  handler["defineProperty"] = JS.method3((JsValue _self, JsValue _actual, JsValue key, JsValue desc) => {
+    if (writeDepth > 0) stageDescriptor(meta, key, desc);
+    return true;
+  });
+  handler["ownKeys"] = JS.method1((JsValue _self, JsValue _actual) => mergedOwnKeys(meta));
+  handler["getOwnPropertyDescriptor"] = JS.method2((JsValue _self, JsValue actual, JsValue key) =>
+    proxyDescriptor(meta, actual, key)
+  );
+  handler["getPrototypeOf"] = JS.method1((JsValue _self, JsValue _actual) => getPrototype(meta["source"]));
+  return handler;
+}
+
+JsValue createStoreProxyFamily(JsValue source, bool shallow, bool optimistic, JsValue family) {
+  JsValue lookup = storeLookup;
+  if (family.truthy()) lookup = family;
+  JsValue present = weakGet(lookup, source);
+  if (present.truthy()) return present;
+  JsValue actual = JS.array();
+  if (!JS.isArray(source)) actual = JS.invoke(Object, "create", getPrototype(source));
+  JsValue meta = JS.object(
+    "source", source,
+    "overlays", newNullObject(),
+    "direct", newNullObject(),
+    "descriptors", newNullObject(),
+    "nodes", newNullObject(),
+    "hasNodes", newNullObject(),
+    "proxy", null,
+    "shallow", shallow,
+    "optimistic", optimistic,
+    "projection", null,
+    "refresh", null,
+    "family", family,
+    "bridges", newNullObject(),
+    "optimisticBase", newNullObject()
+  );
+  meta["parent"] = null;
+  meta["descendant"] = false;
+  meta["epoch"] = 0;
+  meta["initialized"] = false;
+  meta["asyncResult"] = false;
+  meta["replaceChildren"] = false;
+  meta["errorRetryArmed"] = false;
+  meta["_clearOptimistic"] = JS.method0((JsValue _self) => {
+    if (meta["refresh"].truthy() && (JS.number(meta["refresh"]["_statusFlags"]).toInt() & 1) != 0) {
+      return true;
+    }
+    JsValue optimisticBase = meta["optimisticBase"];
+    JsValue baseKeys = ownKeys(optimisticBase);
+    JsValue refreshKey = JS.assume($REFRESH);
+    bool remaining = false;
+    for (int index = 0; index < lengthOf(baseKeys); index++) {
+      JsValue key = baseKeys[index];
+      bool active = false;
+      JsValue collections = JS.array(meta["nodes"], meta["hasNodes"]);
+      for (int collectionIndex = 0; collectionIndex < lengthOf(collections); collectionIndex++) {
+        JsValue entry = collections[collectionIndex][key];
+        if (!entry.truthy()) continue;
+        JsValue raw = entry;
+        if (JS.isArray(entry)) raw = entry[0][refreshKey];
+        if (raw.truthy() && raw["_overrideActive"].truthy()) active = true;
+      }
+      if (active) {
+        remaining = true;
+        continue;
+      }
+      if (meta["source"][$TARGET_VALUE].truthy()) {
+        JS.delete(meta["overlays"], key);
+        JS.delete(meta["direct"], key);
+      } else {
+        meta["overlays"][key] = optimisticBase[key];
+        meta["direct"][key] = true;
+      }
+      JS.delete(optimisticBase, key);
+    }
+    if (!remaining) meta["optimisticBase"] = newNullObject();
+    if (!remaining && meta["source"][$TARGET_VALUE].truthy()) {
+      JsValue bridgeKeys = ownKeys(meta["bridges"]);
+      for (int index = 0; index < lengthOf(bridgeKeys); index++) {
+        JsValue key = bridgeKeys[index];
+        JsValue entry = meta["nodes"][key];
+        if (!entry.truthy()) continue;
+        JsValue raw = entry;
+        if (JS.isArray(entry)) raw = entry[0][refreshKey];
+        JsValue previous = raw["_value"];
+        JsValue next = wrapKernel(
+          JS.invoke(Reflect, "get", meta["source"], key, meta["proxy"]),
+          meta
+        );
+        raw["_value"] = next;
+        raw["_pendingValue"] = next;
+        raw["_hasPending"] = false;
+        if (!same(previous, next)) {
+          Signal<JsValue> signalNode = JS.assume(raw);
+          insertSubs(signalNode, true);
+        }
+      }
+    }
+    return remaining;
+  });
+  JsValue proxy = JS.construct(Proxy, actual, makeHandler(meta));
+  meta["proxy"] = proxy;
+  weakSet(lookup, source, proxy);
+  if (shallow) markRawIngestKernel(source);
+  return proxy;
+}
+
+export JsValue createStoreProxyKernel(JsValue source, bool shallow, bool optimistic) {
+  return createStoreProxyFamily(source, shallow, optimistic, null);
+}
+
+void appendAffectsNode(JsValue output, JsValue node) {
+  if (!node.truthy()) return;
+  if (JS.isArray(node)) {
+    JsValue refreshKey = JS.assume($REFRESH);
+    node = node[0][refreshKey];
+  }
+  if (node.truthy() && !JS.invoke(output, "includes", node).truthy()) {
+    JS.invoke(output, "push", node);
+  }
+}
+
+void collectStoreAffectsNodes(JsValue meta, JsValue output, JsValue seen) {
+  if (!meta.truthy() || JS.invoke(seen, "has", meta).truthy()) return;
+  JS.invoke(seen, "add", meta);
+  JsValue collections = JS.array(meta["nodes"], meta["hasNodes"]);
+  for (int collectionIndex = 0; collectionIndex < lengthOf(collections); collectionIndex++) {
+    JsValue collection = collections[collectionIndex];
+    JsValue nodeKeys = ownKeys(collection);
+    for (int index = 0; index < lengthOf(nodeKeys); index++) {
+      appendAffectsNode(output, collection[nodeKeys[index]]);
+    }
+  }
+  JsValue keys = mergedOwnKeysMode(meta, false);
+  for (int index = 0; index < lengthOf(keys); index++) {
+    JsValue value = currentValue(meta, keys[index], false);
+    if (isObjectLike(value) && value[$TARGET_VALUE].truthy()) {
+      collectStoreAffectsNodes(value[$TARGET_VALUE], output, seen);
+    }
+  }
+}
+
+export JsValue getStoreAffectsNodesKernel(JsValue meta, JsValue key) {
+  JsValue output = JS.array();
+  if (!meta.truthy()) return output;
+  if (!JS.isUndefined(key)) {
+    JsValue value = currentValue(meta, key, false);
+    appendAffectsNode(output, getNode(meta, meta["nodes"], key, value));
+    return output;
+  }
+  appendAffectsNode(output, getNode(meta, meta["nodes"], $TRACK_VALUE, undef()));
+  collectStoreAffectsNodes(meta, output, JS.construct(WeakSet));
+  return output;
+}
+
+export JsValue wrapKernel(JsValue value, JsValue parentMeta) {
+  if (!isWrappableKernel(value) || isRaw(value)) return value;
+  JsValue target = value[$TARGET_VALUE];
+  if (parentMeta.truthy() && parentMeta["shallow"].truthy() && !target.truthy()) return value;
+  JsValue family = null;
+  if (parentMeta.truthy()) family = parentMeta["family"];
+  if (target.truthy()) {
+    if (!family.truthy() || JS.strictEqual(target["family"], family)) return value;
+  }
+  JsValue lookup = storeLookup;
+  if (family.truthy()) lookup = family;
+  JsValue present = weakGet(lookup, value);
+  if (present.truthy()) return present;
+  if (family.truthy() && family["keyed"].truthy()) {
+    JsValue identity = keyOf(value, family["key"]);
+    if (!isUndefined(identity) && !JS.isNullish(identity)) {
+      JsValue keyed = JS.invoke(family["keyed"], "get", identity);
+      if (keyed.truthy()) {
+        JsValue keyedMeta = keyed[$TARGET_VALUE];
+        keyedMeta["source"] = value;
+        weakSet(family, value, keyed);
+        return keyed;
+      }
+    }
+  }
+  bool optimistic = parentMeta.truthy() && parentMeta["optimistic"].truthy();
+  JsValue proxy = createStoreProxyFamily(value, false, optimistic, family);
+  if (family.truthy() && family["keyed"].truthy()) {
+    JsValue identity = keyOf(value, family["key"]);
+    if (!isUndefined(identity) && !JS.isNullish(identity)) {
+      JS.invoke(family["keyed"], "set", identity, proxy);
+    }
+  }
+  if (parentMeta.truthy()) {
+    proxy[$TARGET_VALUE]["parent"] = parentMeta;
+    proxy[$TARGET_VALUE]["refresh"] = parentMeta["refresh"];
+  }
+  return proxy;
+}
+
+void replaceStoreValue(JsValue value, JsValue proxy) {
+  if (JS.isArray(value)) {
+    for (int index = 0; index < lengthOf(value); index++) proxy[index] = value[index];
+    proxy["length"] = lengthOf(value);
+    return;
+  }
+  JsValue nextKeys = ownEnumerableKeysKernel(value);
+  JsValue nextSet = JS.construct(Set);
+  for (int index = 0; index < lengthOf(nextKeys); index++) {
+    JsValue key = nextKeys[index];
+    if (isUnsafeKey(key)) continue;
+    JS.invoke(nextSet, "add", key);
+    proxy[key] = value[key];
+  }
+  JsValue meta = proxy[$TARGET_VALUE];
+  JsValue previousKeys = mergedOwnKeys(meta);
+  for (int index = 0; index < lengthOf(previousKeys); index++) {
+    JsValue key = previousKeys[index];
+    if (!JS.invoke(nextSet, "has", key).truthy()) JS.delete(proxy, key);
+  }
+}
+
+void clearOptimisticNodes(JsValue collection) {
+  JsValue keys = ownKeys(collection);
+  JsValue refreshKey = JS.assume($REFRESH);
+  for (int index = 0; index < lengthOf(keys); index++) {
+    JsValue node = collection[keys[index]];
+    JsValue raw = node;
+    if (JS.isArray(node)) raw = node[0][refreshKey];
+    if (!raw.truthy()) continue;
+    JsValue previous = raw["_overrideValue"];
+    raw["_overrideActive"] = false;
+    raw["_overrideValue"] = undef();
+    raw["_overrideOwner"] = 0;
+    raw["_optimisticLane"] = null;
+    Signal<JsValue> pendingNode = JS.assume(raw);
+    refreshPendingState(pendingNode);
+    JsValue visible = if (raw["_hasPending"].truthy()) { raw["_pendingValue"] } else { raw["_value"] };
+    if (!same(previous, visible)) {
+      Signal<JsValue> signalNode = JS.assume(raw);
+      insertSubs(signalNode, true);
+    }
+  }
+}
+
+void commitOptimisticNodes(JsValue meta, JsValue collection, bool presence) {
+  JsValue keys = ownKeys(collection);
+  JsValue refreshKey = JS.assume($REFRESH);
+  for (int index = 0; index < lengthOf(keys); index++) {
+    JsValue key = keys[index];
+    JsValue node = collection[key];
+    JsValue raw = node;
+    if (JS.isArray(node)) raw = node[0][refreshKey];
+    if (!raw.truthy()) continue;
+    JsValue previous = visibleNodeValue(node);
+    JsValue next = undef();
+    if (presence) next = sourceHas(meta, key);
+    else if (JS.strictEqual(key, $TRACK_VALUE)) next = JS.object();
+    else next = wrapKernel(sourceValue(meta, key), meta);
+    raw["_overrideActive"] = false;
+    raw["_overrideValue"] = undef();
+    raw["_overrideOwner"] = 0;
+    raw["_optimisticLane"] = null;
+    raw["_value"] = next;
+    raw["_pendingValue"] = next;
+    raw["_hasPending"] = false;
+    Signal<JsValue> signalNode = JS.assume(raw);
+    refreshPendingState(signalNode);
+    if (!same(previous, next)) insertSubs(signalNode, true);
+  }
+}
+
+void clearProjectionOptimistic(JsValue meta) {
+  JsValue optimisticBase = meta["optimisticBase"];
+  JsValue keys = ownKeys(optimisticBase);
+  for (int index = 0; index < lengthOf(keys); index++) {
+    JsValue key = keys[index];
+    meta["overlays"][key] = optimisticBase[key];
+    meta["direct"][key] = true;
+  }
+  meta["optimisticBase"] = newNullObject();
+  clearOptimisticNodes(meta["nodes"]);
+  clearOptimisticNodes(meta["hasNodes"]);
+}
+
+JsValue makeSetter(JsValue proxy) {
+  return JS.method1((JsValue _self, JsValue updater) => {
+    JsValue meta = proxy[$TARGET_VALUE];
+    if (
+      meta["projection"].truthy() &&
+      meta["refresh"].truthy() &&
+      !meta["optimistic"].truthy()
+    ) {
+      Computed<JsValue> refreshNode = JS.assume(meta["refresh"]);
+      suppressComputedRecompute(refreshNode);
+    }
+    writeDepth += 1;
+    try {
+      JsValue result = hostUntrack(
+        JS.method0((JsValue _untrackSelf) => JS.call(updater, undef(), proxy)),
+        undef()
+      );
+      if (!isUndefined(result) && !JS.strictEqual(result, proxy)) {
+        replaceStoreValue(result, proxy);
+      }
+    } finally {
+      writeDepth -= 1;
+    }
+    return undef();
+  });
+}
+
+JsValue option(JsValue options, string key) {
+  if (JS.isNullish(options)) return undef();
+  return options[key];
+}
+
+JsValue createPlainStore(JsValue initial, JsValue options, bool optimistic) {
+  if (!isWrappableKernel(initial)) initial = JS.object();
+  bool shallow = option(options, "shallow").truthy();
+  JsValue family = null;
+  if (optimistic) family = JS.construct(WeakMap);
+  JsValue proxy = createStoreProxyFamily(initial, shallow, optimistic, family);
+  return JS.array(proxy, makeSetter(proxy));
+}
+
+JsValue keyOf(JsValue item, JsValue key) {
+  if (JS.isNullish(key) || !isObjectLike(item)) return undef();
+  if (JS.typeOf(key) == "function") return JS.call(key, undef(), item);
+  return item[key];
+}
+
+bool canRecurse(JsValue previous, JsValue next, JsValue key) {
+  if (!isWrappableKernel(previous) || !isWrappableKernel(next) || isRaw(previous) || isRaw(next)) return false;
+  if (JS.isArray(previous) != JS.isArray(next)) return false;
+  if (JS.isNullish(key)) return true;
+  JsValue left = keyOf(previous, key);
+  JsValue right = keyOf(next, key);
+  if (isUndefined(left) || JS.isNullish(left)) return true;
+  return same(left, right);
+}
+
+bool shouldRecurse(JsValue previous, JsValue next, JsValue key, JsValue parentMeta, JsValue property) {
+  if (!canRecurse(previous, next, key)) return false;
+  if (parentMeta["replaceChildren"].truthy() && !JS.isNullish(key)) {
+    JsValue left = keyOf(previous, key);
+    JsValue right = keyOf(next, key);
+    if ((isUndefined(left) || JS.isNullish(left)) &&
+        (isUndefined(right) || JS.isNullish(right))) return false;
+  }
+  if (JS.isNullish(key)) return true;
+  if (projectionDepth > 0 && previous[$TARGET_VALUE].truthy()) return true;
+  if (parentMeta["nodes"][property].truthy() || parentMeta["nodes"][$TRACK_VALUE].truthy()) return true;
+  JsValue childMeta = previous[$TARGET_VALUE];
+  return childMeta.truthy() && childMeta["descendant"].truthy();
+}
+
+void writeKey(JsValue target, JsValue key, JsValue value) {
+  target[key] = value;
+}
+
+void deleteKey(JsValue target, JsValue key) {
+  JS.delete(target, key);
+}
+
+void reconcileArray(JsValue next, JsValue state, JsValue key) {
+  JsValue parentMeta = state[$TARGET_VALUE];
+  int previousLength = JS.number(state["length"]).toInt();
+  int nextLength = lengthOf(next);
+  JsValue previous = JS.array();
+  for (int index = 0; index < previousLength; index++) JS.invoke(previous, "push", state[index]);
+
+  if (JS.isNullish(key)) {
+    for (int index = 0; index < nextLength; index++) {
+      JsValue oldItem = undef();
+      if (index < previousLength) oldItem = previous[index];
+      JsValue nextItem = next[index];
+      if (shouldRecurse(oldItem, nextItem, key, parentMeta, index)) {
+        reconcileInto(nextItem, oldItem, key, false);
+        if (projectionDepth > 0 && oldItem[$TARGET_VALUE].truthy()) {
+          JsValue childMeta = oldItem[$TARGET_VALUE];
+          childMeta["source"] = nextItem;
+          childMeta["overlays"] = newNullObject();
+          childMeta["direct"] = newNullObject();
+          childMeta["descriptors"] = newNullObject();
+          if (parentMeta["family"].truthy()) weakSet(parentMeta["family"], nextItem, oldItem);
+        }
+      } else writeKey(state, index, nextItem);
+    }
+  } else {
+    JsValue byKey = JS.construct(Map);
+    for (int index = 0; index < previousLength; index++) {
+      JsValue oldItem = previous[index];
+      JsValue oldKey = keyOf(oldItem, key);
+      if (!isUndefined(oldKey) && !JS.isNullish(oldKey)) JS.invoke(byKey, "set", oldKey, oldItem);
+    }
+    for (int index = 0; index < nextLength; index++) {
+      JsValue nextItem = next[index];
+      JsValue nextKey = keyOf(nextItem, key);
+      JsValue oldItem = undef();
+      if (!isUndefined(nextKey) && !JS.isNullish(nextKey)) oldItem = JS.invoke(byKey, "get", nextKey);
+      else if (index < previousLength) oldItem = previous[index];
+      if (!isUndefined(oldItem) && shouldRecurse(oldItem, nextItem, key, parentMeta, index)) {
+        reconcileInto(nextItem, oldItem, key, false);
+        if (projectionDepth > 0 && oldItem[$TARGET_VALUE].truthy()) {
+          JsValue childMeta = oldItem[$TARGET_VALUE];
+          childMeta["source"] = nextItem;
+          childMeta["overlays"] = newNullObject();
+          childMeta["direct"] = newNullObject();
+          childMeta["descriptors"] = newNullObject();
+          if (parentMeta["family"].truthy()) weakSet(parentMeta["family"], nextItem, oldItem);
+        }
+        if (index >= previousLength || !same(oldItem, previous[index])) {
+          writeKey(state, index, oldItem);
+        }
+      } else writeKey(state, index, nextItem);
+    }
+  }
+  state["length"] = nextLength;
+}
+
+void reconcileObject(JsValue next, JsValue state, JsValue key) {
+  JsValue parentMeta = state[$TARGET_VALUE];
+  JsValue nextKeys = ownEnumerableKeysKernel(next);
+  JsValue nextSet = JS.construct(Set);
+  for (int index = 0; index < lengthOf(nextKeys); index++) {
+    JsValue property = nextKeys[index];
+    if (isUnsafeKey(property)) continue;
+    JS.invoke(nextSet, "add", property);
+    JsValue incoming = next[property];
+    JsValue previous = state[property];
+    if (shouldRecurse(previous, incoming, key, parentMeta, property)) {
+      reconcileInto(incoming, previous, key, false);
+    }
+    else writeKey(state, property, incoming);
+  }
+  JsValue oldKeys = mergedOwnKeys(state[$TARGET_VALUE]);
+  for (int index = 0; index < lengthOf(oldKeys); index++) {
+    JsValue property = oldKeys[index];
+    if (isUnsafeKey(property)) continue;
+    if (isEnumerable(state, property) && !JS.invoke(nextSet, "has", property).truthy()) deleteKey(state, property);
+  }
+}
+
+export void reconcileInto(JsValue next, JsValue state, JsValue key, bool replace) {
+  if (!isWrappableKernel(next) || !isWrappableKernel(state)) return;
+  if (JS.isArray(next) != JS.isArray(state)) return;
+  if (!replace && !JS.isNullish(key)) {
+    JsValue previousKey = keyOf(state, key);
+    JsValue nextKey = keyOf(next, key);
+    if (!isUndefined(previousKey) && !same(previousKey, nextKey)) {
+      throw JS.construct(Error, "Cannot reconcile states with different identity");
+    }
+  }
+  if (replace && !JS.isNullish(key)) {
+    JsValue previousKey = keyOf(state, key);
+    JsValue nextKey = keyOf(next, key);
+    if (!isUndefined(previousKey) && !same(previousKey, nextKey)) {
+      replaceStoreValue(next, state);
+      return;
+    }
+  }
+  if (JS.isArray(next)) reconcileArray(next, state, key);
+  else reconcileObject(next, state, key);
+}
+
+export JsValue reconcileKernel(JsValue value, JsValue key) {
+  JsValue actualKey = key;
+  if (isUndefined(key)) actualKey = "id";
+  JsValue incoming = value;
+  return JS.method1((JsValue _self, JsValue state) => {
+    writeDepth += 1;
+    reconcileDepth += 1;
+    try {
+      reconcileInto(incoming, state, actualKey, false);
+    } finally {
+      reconcileDepth -= 1;
+      writeDepth -= 1;
+    }
+    return state;
+  });
+}
+
+export JsValue makeReconcileFunctionKernel() {
+  JsValue fn = JS.method2((JsValue _self, JsValue value, JsValue key) =>
+    reconcileKernel(value, key)
+  );
+  JS.invoke(Object, "defineProperty", fn, "length", JS.object("value", 1));
+  return fn;
+}
+
+void commitProjectionResult(JsValue result, JsValue store, JsValue key) {
+  JsValue meta = store[$TARGET_VALUE];
+  meta["errorRetryArmed"] = false;
+  if (isUndefined(result) || JS.strictEqual(result, store) ||
+      JS.strictEqual(result[$TARGET_VALUE], store[$TARGET_VALUE])) {
+    if (meta["optimistic"].truthy() && lengthOf(ownKeys(meta["optimisticBase"])) > 0) {
+      clearProjectionOptimistic(meta);
+    }
+    return;
+  }
+  if (result[$TARGET_VALUE].truthy() && JS.strictEqual(meta["source"], result)) return;
+  writeDepth += 1;
+  projectionDepth += 1;
+  reconcileDepth += 1;
+  setProjectionWriteActive(true);
+  try {
+    if (meta["source"][$TARGET_VALUE].truthy()) {
+      meta["source"] = snapshotImpl(meta["source"], false, JS.construct(WeakMap));
+      meta["overlays"] = newNullObject();
+      meta["direct"] = newNullObject();
+      meta["descriptors"] = newNullObject();
+    }
+    meta["replaceChildren"] = meta["asyncResult"];
+    reconcileInto(result, store, key, true);
+    if (meta["optimistic"].truthy()) {
+      meta["source"] = result;
+      meta["overlays"] = newNullObject();
+      meta["direct"] = newNullObject();
+      meta["descriptors"] = newNullObject();
+      meta["optimisticBase"] = newNullObject();
+      weakSet(meta["family"], result, store);
+      commitOptimisticNodes(meta, meta["nodes"], false);
+      commitOptimisticNodes(meta, meta["hasNodes"], true);
+    } else if (result[$TARGET_VALUE].truthy()) {
+      meta["source"] = result;
+      meta["overlays"] = newNullObject();
+      meta["direct"] = newNullObject();
+      meta["descriptors"] = newNullObject();
+    }
+  } finally {
+    setProjectionWriteActive(false);
+    meta["replaceChildren"] = false;
+    reconcileDepth -= 1;
+    projectionDepth -= 1;
+    writeDepth -= 1;
+  }
+}
+
+JsValue makeProjectionDraft(JsValue value, JsValue meta, int epoch) {
+  JsValue handler = JS.object();
+  handler["get"] = JS.method3((JsValue _self, JsValue _actual, JsValue key, JsValue _receiver) => {
+    projectionDepth += 1;
+    writeDepth += 1;
+    JsValue result = undef();
+    try {
+      result = value[key];
+    } finally {
+      writeDepth -= 1;
+      projectionDepth -= 1;
+    }
+    if (isObjectLike(result) && result[$TARGET_VALUE].truthy()) {
+      return makeProjectionDraft(result, meta, epoch);
+    }
+    return result;
+  });
+  handler["has"] = JS.method2((JsValue _self, JsValue _actual, JsValue key) => {
+    projectionDepth += 1;
+    writeDepth += 1;
+    bool result = false;
+    try {
+      result = inValue(key, value);
+    } finally {
+      writeDepth -= 1;
+      projectionDepth -= 1;
+    }
+    return result;
+  });
+  handler["set"] = JS.method3((JsValue _self, JsValue _actual, JsValue key, JsValue next) => {
+    if (JS.number(meta["epoch"]).toInt() != epoch) return true;
+    JsValue nextMeta = next[$TARGET_VALUE];
+    if (nextMeta.truthy()) next = nextMeta["proxy"];
+    projectionDepth += 1;
+    writeDepth += 1;
+    setProjectionWriteActive(true);
+    try {
+      value[key] = next;
+      if (meta["optimistic"].truthy() && lengthOf(ownKeys(meta["optimisticBase"])) > 0) {
+        clearProjectionOptimistic(meta);
+      }
+    } catch (JsValue failure) {
+      if (!JS.strictEqual(failure["_kind"], "not-ready")) throw failure;
+    } finally {
+      setProjectionWriteActive(false);
+      writeDepth -= 1;
+      projectionDepth -= 1;
+    }
+    return true;
+  });
+  handler["deleteProperty"] = JS.method2((JsValue _self, JsValue _actual, JsValue key) => {
+    if (JS.number(meta["epoch"]).toInt() != epoch) return true;
+    projectionDepth += 1;
+    writeDepth += 1;
+    setProjectionWriteActive(true);
+    try {
+      JS.delete(value, key);
+      if (meta["optimistic"].truthy() && lengthOf(ownKeys(meta["optimisticBase"])) > 0) {
+        clearProjectionOptimistic(meta);
+      }
+    } catch (JsValue failure) {
+      if (!JS.strictEqual(failure["_kind"], "not-ready")) throw failure;
+    } finally {
+      setProjectionWriteActive(false);
+      writeDepth -= 1;
+      projectionDepth -= 1;
+    }
+    return true;
+  });
+  handler["defineProperty"] = JS.method3((JsValue _self, JsValue _actual, JsValue key, JsValue desc) => {
+    if (JS.number(meta["epoch"]).toInt() != epoch) return true;
+    projectionDepth += 1;
+    writeDepth += 1;
+    setProjectionWriteActive(true);
+    try {
+      JS.invoke(Object, "defineProperty", value, key, desc);
+      if (meta["optimistic"].truthy() && lengthOf(ownKeys(meta["optimisticBase"])) > 0) {
+        clearProjectionOptimistic(meta);
+      }
+    } catch (JsValue failure) {
+      if (!JS.strictEqual(failure["_kind"], "not-ready")) throw failure;
+    } finally {
+      setProjectionWriteActive(false);
+      writeDepth -= 1;
+      projectionDepth -= 1;
+    }
+    return true;
+  });
+  JsValue target = JS.array();
+  if (!JS.isArray(value)) target = JS.invoke(Object, "create", getPrototype(value));
+  return JS.construct(Proxy, target, handler);
+}
+
+JsValue createProjectionStore(JsValue fn, JsValue seed, JsValue options, bool optimistic) {
+  if (!isWrappableKernel(seed)) seed = JS.object();
+  bool shallow = option(options, "shallow").truthy();
+  JsValue family = JS.construct(WeakMap);
+  JsValue store = createStoreProxyFamily(seed, shallow, optimistic, family);
+  JsValue tuple = JS.array(store, makeSetter(store));
+  JsValue meta = store[$TARGET_VALUE];
+  JsValue key = option(options, "key");
+  if (isUndefined(key)) key = "id";
+  if (optimistic) {
+    family["key"] = key;
+    family["keyed"] = JS.construct(Map);
+  }
+  JsValue memoOptions = options;
+  if (option(options, "seedLoadingValue").truthy()) {
+    memoOptions = JS.invoke(Object, "assign", JS.object(), options);
+    JS.invoke(Object, "defineProperty", memoOptions, "loadingValue", JS.object(
+      "value", undef(),
+      "enumerable", true,
+      "configurable", true,
+      "writable", true
+    ));
+  }
+  JsValue resultMemo = hostCreateMemo(JS.method0((JsValue _self) => {
+    int epoch = JS.number(meta["epoch"]).toInt() + 1;
+    meta["epoch"] = epoch;
+    JsValue draft = makeProjectionDraft(store, meta, epoch);
+    JsValue result = JS.call(fn, undef(), draft);
+    bool asynchronous = isObjectLike(result) && JS.typeOf(result["then"]) == "function";
+    if (!asynchronous && isObjectLike(result)) {
+      JsValue asyncIterator = Symbol["asyncIterator"];
+      asynchronous = JS.typeOf(result[asyncIterator]) == "function";
+    }
+    meta["asyncResult"] = asynchronous;
+    return result;
+  }), memoOptions);
+  JsValue refreshKey = JS.assume($REFRESH);
+  Computed<JsValue> resultNode = JS.assume(resultMemo[refreshKey]);
+  resultNode._config = resultNode._config ^ (resultNode._config & CONFIG_AUTO_DISPOSE);
+  JsValue memo = hostCreateMemo(JS.method0((JsValue _self) => {
+    JsValue result = JS.call(resultMemo, undef());
+    if (resultNode._hasPending) result = resultNode._pendingValue;
+    commitProjectionResult(result, store, key);
+    meta["initialized"] = true;
+    return result;
+  }), null);
+  Computed<JsValue> commitNode = JS.assume(memo[refreshKey]);
+  commitNode._config = commitNode._config ^ (commitNode._config & CONFIG_AUTO_DISPOSE);
+  meta["projection"] = memo;
+  meta["refresh"] = JS.assume(resultNode);
+  return tuple;
+}
+
+export JsValue createStoreKernel(JsValue first, JsValue second, JsValue options) {
+  if (JS.typeOf(first) == "function") return createProjectionStore(first, second, options, false);
+  return createPlainStore(first, second, false);
+}
+
+export JsValue createProjectionKernel(JsValue fn, JsValue seed, JsValue options) {
+  return createProjectionStore(fn, seed, options, false)[0];
+}
+
+export JsValue createOptimisticStoreKernel(JsValue first, JsValue second, JsValue options) {
+  if (JS.typeOf(first) == "function") return createProjectionStore(first, second, options, true);
+  return createPlainStore(first, second, true);
+}
+
+JsValue snapshotImpl(JsValue item, bool track, JsValue seen) {
+  if (!isWrappableKernel(item)) return item;
+  JsValue meta = item[$TARGET_VALUE];
+  if (!meta.truthy()) {
+    JsValue known = weakGet(storeLookup, item);
+    if (known.truthy()) {
+      item = known;
+      meta = item[$TARGET_VALUE];
+    }
+  }
+  if (weakHas(seen, item)) return weakGet(seen, item);
+  JsValue source = item;
+  if (meta.truthy()) source = meta["source"];
+  if (track && pendingCheckIsActive() && meta.truthy()) {
+    JsValue collections = JS.array(meta["nodes"], meta["hasNodes"]);
+    JsValue refreshKey = JS.assume($REFRESH);
+    for (int collectionIndex = 0; collectionIndex < lengthOf(collections); collectionIndex++) {
+      JsValue keys = ownKeys(collections[collectionIndex]);
+      for (int index = 0; index < lengthOf(keys); index++) {
+        JsValue entry = collections[collectionIndex][keys[index]];
+        JsValue raw = entry;
+        if (JS.isArray(entry)) raw = entry[0][refreshKey];
+        Signal<JsValue> affectsNode = JS.assume(raw);
+        if (affectsNode._affectsCount > 0) markPendingProbeFound();
+      }
+    }
+  }
+  if (track && meta.truthy()) trackSelf(meta);
+  JsValue overlayKeys = JS.array();
+  if (meta.truthy()) overlayKeys = ownKeys(meta["overlays"]);
+  if (meta.truthy() && lengthOf(overlayKeys) == 0 && source[$TARGET_VALUE].truthy()) {
+    JsValue chained = snapshotImpl(source, track, seen);
+    weakSet(seen, item, chained);
+    return chained;
+  }
+  JsValue result = undef();
+  weakSet(seen, item, source);
+  weakSet(seen, source, source);
+  if (lengthOf(overlayKeys) > 0) {
+    if (JS.isArray(source)) result = JS.call(Array["prototype"]["slice"], source);
+    else {
+      result = JS.invoke(Object, "create", getPrototype(source));
+      JS.invoke(Object, "assign", result, source);
+    }
+    weakSet(seen, item, result);
+    weakSet(seen, source, result);
+    for (int index = 0; index < lengthOf(overlayKeys); index++) {
+      JsValue overlayKey = overlayKeys[index];
+      bool remove = JS.strictEqual(meta["overlays"][overlayKey], $DELETED_VALUE);
+      if (meta["optimistic"].truthy()) remove = !currentHas(meta, overlayKey, false);
+      if (remove) {
+        JS.delete(result, overlayKey);
+      }
+    }
+  }
+  JsValue keys = ownEnumerableKeysKernel(source);
+  if (meta.truthy()) keys = mergedOwnKeysMode(meta, track);
+  for (int index = 0; index < lengthOf(keys); index++) {
+    JsValue key = keys[index];
+    if (JS.strictEqual(key, "length")) continue;
+    JsValue desc = descriptor(source, key);
+    if (meta.truthy()) desc = sourceOwnDescriptor(meta, key);
+    if (!desc.truthy() || desc["get"].truthy() || !desc["enumerable"].truthy()) continue;
+    JsValue base = source[key];
+    JsValue value = base;
+    if (meta.truthy()) {
+      if (meta["optimistic"].truthy()) value = currentValue(meta, key, track);
+      else value = sourceValue(meta, key);
+    }
+    if (JS.strictEqual(value, $DELETED_VALUE)) continue;
+    JsValue walkValue = value;
+    if (track && isWrappableKernel(value) && !isRaw(value)) walkValue = wrapKernel(value, meta);
+    JsValue child = snapshotImpl(walkValue, track, seen);
+    if (!same(child, base) || !same(value, base) || result.truthy()) {
+      if (!result.truthy()) {
+        if (JS.isArray(source)) result = JS.call(Array["prototype"]["slice"], source);
+        else {
+          result = JS.invoke(Object, "create", getPrototype(source));
+          JS.invoke(Object, "assign", result, source);
+        }
+        weakSet(seen, item, result);
+        weakSet(seen, source, result);
+      }
+      result[key] = child;
+    }
+  }
+  if (result.truthy() && JS.isArray(source)) {
+    int resultLength = lengthOf(source);
+    if (meta.truthy()) {
+      JsValue lengthValue = sourceValue(meta, "length");
+      if (meta["optimistic"].truthy()) lengthValue = currentValue(meta, "length", track);
+      resultLength = JS.number(lengthValue).toInt();
+    }
+    result["length"] = resultLength;
+  }
+  if (result.truthy()) return result;
+  return source;
+}
+
+export JsValue snapshotKernel(JsValue item) {
+  return snapshotImpl(item, false, JS.construct(WeakMap));
+}
+
+export JsValue deepKernel(JsValue item) {
+  return snapshotImpl(item, true, JS.construct(WeakMap));
+}
+
+JsValue resolveSource(JsValue source) {
+  if (JS.typeOf(source) == "function") source = JS.call(source, undef());
+  if (source.truthy()) return source;
+  return JS.object();
+}
+
+JsValue copyArguments(JsValue args) {
+  return JS.call(Array["prototype"]["slice"], args);
+}
+
+JsValue mergeProxyDescriptor(JsValue key) {
+  JsValue value = undef();
+  if (JS.isNullish(key)) value = undef();
+  return JS.object("enumerable", true, "configurable", true, "value", value, "writable", false);
+}
+
+JsValue omitProxyDescriptor(JsValue props, JsValue key) {
+  return JS.object(
+    "enumerable", true,
+    "configurable", true,
+    "value", props[key],
+    "writable", false
+  );
+}
+
+export JsValue mergeArgumentsKernel(JsValue args) {
+  JsValue input = copyArguments(args);
+  if (lengthOf(input) == 1 && JS.typeOf(input[0]) != "function") return input[0];
+  JsValue sources = JS.array();
+  bool reactive = false;
+  for (int index = 0; index < lengthOf(input); index++) {
+    JsValue source = input[index];
+    if (source.truthy() && isObjectLike(source) && source[$MERGE_SOURCES_VALUE].truthy()) {
+      JsValue children = source[$MERGE_SOURCES_VALUE];
+      for (int child = 0; child < lengthOf(children); child++) {
+        JS.invoke(sources, "push", children[child]);
+      }
+    } else if (JS.typeOf(source) == "function") {
+      reactive = true;
+      JsValue accessor = hostCreateMemo(source, null);
+      JS.invoke(sources, "push", accessor);
+    } else {
+      if (source.truthy() && isObjectLike(source) && inValue($PROXY_VALUE, source)) reactive = true;
+      JS.invoke(sources, "push", source);
+    }
+  }
+  if (!reactive) {
+    JsValue defined = JS.construct(Set);
+    JsValue descriptorMap = newNullObject();
+    JsValue keyOrder = JS.array();
+    int lastIndex = lengthOf(sources) - 1;
+    while (lastIndex >= 0 && !sources[lastIndex].truthy()) lastIndex -= 1;
+    bool nonTargetKey = false;
+    for (int index = lengthOf(sources) - 1; index >= 0; index--) {
+      JsValue source = sources[index];
+      if (!source.truthy()) continue;
+      if (!isObjectLike(source)) throw JS.construct(TypeError, "merge sources must be objects");
+      JsValue keys = JS.invoke(Object, "getOwnPropertyNames", source);
+      for (int cursor = lengthOf(keys) - 1; cursor >= 0; cursor--) {
+        JsValue key = keys[cursor];
+        if (JS.strictEqual(key, "__proto__") || JS.strictEqual(key, "constructor") ||
+            JS.invoke(defined, "has", key).truthy()) continue;
+        JS.invoke(defined, "add", key);
+        if (index != lastIndex) nonTargetKey = true;
+        JsValue desc = descriptor(source, key);
+        if (desc["get"].truthy()) {
+          desc = JS.object(
+            "get", JS.invoke(desc["get"], "bind", source),
+            "enumerable", true,
+            "configurable", true
+          );
+        } else {
+          desc = JS.object(
+            "value", desc["value"],
+            "writable", true,
+            "enumerable", true,
+            "configurable", true
+          );
+        }
+        descriptorMap[key] = desc;
+        JS.invoke(keyOrder, "push", key);
+      }
+    }
+    if (!nonTargetKey && lastIndex >= 0) return sources[lastIndex];
+    JsValue result = JS.object();
+    for (int index = lengthOf(keyOrder) - 1; index >= 0; index--) {
+      JsValue key = keyOrder[index];
+      JS.invoke(Object, "defineProperty", result, key, descriptorMap[key]);
+    }
+    result[$MERGE_SOURCES_VALUE] = sources;
+    return result;
+  }
+  JsValue target = JS.object();
+  JsValue handler = JS.object();
+  handler["get"] = JS.method3((JsValue _self, JsValue _target, JsValue key, JsValue receiver) => {
+    if (JS.strictEqual(key, $PROXY_VALUE)) return receiver;
+    if (JS.strictEqual(key, $MERGE_SOURCES_VALUE)) return sources;
+    for (int index = lengthOf(sources) - 1; index >= 0; index--) {
+      JsValue source = resolveSource(sources[index]);
+      if (inValue(key, source)) return source[key];
+    }
+    return undef();
+  });
+  handler["has"] = JS.method2((JsValue _self, JsValue _target, JsValue key) => {
+    if (JS.strictEqual(key, $PROXY_VALUE)) return true;
+    for (int index = lengthOf(sources) - 1; index >= 0; index--) {
+      if (inValue(key, resolveSource(sources[index]))) return true;
+    }
+    return false;
+  });
+  handler["ownKeys"] = JS.method1((JsValue _self, JsValue _target) => {
+    JsValue keys = JS.array();
+    JsValue seen = JS.construct(Set);
+    for (int index = 0; index < lengthOf(sources); index++) {
+      JsValue next = ownEnumerableKeysKernel(resolveSource(sources[index]));
+      for (int cursor = 0; cursor < lengthOf(next); cursor++) {
+        JsValue key = next[cursor];
+        if (!JS.invoke(seen, "has", key).truthy()) {
+          JS.invoke(seen, "add", key);
+          JS.invoke(keys, "push", key);
+        }
+      }
+    }
+    return keys;
+  });
+  handler["getOwnPropertyDescriptor"] = JS.method2((JsValue _self, JsValue _target, JsValue key) =>
+    mergeProxyDescriptor(key)
+  );
+  return JS.construct(Proxy, target, handler);
+}
+
+export JsValue omitKernel(JsValue props, JsValue keys) {
+  if (!inValue($PROXY_VALUE, props)) {
+    JsValue result = JS.object();
+    JsValue names = JS.invoke(Object, "getOwnPropertyNames", props);
+    for (int index = 0; index < lengthOf(names); index++) {
+      JsValue key = names[index];
+      if (!JS.invoke(keys, "includes", key).truthy()) {
+        JS.invoke(Object, "defineProperty", result, key, descriptor(props, key));
+      }
+    }
+    return result;
+  }
+  JsValue target = JS.object();
+  JsValue handler = JS.object();
+  handler["get"] = JS.method3((JsValue _self, JsValue _target, JsValue key, JsValue _receiver) => {
+    if (JS.invoke(keys, "includes", key).truthy()) return undef();
+    return props[key];
+  });
+  handler["has"] = JS.method2((JsValue _self, JsValue _target, JsValue key) =>
+    !JS.invoke(keys, "includes", key).truthy() && inValue(key, props)
+  );
+  handler["ownKeys"] = JS.method1((JsValue _self, JsValue _target) => {
+    JsValue source = ownEnumerableKeysKernel(props);
+    JsValue result = JS.array();
+    for (int index = 0; index < lengthOf(source); index++) {
+      if (!JS.invoke(keys, "includes", source[index]).truthy()) JS.invoke(result, "push", source[index]);
+    }
+    return result;
+  });
+  handler["getOwnPropertyDescriptor"] = JS.method2((JsValue _self, JsValue _target, JsValue key) =>
+    omitProxyDescriptor(props, key)
+  );
+  return JS.construct(Proxy, target, handler);
+}
+
+export JsValue omitArgumentsKernel(JsValue args) {
+  JsValue props = args[0];
+  JsValue keys = JS.call(Array["prototype"]["slice"], args, 1);
+  return omitKernel(props, keys);
+}
+
+void mergePathValue(JsValue target, JsValue value) {
+  JsValue keys = ownEnumerableKeysKernel(value);
+  for (int index = 0; index < lengthOf(keys); index++) {
+    JsValue key = keys[index];
+    if (isUnsafePathKey(key)) continue;
+    JsValue desc = descriptor(value, key);
+    if (desc["get"].truthy() || desc["set"].truthy()) JS.invoke(Object, "defineProperty", target, key, desc);
+    else target[key] = desc["value"];
+  }
+}
+
+void applyPathValue(JsValue current, JsValue key, JsValue setter, bool root) {
+  JsValue previous = current[key];
+  if (root) previous = current;
+  JsValue value = setter;
+  if (JS.typeOf(value) == "function") value = JS.call(value, undef(), previous);
+  if (same(value, previous)) return;
+  if (JS.strictEqual(value, $PATH_DELETE_VALUE)) {
+    if (!root) JS.delete(current, key);
+    return;
+  }
+  if (root || (isWrappableKernel(previous) && isWrappableKernel(value) && !JS.isArray(value))) {
+    JsValue target = current[key];
+    if (root) target = current;
+    mergePathValue(target, value);
+  } else current[key] = value;
+}
+
+void updatePathAt(JsValue current, JsValue args, int index) {
+  int count = lengthOf(args);
+  if (count == 1) {
+    applyPathValue(current, undef(), args[0], true);
+    return;
+  }
+  JsValue part = args[index];
+  if (isUnsafePathKey(part)) return;
+  bool last = index == count - 2;
+  if (JS.isArray(part)) {
+    for (int cursor = 0; cursor < lengthOf(part); cursor++) {
+      JsValue key = part[cursor];
+      if (last) applyPathValue(current, key, args[count - 1], false);
+      else updatePathAt(current[key], args, index + 1);
+    }
+    return;
+  }
+  if (JS.isArray(current) && JS.typeOf(part) == "function") {
+    for (int cursor = 0; cursor < lengthOf(current); cursor++) {
+      if (JS.call(part, undef(), current[cursor], cursor).truthy()) {
+        if (last) applyPathValue(current, cursor, args[count - 1], false);
+        else updatePathAt(current[cursor], args, index + 1);
+      }
+    }
+    return;
+  }
+  if (JS.isArray(current) && isObjectLike(part) && !JS.isArray(part)) {
+    int from = 0;
+    if (!isUndefined(part["from"])) from = JS.number(part["from"]).toInt();
+    int to = lengthOf(current) - 1;
+    if (!isUndefined(part["to"])) to = JS.number(part["to"]).toInt();
+    int by = 1;
+    if (!isUndefined(part["by"])) by = JS.number(part["by"]).toInt();
+    if (by == 0) return;
+    int cursor = from;
+    while ((by > 0 && cursor <= to) || (by < 0 && cursor >= to)) {
+      if (last) applyPathValue(current, cursor, args[count - 1], false);
+      else updatePathAt(current[cursor], args, index + 1);
+      cursor += by;
+    }
+    return;
+  }
+  if (last) applyPathValue(current, part, args[count - 1], false);
+  else updatePathAt(current[part], args, index + 1);
+}
+
+export JsValue storePathArgumentsKernel(JsValue argumentsValue) {
+  JsValue args = copyArguments(argumentsValue);
+  return JS.method1((JsValue _self, JsValue state) => {
+    updatePathAt(state, args, 0);
+    return undef();
+  });
+}

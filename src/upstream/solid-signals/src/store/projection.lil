@@ -1,0 +1,10 @@
+import { createProjectionKernel } from "./_kernel";
+
+export JsValue createProjection(JsValue derive, JsValue seed, JsValue options) {
+  return createProjectionKernel(derive, seed, options);
+}
+
+export JsValue createProjectionInternal(JsValue derive, JsValue seed, JsValue options) {
+  JsValue store = createProjectionKernel(derive, seed, options);
+  return JS.object("store", store, "node", store);
+}

@@ -1,0 +1,3 @@
+import { link, trimStaleDeps, unlinkSubs, unobserved } from "./kernel";
+
+export { link, trimStaleDeps, unlinkSubs, unobserved };

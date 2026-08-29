@@ -1,0 +1,25 @@
+import {
+  Computed,
+  NotReadyError,
+  addPendingSource,
+  clearStatus,
+  handleAsync,
+  isThenable,
+  notifyStatus,
+  parkLoadingWindow,
+  releaseSettledDependents,
+  settleErroredDependents,
+  settlePendingSource
+} from "./kernel";
+
+export {
+  addPendingSource,
+  clearStatus,
+  handleAsync,
+  isThenable,
+  notifyStatus,
+  parkLoadingWindow,
+  releaseSettledDependents,
+  settleErroredDependents,
+  settlePendingSource
+};

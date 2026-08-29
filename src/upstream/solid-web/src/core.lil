@@ -1,0 +1,119 @@
+import {
+  createMemo,
+  createOwner,
+  createRenderEffect,
+  runWithOwner,
+  getOwner,
+  createComponent,
+  createRoot,
+  sharedConfig,
+  untrack,
+  merge,
+  flatten,
+  ssrHandleError,
+  ssrScope,
+  NoHydration,
+  Hydration,
+  runInServerComponentScope,
+  creationStamp,
+  inServerComponentScope
+} from "./_solid";
+import { WeakMap } from "../../dom-expressions/runtime/_host";
+export {
+  getOwner,
+  runWithOwner,
+  createComponent,
+  createRoot as root,
+  sharedConfig,
+  untrack,
+  merge as mergeProps,
+  flatten,
+  ssrHandleError,
+  ssrScope,
+  NoHydration,
+  Hydration,
+  runInServerComponentScope,
+  creationStamp,
+  inServerComponentScope
+};
+
+JsValue transparentOptions = JS.object("transparent", true, "sync", true);
+JsValue syncOptions = JS.object("sync", true);
+
+export JsValue effect(
+  JsValue fn,
+  JsValue effectFn,
+  JsValue options = JS.undefined()
+) {
+  JsValue normalized = transparentOptions;
+  if (!JS.isUndefined(options)) {
+    normalized = JS.object("sync", true);
+    for (string key in options) normalized[key] = options[key];
+    normalized["transparent"] = !options["scope"].truthy();
+  }
+  JsValue owner = JS.call(getOwner, JS.undefined());
+  JsValue childCount = if (!JS.isNullish(owner) && normalized["transparent"].truthy()) {
+    owner["_childCount"]
+  } else {
+    JS.undefined()
+  };
+  JsValue result = JS.call(createRenderEffect, JS.undefined(), fn, effectFn, normalized);
+  if (!JS.isUndefined(childCount)) owner["_childCount"] = childCount;
+  return result;
+}
+
+export JsValue memo(JsValue fn) {
+  JsValue owner = JS.call(getOwner, JS.undefined());
+  return JS.call(
+    createMemo,
+    JS.undefined(),
+    JS.method0((JsValue _self) => {
+      JsValue current = JS.call(getOwner, JS.undefined());
+      if (!JS.isNullish(owner) && !JS.isNullish(current)) {
+        current["_context"] = JS.invoke(owner["_context"], "slice");
+      }
+      return JS.call(fn, JS.undefined());
+    }),
+    syncOptions
+  );
+}
+
+export JsValue runWithHydrationScope(string id, JsValue fn) {
+  JsValue owner = JS.call(createOwner, JS.undefined(), JS.object("id", id));
+  return JS.call(runWithOwner, JS.undefined(), owner, fn);
+}
+
+export JsValue ssrAsyncValue(JsValue value) {
+  return JS.call(
+    createMemo,
+    JS.undefined(),
+    JS.method0((JsValue _self) => value),
+    JS.object("serialize", false)
+  );
+}
+
+JsValue assetGates = JS.construct(WeakMap);
+
+export void waitAsset(JsValue promise) {
+  JsValue gate = JS.invoke(assetGates, "get", promise);
+  if (!gate.truthy()) {
+    JsValue holder = JS.object("gate", JS.undefined());
+    JS.call(
+      runWithOwner,
+      JS.undefined(),
+      null,
+      JS.method0((JsValue _self) => {
+        holder["gate"] = JS.call(
+          createMemo,
+          JS.undefined(),
+          JS.method0((JsValue _memoSelf) => promise),
+          JS.object("transparent", true)
+        );
+        return JS.undefined();
+      })
+    );
+    gate = holder["gate"];
+    JS.invoke(assetGates, "set", promise, gate);
+  }
+  JS.call(gate, JS.undefined());
+}

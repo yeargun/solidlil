@@ -1,0 +1,22 @@
+import { action } from "../../src/upstream/solid-signals/src/core/action";
+import { handleAsync } from "../../src/upstream/solid-signals/src/core/async";
+import { REACTIVE_DIRTY } from "../../src/upstream/solid-signals/src/core/constants";
+import { createContext } from "../../src/upstream/solid-signals/src/core/context";
+import { computed } from "../../src/upstream/solid-signals/src/core/core";
+import { DEV } from "../../src/upstream/solid-signals/src/core/dev";
+import { effect } from "../../src/upstream/solid-signals/src/core/effect";
+import { NotReadyError } from "../../src/upstream/solid-signals/src/core/error";
+import { enableExternalSource } from "../../src/upstream/solid-signals/src/core/external";
+import { link } from "../../src/upstream/solid-signals/src/core/graph";
+import { Heap } from "../../src/upstream/solid-signals/src/core/heap";
+import { flush } from "../../src/upstream/solid-signals/src/core/index";
+import { devCheckQuiescent } from "../../src/upstream/solid-signals/src/core/invariants";
+import { activeLanes } from "../../src/upstream/solid-signals/src/core/lanes";
+import { installOptimisticEngine } from "../../src/upstream/solid-signals/src/core/optimistic";
+import { createOwner } from "../../src/upstream/solid-signals/src/core/owner";
+import { globalQueue } from "../../src/upstream/solid-signals/src/core/scheduler";
+import { isPending } from "../../src/upstream/solid-signals/src/core/verdict";
+
+export int signalsCoreModuleCount() {
+  return 18;
+}

@@ -1,0 +1,38 @@
+import {
+  Dynamic,
+  Portal,
+  clientOnly,
+  httpHeader,
+  httpStatus,
+  getNextElement,
+  hydrate,
+  isDev,
+  isServer,
+  mergeProps,
+  render as webRender
+} from "../../src/upstream/solid-web/src/index";
+import {
+  createRoot as __createRoot,
+  createSignal as __createSignal,
+  flush as __flush
+} from "../../src/upstream/solid-web/src/_solid";
+
+export {
+  Dynamic,
+  Portal,
+  clientOnly,
+  httpHeader,
+  httpStatus,
+  getNextElement,
+  hydrate,
+  isDev,
+  isServer,
+  mergeProps,
+  __createRoot,
+  __createSignal,
+  __flush
+};
+
+export JsValue render(JsValue code, JsValue element, JsValue initial) {
+  return webRender(code, element, initial);
+}

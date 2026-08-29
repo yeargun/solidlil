@@ -1,0 +1,89 @@
+import { affects } from "../../src/upstream/solid-signals/src/affects";
+import {
+  createErrorBoundary,
+  createLoadingBoundary,
+  createRevealOrder,
+  flatten
+} from "../../src/upstream/solid-signals/src/boundaries";
+import {
+  ContextNotFoundError,
+  NoOwnerError,
+  NotReadyError,
+  action,
+  createContext,
+  createOwner,
+  createRoot,
+  flush,
+  getContext,
+  getObserver,
+  getOwner,
+  isDisposed,
+  isEqual,
+  isPending,
+  latest,
+  runWithOwner,
+  setContext,
+  untrack as coreUntrack
+} from "../../src/upstream/solid-signals/src/core/index";
+import { refresh as coreRefresh } from "../../src/upstream/solid-signals/src/core/core";
+import { mapArray, repeat } from "../../src/upstream/solid-signals/src/map";
+import {
+  createEffect,
+  createMemo,
+  createOptimistic,
+  createReaction,
+  createRenderEffect,
+  createSignal,
+  createTrackedEffect,
+  onCleanup,
+  onSettled,
+  resolve as coreResolve
+} from "../../src/upstream/solid-signals/src/signals";
+
+export {
+  ContextNotFoundError,
+  NoOwnerError,
+  NotReadyError,
+  action,
+  affects,
+  createContext,
+  createEffect,
+  createErrorBoundary,
+  createLoadingBoundary,
+  createMemo,
+  createOptimistic,
+  createOwner,
+  createReaction,
+  createRenderEffect,
+  createRevealOrder,
+  createRoot,
+  createSignal,
+  createTrackedEffect,
+  flatten,
+  flush,
+  getContext,
+  getObserver,
+  getOwner,
+  isDisposed,
+  isEqual,
+  isPending,
+  latest,
+  mapArray,
+  onCleanup,
+  onSettled,
+  repeat,
+  runWithOwner,
+  setContext
+};
+
+export void refresh(JsValue value) {
+  coreRefresh(value);
+}
+
+export JsValue resolve(JsValue callback) {
+  return coreResolve(callback);
+}
+
+export JsValue untrack(JsValue callback, JsValue strictReadLabel) {
+  return coreUntrack(callback, strictReadLabel);
+}

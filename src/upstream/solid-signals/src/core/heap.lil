@@ -1,0 +1,25 @@
+import {
+  Heap,
+  deleteFromHeap,
+  enqueueSub,
+  increaseHeapSize,
+  insertIntoHeap,
+  insertIntoHeapHeight,
+  markHeap,
+  markNode,
+  queueFor,
+  runHeap
+} from "./kernel";
+
+export {
+  Heap,
+  deleteFromHeap,
+  enqueueSub,
+  increaseHeapSize,
+  insertIntoHeap,
+  insertIntoHeapHeight,
+  markHeap,
+  markNode,
+  queueFor,
+  runHeap
+};

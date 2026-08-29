@@ -1,0 +1,227 @@
+import {
+  $DEVCOMP,
+  $PROXY,
+  $REFRESH,
+  $TRACK,
+  DEV,
+  Errored,
+  For,
+  Hydration,
+  Loading,
+  Match,
+  NoHydrateContext,
+  NoHydration,
+  NotReadyError,
+  Repeat,
+  Reveal,
+  Show,
+  Switch,
+  action,
+  affects,
+  children,
+  createComponent,
+  createContext,
+  createEffect,
+  createErrorBoundary,
+  createLoadingBoundary,
+  createMemo,
+  createOptimistic,
+  createOptimisticStore,
+  createOwner,
+  createProjection,
+  createReaction,
+  createRenderEffect,
+  createRoot,
+  createSignal,
+  createStore,
+  createTrackedEffect,
+  createUniqueId,
+  deep,
+  enableExternalSource,
+  enableHydration,
+  enforceLoadingBoundary,
+  flatten,
+  flush,
+  getNextChildId,
+  getObserver,
+  getOwner,
+  isDisposed,
+  isEqual,
+  isPending,
+  isWrappable,
+  latest,
+  lazy,
+  mapArray,
+  materializeContainerTrace,
+  merge,
+  omit,
+  onCleanup,
+  onSettled,
+  reconcile,
+  refresh,
+  repeat,
+  resolve,
+  runWithOwner,
+  sharedConfig,
+  snapshot,
+  storePath,
+  untrack,
+  useContext
+} from "../../src/upstream/solid/src/index";
+import {
+  Dynamic,
+  Portal,
+  addEvent,
+  applyRef,
+  assign,
+  className,
+  clientOnly,
+  delegateEvents,
+  dynamic,
+  dynamicProperty,
+  effect,
+  getFirstChild,
+  getHydrationKey,
+  getNextElement,
+  getNextMarker,
+  getNextMatch,
+  getNextSibling,
+  hydrate,
+  insert,
+  memo,
+  mergeProps,
+  ref,
+  registerDelegatedContainer,
+  registerDelegatedRoot,
+  registerElementClaim,
+  render,
+  runHydrationEvents,
+  scope,
+  setAttribute,
+  setAttributeNS,
+  setProperty,
+  setStyleProperty,
+  spread,
+  style,
+  template,
+  unregisterDelegatedContainer,
+  unregisterDelegatedRoot,
+  useHead,
+  warmAsset
+} from "../../src/upstream/solid-web/src/index";
+import { waitAsset } from "../../src/upstream/solid-web/src/core";
+
+/** A single compiled module keeps all test imports on one owner/signal graph. */
+export JsValue webCorpusApi() {
+  JsValue api = JS.object();
+  api["$DEVCOMP"] = $DEVCOMP;
+  api["$PROXY"] = $PROXY;
+  api["$REFRESH"] = $REFRESH;
+  api["$TRACK"] = $TRACK;
+  api["DEV"] = DEV;
+  api["Errored"] = Errored;
+  api["For"] = For;
+  api["Hydration"] = Hydration;
+  api["Loading"] = Loading;
+  api["Match"] = Match;
+  api["NoHydrateContext"] = NoHydrateContext;
+  api["NoHydration"] = NoHydration;
+  api["NotReadyError"] = NotReadyError;
+  api["Repeat"] = Repeat;
+  api["Reveal"] = Reveal;
+  api["Show"] = Show;
+  api["Switch"] = Switch;
+  api["action"] = action;
+  api["affects"] = affects;
+  api["children"] = children;
+  api["createComponent"] = createComponent;
+  api["createContext"] = createContext;
+  api["createEffect"] = createEffect;
+  api["createErrorBoundary"] = createErrorBoundary;
+  api["createLoadingBoundary"] = createLoadingBoundary;
+  api["createMemo"] = createMemo;
+  api["createOptimistic"] = createOptimistic;
+  api["createOptimisticStore"] = createOptimisticStore;
+  api["createOwner"] = createOwner;
+  api["createProjection"] = createProjection;
+  api["createReaction"] = createReaction;
+  api["createRenderEffect"] = createRenderEffect;
+  api["createRoot"] = createRoot;
+  api["createSignal"] = createSignal;
+  api["createStore"] = createStore;
+  api["createTrackedEffect"] = createTrackedEffect;
+  api["createUniqueId"] = createUniqueId;
+  api["deep"] = deep;
+  api["enableExternalSource"] = enableExternalSource;
+  api["enableHydration"] = enableHydration;
+  api["enforceLoadingBoundary"] = enforceLoadingBoundary;
+  api["flatten"] = flatten;
+  api["flush"] = flush;
+  api["getNextChildId"] = getNextChildId;
+  api["getObserver"] = getObserver;
+  api["getOwner"] = getOwner;
+  api["isDisposed"] = isDisposed;
+  api["isEqual"] = isEqual;
+  api["isPending"] = isPending;
+  api["isWrappable"] = isWrappable;
+  api["latest"] = latest;
+  api["lazy"] = lazy;
+  api["mapArray"] = mapArray;
+  api["materializeContainerTrace"] = materializeContainerTrace;
+  api["merge"] = merge;
+  api["omit"] = omit;
+  api["onCleanup"] = onCleanup;
+  api["onSettled"] = onSettled;
+  api["reconcile"] = reconcile;
+  api["refresh"] = refresh;
+  api["repeat"] = repeat;
+  api["resolve"] = resolve;
+  api["runWithOwner"] = runWithOwner;
+  api["sharedConfig"] = sharedConfig;
+  api["snapshot"] = snapshot;
+  api["storePath"] = storePath;
+  api["untrack"] = untrack;
+  api["useContext"] = useContext;
+
+  api["Dynamic"] = Dynamic;
+  api["Portal"] = Portal;
+  api["addEvent"] = addEvent;
+  api["applyRef"] = applyRef;
+  api["assign"] = assign;
+  api["className"] = className;
+  api["clientOnly"] = clientOnly;
+  api["delegateEvents"] = delegateEvents;
+  api["dynamic"] = dynamic;
+  api["dynamicProperty"] = dynamicProperty;
+  api["effect"] = effect;
+  api["getFirstChild"] = getFirstChild;
+  api["getHydrationKey"] = getHydrationKey;
+  api["getNextElement"] = getNextElement;
+  api["getNextMarker"] = getNextMarker;
+  api["getNextMatch"] = getNextMatch;
+  api["getNextSibling"] = getNextSibling;
+  api["hydrate"] = hydrate;
+  api["insert"] = insert;
+  api["memo"] = memo;
+  api["mergeProps"] = mergeProps;
+  api["ref"] = ref;
+  api["registerDelegatedContainer"] = registerDelegatedContainer;
+  api["registerDelegatedRoot"] = registerDelegatedRoot;
+  api["registerElementClaim"] = registerElementClaim;
+  api["render"] = render;
+  api["runHydrationEvents"] = runHydrationEvents;
+  api["scope"] = scope;
+  api["setAttribute"] = setAttribute;
+  api["setAttributeNS"] = setAttributeNS;
+  api["setProperty"] = setProperty;
+  api["setStyleProperty"] = setStyleProperty;
+  api["spread"] = spread;
+  api["style"] = style;
+  api["template"] = template;
+  api["unregisterDelegatedContainer"] = unregisterDelegatedContainer;
+  api["unregisterDelegatedRoot"] = unregisterDelegatedRoot;
+  api["useHead"] = useHead;
+  api["waitAsset"] = waitAsset;
+  api["warmAsset"] = warmAsset;
+  return api;
+}

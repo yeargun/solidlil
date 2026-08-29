@@ -1,0 +1,5228 @@
+// Solid's core modules form deliberate static cycles (core <-> scheduler <->
+// heap <-> owner). LilScript currently rejects those cycles, so this file is
+// the typed implementation kernel. The source-named siblings are thin,
+// source-aligned re-export facades; no JavaScript implementation is involved.
+
+import { Error, Map, console } from "../../../_host";
+
+extern void queueMicrotask(func()->void callback);
+
+// constants.ts
+export int REACTIVE_NONE = 0;
+export int REACTIVE_CHECK = 1 << 0;
+export int REACTIVE_DIRTY = 1 << 1;
+export int REACTIVE_RECOMPUTING_DEPS = 1 << 2;
+export int REACTIVE_IN_HEAP = 1 << 3;
+export int REACTIVE_IN_HEAP_HEIGHT = 1 << 4;
+export int REACTIVE_ZOMBIE = 1 << 5;
+export int REACTIVE_DISPOSED = 1 << 6;
+export int REACTIVE_OPTIMISTIC_DIRTY = 1 << 7;
+export int REACTIVE_SNAPSHOT_STALE = 1 << 8;
+export int REACTIVE_LAZY = 1 << 9;
+export int REACTIVE_MANUAL_WRITE = 1 << 10;
+export int REACTIVE_REASK = 1 << 11;
+
+export int CONFIG_OWNED_WRITE = 1 << 0;
+export int CONFIG_NO_SNAPSHOT = 1 << 1;
+export int CONFIG_TRANSPARENT = 1 << 2;
+export int CONFIG_IN_SNAPSHOT_SCOPE = 1 << 3;
+export int CONFIG_CHILDREN_FORBIDDEN = 1 << 4;
+export int CONFIG_AUTO_DISPOSE = 1 << 5;
+export int CONFIG_SYNC = 1 << 6;
+
+export int STATUS_NONE = 0;
+export int STATUS_PENDING = 1 << 0;
+export int STATUS_ERROR = 1 << 1;
+export int STATUS_UNINITIALIZED = 1 << 2;
+
+export int EFFECT_PURE = 0;
+export int EFFECT_RENDER = 1;
+export int EFFECT_USER = 2;
+export int EFFECT_TRACKED = 3;
+
+export JsValue NOT_PENDING = JS.object("name", "not-pending");
+export JsValue NO_SNAPSHOT = JS.object("name", "no-snapshot");
+export JsValue OVERRIDE_UNDEFINED = JS.object("name", "override-undefined");
+export string STORE_SNAPSHOT_PROPS = "sp";
+export bool SUPPORTS_PROXY = true;
+export Symbol $REFRESH = new Symbol("refresh");
+
+export T unwrapOverride<T>(JsValue value) {
+  if (JS.strictEqual(value, OVERRIDE_UNDEFINED)) {
+    return JS.assume(JS.undefined());
+  }
+  return JS.assume(value);
+}
+
+// error.ts. LilScript classes are throwable and retain constructor identity;
+// extending the host Error class is not currently representable.
+export class NotReadyError {
+  JsValue source;
+  bool _markVisual;
+  string _kind;
+
+  init(JsValue source) {
+    this.source = source;
+    JsValue raw = JS.assume(this);
+    raw["source"] = source;
+    this._markVisual = false;
+    this._kind = "not-ready";
+  }
+}
+
+export class StatusError {
+  JsValue source;
+  JsValue cause;
+  string _kind;
+  string message;
+
+  init(JsValue source, JsValue cause) {
+    this.source = source;
+    this.cause = cause;
+    JsValue raw = JS.assume(this);
+    raw["source"] = source;
+    raw["cause"] = cause;
+    this._kind = "status";
+    this.message = if (JS.isNullish(cause)) { "" } else { JS.string(cause) };
+  }
+}
+
+export class NoOwnerError {
+  string message;
+
+  init() {
+    this.message = "Context can only be accessed under a reactive root.";
+  }
+}
+
+export class ContextNotFoundError {
+  string message;
+
+  init() {
+    this.message = "Context must either have a default or be provided before access.";
+  }
+}
+
+export JsValue unwrapStatusError(JsValue failure) {
+  if (!JS.isNullish(failure)) {
+    StatusError candidate = JS.assume(failure);
+    if (candidate._kind == "status") return candidate.cause;
+  }
+  return failure;
+}
+
+export bool isNotReadyError(JsValue failure) {
+  if (JS.isNullish(failure)) return false;
+  NotReadyError candidate = JS.assume(failure);
+  return candidate._kind == "not-ready";
+}
+
+int currentActionId = 0;
+
+class QueueEntry {
+  func(int)->void callback;
+  int owner;
+
+  init(func(int)->void callback) {
+    this.callback = callback;
+    this.owner = currentActionId;
+  }
+}
+
+export OptimisticLane? currentOptimisticLane = null;
+bool enforceLoadingBoundaryActive = false;
+bool hitUnhandledAsync = false;
+
+export class Queue {
+  Queue? _parent;
+  QueueEntry[] _render;
+  QueueEntry[] _user;
+  Queue[] _children;
+  JsValue _notifyHook;
+  JsValue _checkSourcesHook;
+  JsValue _skipRunHook;
+  JsValue _enqueueHook;
+  int created;
+
+  init() {
+    this._parent = null;
+    this._render = [];
+    this._user = [];
+    this._children = [];
+    this._notifyHook = JS.undefined();
+    this._checkSourcesHook = JS.undefined();
+    this._skipRunHook = JS.undefined();
+    this._enqueueHook = JS.undefined();
+    this.created = 0;
+  }
+
+  void addChild(Queue child) {
+    this._children.push(child);
+    child._parent = this;
+  }
+
+  void removeChild(Queue child) {
+    for (int index = 0; index < this._children.length; index++) {
+      if (this._children[index] == child) {
+        this._children.splice(index, 1);
+        child._parent = null;
+        return;
+      }
+    }
+  }
+
+  bool notify(Computed<JsValue> node, int mask, int flags, JsValue? failure = null) {
+    JsValue actualFailure = if (failure == null) { JS.undefined() } else { JS.assume(failure) };
+    return notifyQueue(this, node, mask, flags, actualFailure);
+  }
+
+  void checkSources() {
+    checkQueueSources(this);
+  }
+
+  void enqueue(int type, func(int)->void callback) {
+    if (JS.typeOf(this._enqueueHook) == "function") {
+      JS.call(this._enqueueHook, JS.undefined(), type, JS.assume(callback));
+      return;
+    }
+    QueueEntry entry = new QueueEntry(callback);
+    OptimisticLane? activeLane = currentOptimisticLane;
+    if (activeLane != null) {
+      OptimisticLane lane = findLane(activeLane);
+      if (type == EFFECT_RENDER) {
+        lane._render.push(entry);
+      } else {
+        lane._user.push(entry);
+      }
+      schedule();
+      return;
+    }
+    if (type == EFFECT_RENDER) {
+      this._render.push(entry);
+    } else {
+      this._user.push(entry);
+    }
+    schedule();
+  }
+
+  void run(int type) {
+    runQueueTree(this, type);
+  }
+
+  void runOwn(int type) {
+    QueueEntry[] entries = this._user;
+    if (type == EFFECT_RENDER) {
+      entries = this._render;
+      this._render = [];
+    } else {
+      this._user = [];
+    }
+    QueueEntry[] retained = [];
+    for (int index = 0; index < entries.length; index++) {
+      QueueEntry entry = entries[index];
+      if (entry.owner != 0 && actionFrame(entry.owner) != null) retained.push(entry);
+      else entry.callback(type);
+    }
+    QueueEntry[] active = if (type == EFFECT_RENDER) { this._render } else { this._user };
+    for (int index = 0; index < retained.length; index++) active.push(retained[index]);
+  }
+
+  int pending() {
+    return this._render.length + this._user.length;
+  }
+}
+
+bool notifyQueue(Queue queue, Computed<JsValue> node, int mask, int flags, JsValue failure) {
+  JsValue hook = queue._notifyHook;
+  if (JS.typeOf(hook) == "function") {
+    return JS.call(hook, JS.undefined(), JS.assume(node), mask, flags, failure).truthy();
+  }
+  Queue? parent = queue._parent;
+  if (parent != null) return notifyQueue(parent, node, mask, flags, failure);
+  return false;
+}
+
+void checkQueueSources(Queue queue) {
+  JsValue hook = queue._checkSourcesHook;
+  if (JS.typeOf(hook) == "function") JS.call(hook, JS.undefined());
+  Queue[] children = queue._children.slice();
+  for (int index = 0; index < children.length; index++) {
+    checkQueueSources(children[index]);
+  }
+}
+
+void runQueueTree(Queue queue, int type) {
+  JsValue skip = queue._skipRunHook;
+  if (JS.typeOf(skip) == "function" && JS.call(skip, JS.undefined(), type).truthy()) return;
+  queue.runOwn(type);
+  Queue[] children = queue._children.slice();
+  for (int index = 0; index < children.length; index++) {
+    runQueueTree(children[index], type);
+  }
+}
+
+export class GlobalQueue extends Queue {
+  bool _running;
+
+  init() {
+    super();
+    this._running = false;
+    this._notifyHook = JS.assume((
+      Computed<JsValue> node,
+      int mask,
+      int flags,
+      JsValue failure
+    ) => {
+      if ((mask & STATUS_PENDING) != 0) {
+        if ((flags & STATUS_PENDING) != 0 && enforceLoadingBoundaryActive) {
+          hitUnhandledAsync = true;
+        }
+        return true;
+      }
+      return false;
+    });
+  }
+
+  void flushQueue() {
+    flushGlobalQueue(this);
+  }
+
+}
+
+class CleanupEntry {
+  func()->void callback;
+  bool active;
+
+  init(func()->void callback) {
+    this.callback = callback;
+    this.active = true;
+  }
+
+  void run() {
+    if (!this.active) {
+      return;
+    }
+    this.active = false;
+    this.callback();
+  }
+}
+
+class ContextSlot {
+  Symbol id;
+  JsValue value;
+
+  init(Symbol id, JsValue value) {
+    this.id = id;
+    this.value = value;
+  }
+}
+
+export class Owner {
+  string? id;
+  int _config;
+  bool _snapshotScope;
+  bool _disposed;
+  bool _computed;
+  bool _root;
+  Owner? _parent;
+  Owner? _firstChild;
+  Owner? _nextSibling;
+  Owner? _prevSibling;
+  int _childCount;
+  Queue _queue;
+  CleanupEntry[] _disposal;
+  ContextSlot[] _context;
+
+  init(Owner? parent, Queue queue, int config) {
+    this.id = JS.assume(JS.undefined());
+    this._config = config;
+    this._snapshotScope = false;
+    this._disposed = false;
+    this._computed = false;
+    this._root = false;
+    this._parent = parent;
+    this._firstChild = null;
+    this._nextSibling = null;
+    this._prevSibling = null;
+    this._childCount = 0;
+    this._queue = queue;
+    this._disposal = [];
+    this._context = [];
+    if (parent != null) {
+      for (int index = 0; index < parent._context.length; index++) {
+        ContextSlot slot = parent._context[index];
+        this._context.push(new ContextSlot(slot.id, slot.value));
+      }
+    }
+  }
+}
+
+export class Root extends Owner {
+  Computed<JsValue>? _parentComputed;
+
+  init(Owner? parent, Queue queue, int config) {
+    super(parent, queue, config);
+    this._root = true;
+    this._parentComputed = null;
+  }
+
+  void dispose() {
+    disposeChildren(this, true, false);
+  }
+}
+
+export class NodeOptions<T> {
+  string? id;
+  string? name;
+  bool transparent;
+  (func(T,T)->bool)? equals;
+  bool equalsFalse;
+  bool ownedWrite;
+  bool noSnapshot;
+  bool lazy;
+  bool sync;
+  bool hasLoadingValue;
+  T loadingValue;
+  (func()->void)? unobserved;
+
+  init() {
+    this.id = null;
+    this.name = null;
+    this.transparent = false;
+    this.equals = null;
+    this.equalsFalse = false;
+    this.ownedWrite = false;
+    this.noSnapshot = false;
+    this.lazy = false;
+    this.sync = false;
+    this.hasLoadingValue = false;
+    this.loadingValue = JS.assume(JS.undefined());
+    this.unobserved = null;
+  }
+}
+
+export class Signal<T> extends Owner {
+  Link? _subs;
+  Link? _subsTail;
+  T _value;
+  T _pendingValue;
+  bool _hasPending;
+  bool _queuedPending;
+  int _pendingOwner;
+  func(T,T)->bool _equals;
+  bool _equalsEnabled;
+  (func()->void)? _unobserved;
+  int _time;
+  bool _optimistic;
+  bool _overrideActive;
+  T _overrideValue;
+  int _overrideOwner;
+  OptimisticLane? _optimisticLane;
+  Signal<bool>? _pendingSignal;
+  Computed<T>? _latestValueComputed;
+  Signal<JsValue>? _parentSource;
+  bool _pendingCompanion;
+  int _affectsCount;
+  int _affectsOwner;
+  bool _userWritable;
+  bool _hasSnapshot;
+  T _snapshotValue;
+
+  init(T value, func(T,T)->bool equals, bool equalsEnabled, int config, Queue queue) {
+    super(null, queue, config);
+    this._subs = null;
+    this._subsTail = null;
+    this._value = value;
+    this._pendingValue = value;
+    this._hasPending = false;
+    this._queuedPending = false;
+    this._pendingOwner = 0;
+    this._equals = equals;
+    this._equalsEnabled = equalsEnabled;
+    this._unobserved = null;
+    this._time = 0;
+    this._optimistic = false;
+    this._overrideActive = false;
+    this._overrideValue = value;
+    this._overrideOwner = 0;
+    this._optimisticLane = null;
+    this._pendingSignal = null;
+    this._latestValueComputed = null;
+    this._parentSource = null;
+    this._pendingCompanion = false;
+    this._affectsCount = 0;
+    this._affectsOwner = 0;
+    this._userWritable = false;
+    this._hasSnapshot = false;
+    this._snapshotValue = value;
+  }
+}
+
+export class Computed<T> extends Signal<T> {
+  Link? _deps;
+  Link? _depsTail;
+  int _depGen;
+  int _flags;
+  int _statusFlags;
+  int _height;
+  Computed<JsValue>? _nextHeap;
+  Computed<JsValue>? _prevHeap;
+  func()->T _fn;
+  (func()->Task<T>)? _asyncFn;
+  bool _inFlight;
+  JsValue _asyncIterator;
+  int _asyncEpoch;
+  bool _asyncHadValue;
+  JsValue _error;
+  bool _blocked;
+  bool _reask;
+  Computed<JsValue>[] _pendingSources;
+  (func(int,JsValue)->void)? _notifyStatus;
+  bool _loading;
+  bool _initialized;
+  bool _isEffect;
+  bool _hadAsyncDependency;
+  bool _asyncCapable;
+  bool _optimisticAsyncBacked;
+  bool _optimisticConfirmed;
+  bool _optimisticHadLaneWork;
+  bool _optimisticLaneSettled;
+  int _type;
+  bool _modified;
+  (func()->void)? _runEffect;
+  (func(JsValue)->void)? _runEffectError;
+  (func()->void)? _effectCleanup;
+  ExternalSource? _externalSource;
+
+  init(
+    T seed,
+    func()->T compute,
+    func(T,T)->bool equals,
+    bool equalsEnabled,
+    int config,
+    Queue queue
+  ) {
+    super(seed, equals, equalsEnabled, config, queue);
+    this._computed = true;
+    this._deps = null;
+    this._depsTail = null;
+    this._depGen = 0;
+    this._flags = REACTIVE_NONE;
+    this._statusFlags = STATUS_UNINITIALIZED;
+    this._height = 0;
+    this._nextHeap = JS.assume(JS.undefined());
+    this._prevHeap = null;
+    this._fn = compute;
+    this._asyncFn = null;
+    this._inFlight = false;
+    this._asyncIterator = JS.undefined();
+    this._asyncEpoch = 0;
+    this._asyncHadValue = false;
+    this._error = JS.undefined();
+    this._blocked = false;
+    this._reask = false;
+    this._pendingSources = [];
+    this._notifyStatus = null;
+    this._loading = false;
+    this._initialized = false;
+    this._isEffect = false;
+    this._hadAsyncDependency = false;
+    this._asyncCapable = false;
+    this._optimisticAsyncBacked = false;
+    this._optimisticConfirmed = false;
+    this._optimisticHadLaneWork = false;
+    this._optimisticLaneSettled = false;
+    this._type = EFFECT_PURE;
+    this._modified = false;
+    this._runEffect = null;
+    this._runEffectError = null;
+    this._effectCleanup = null;
+    this._externalSource = null;
+  }
+}
+
+export class Link {
+  Signal<JsValue> _dep;
+  Computed<JsValue> _sub;
+  Link? _nextDep;
+  Link? _prevSub;
+  Link? _nextSub;
+  int _gen;
+  bool _pendingObserver;
+
+  init(
+    Signal<JsValue> dep,
+    Computed<JsValue> sub,
+    Link? nextDep,
+    Link? prevSub,
+    int generation,
+    bool pendingObserver
+  ) {
+    this._dep = dep;
+    this._sub = sub;
+    this._nextDep = nextDep;
+    this._prevSub = prevSub;
+    this._nextSub = null;
+    this._gen = generation;
+    this._pendingObserver = pendingObserver;
+  }
+}
+
+class DeferredOwnerState {
+  Owner owner;
+  Owner? firstChild;
+  CleanupEntry[] disposal;
+
+  init(Owner owner, Owner? firstChild, CleanupEntry[] disposal) {
+    this.owner = owner;
+    this.firstChild = firstChild;
+    this.disposal = disposal;
+  }
+}
+
+export class Heap {
+  (Computed<JsValue>?)[] _heap;
+  bool _marked;
+  int _min;
+  int _max;
+  int _count;
+
+  init() {
+    this._heap = [];
+    this._marked = false;
+    this._min = 0;
+    this._max = 0;
+    this._count = 0;
+  }
+}
+
+export class OptimisticLane {
+  Signal<JsValue> _source;
+  Set<Computed<JsValue> > _pendingAsync;
+  Computed<JsValue>[] _pendingAsyncValues;
+  QueueEntry[] _render;
+  QueueEntry[] _user;
+  OptimisticLane? _mergedInto;
+  OptimisticLane? _parentLane;
+  int _transition;
+
+  init(Signal<JsValue> source, OptimisticLane? parentLane, int transition) {
+    this._source = source;
+    this._pendingAsync = new Set<Computed<JsValue> >();
+    this._pendingAsyncValues = [];
+    this._render = [];
+    this._user = [];
+    this._mergedInto = null;
+    this._parentLane = parentLane;
+    this._transition = transition;
+  }
+}
+
+export class Context<T> {
+  Symbol id;
+  T defaultValue;
+  bool hasDefault;
+
+  init(T defaultValue, bool hasDefault, string description) {
+    this.id = new Symbol(description);
+    this.defaultValue = defaultValue;
+    this.hasDefault = hasDefault;
+  }
+}
+
+export class ExternalSource {
+  func(JsValue)->JsValue track;
+  func()->void dispose;
+
+  init(func(JsValue)->JsValue track, func()->void dispose) {
+    this.track = track;
+    this.dispose = dispose;
+  }
+}
+
+export class ExternalSourceConfig {
+  func(func(JsValue)->JsValue,func()->void)->ExternalSource factory;
+  JsValue untrack;
+
+  init(func(func(JsValue)->JsValue,func()->void)->ExternalSource factory, JsValue untrack = JS.undefined()) {
+    this.factory = factory;
+    this.untrack = untrack;
+  }
+}
+
+export class DiagnosticEvent {
+  int sequence;
+  string code;
+  string kind;
+  string severity;
+  string message;
+
+  init(int sequence, string code, string kind, string severity, string message) {
+    this.sequence = sequence;
+    this.code = code;
+    this.kind = kind;
+    this.severity = severity;
+    this.message = message;
+  }
+}
+
+export class Dev {
+  JsValue hooks;
+  JsValue diagnostics;
+  JsValue getChildren;
+  JsValue getSignals;
+  JsValue getParent;
+  JsValue getSources;
+  JsValue getObservers;
+
+  init() {
+    this.hooks = JS.object();
+    this.diagnostics = createDiagnostics();
+    this.getChildren = JS.undefined();
+    this.getSignals = JS.undefined();
+    this.getParent = JS.undefined();
+    this.getSources = JS.undefined();
+    this.getObservers = JS.undefined();
+  }
+}
+
+class ActionFrame {
+  int id;
+  int mergedInto;
+  int activeCalls;
+  bool entangled;
+  Signal<JsValue>[] nodes;
+  Signal<JsValue>[] affects;
+  Signal<JsValue>[] pending;
+  Computed<JsValue>[] gated;
+  Computed<JsValue>[] asyncNodes;
+  JsValue[] stores;
+
+  init(int id) {
+    this.id = id;
+    this.mergedInto = 0;
+    this.activeCalls = 1;
+    this.entangled = false;
+    this.nodes = [];
+    this.affects = [];
+    this.pending = [];
+    this.gated = [];
+    this.asyncNodes = [];
+    this.stores = [];
+  }
+}
+
+export GlobalQueue globalQueue = new GlobalQueue();
+export Heap dirtyQueue = new Heap();
+export Heap zombieQueue = new Heap();
+export int clock = 0;
+export bool tracking = false;
+export bool stale = false;
+export bool pendingCheckActive = false;
+export bool latestReadActive = false;
+export bool snapshotCaptureActive = false;
+export Owner? context = null;
+export bool projectionWriteActive = false;
+export int activeAffectsMarks = 0;
+export string? strictRead = null;
+
+bool developmentBuild() {
+  func(int)->int marker = (int value) => value;
+  JsValue source = JS.invoke(JS.assume(marker), "toString");
+  return JS.invoke(source, "startsWith", "function").truthy();
+}
+
+export bool DEV_ENABLED = developmentBuild();
+export JsValue DEV = if (DEV_ENABLED) { createDev() } else { JS.undefined() };
+
+bool scheduled = false;
+bool halted = false;
+bool haltNotified = false;
+bool flushing = false;
+bool pendingProbeFound = false;
+bool trackedQueueCallback = false;
+bool reaskArmed = false;
+bool optimisticEngineInstalled = false;
+int nextActionId = 1;
+ActionFrame[] actionFrames = [];
+Signal<JsValue>[] ambientOptimisticNodes = [];
+JsValue[] ambientOptimisticStores = [];
+Signal<JsValue>[] ambientAffectsNodes = [];
+Signal<JsValue>[] pendingNodes = [];
+Signal<JsValue>[] heldPendingNodes = [];
+Computed<JsValue>[] pendingManualNodes = [];
+Computed<JsValue>[] deferredTransitionEffects = [];
+Computed<JsValue>[] deferredCommitSubscribers = [];
+Signal<JsValue>[] laneSignals = [];
+OptimisticLane[] laneValues = [];
+export Set<OptimisticLane> activeLanes = new Set<OptimisticLane>();
+ExternalSourceConfig? externalSourceConfig = null;
+int diagnosticSequence = 0;
+JsValue[] diagnosticListeners = [];
+JsValue[][] diagnosticCaptures = [];
+Signal<JsValue>[] devHeldPendingNodes = [];
+Signal<JsValue>[] devCompanionOwners = [];
+Signal<JsValue>[] devOptimisticNodes = [];
+Signal<JsValue>[] devAffectsMarkedNodes = [];
+bool asyncReporterWritesAllowed = false;
+bool companionUpdatesPaused = false;
+bool ambientOptimisticBlocked = false;
+bool ambientAffectsBlocked = false;
+Signal<JsValue>[] pendingProbeNodes = [];
+Signal<JsValue>[][] pendingProbeStack = [];
+DeferredOwnerState[] deferredOwnerStates = [];
+Signal<JsValue>[] snapshotSources = [];
+
+JsValue createDiagnostics() {
+  JsValue diagnostics = JS.object();
+  diagnostics["subscribe"] = JS.method1((JsValue _self, JsValue listener) => {
+    bool present = false;
+    for (int index = 0; index < diagnosticListeners.length; index++) {
+      if (JS.strictEqual(diagnosticListeners[index], listener)) present = true;
+    }
+    if (!present) diagnosticListeners.push(listener);
+    return JS.method0((JsValue _disposeSelf) => {
+      for (int index = 0; index < diagnosticListeners.length; index++) {
+        if (JS.strictEqual(diagnosticListeners[index], listener)) {
+          diagnosticListeners.splice(index, 1);
+          break;
+        }
+      }
+      return JS.undefined();
+    });
+  });
+  diagnostics["capture"] = JS.method0((JsValue _self) => {
+    JsValue[] events = [];
+    diagnosticCaptures.push(events);
+    JsValue capture = JS.object("events", JS.assume(events));
+    capture["clear"] = JS.method0((JsValue _clearSelf) => {
+      events.splice(0, events.length);
+      return JS.undefined();
+    });
+    capture["stop"] = JS.method0((JsValue _stopSelf) => {
+      for (int index = 0; index < diagnosticCaptures.length; index++) {
+        if (diagnosticCaptures[index] == events) {
+          diagnosticCaptures.splice(index, 1);
+          break;
+        }
+      }
+      JsValue[] stopped = events.slice();
+      JsValue result = JS.assume(stopped);
+      return result;
+    });
+    return capture;
+  });
+  return diagnostics;
+}
+
+JsValue createDev() {
+  return JS.object(
+    "hooks", JS.object(),
+    "diagnostics", createDiagnostics(),
+    "getChildren", JS.undefined(),
+    "getSignals", JS.undefined(),
+    "getParent", JS.undefined(),
+    "getSources", JS.undefined(),
+    "getObservers", JS.undefined()
+  );
+}
+
+void publishDiagnostic(JsValue event) {
+  for (int index = 0; index < diagnosticListeners.length; index++) {
+    JS.call(diagnosticListeners[index], JS.undefined(), event);
+  }
+  for (int index = 0; index < diagnosticCaptures.length; index++) {
+    diagnosticCaptures[index].push(event);
+  }
+}
+
+void callDevHook(string name, JsValue[] values) {
+  if (!DEV_ENABLED) return;
+  JsValue callback = DEV["hooks"][name];
+  if (JS.typeOf(callback) != "function") return;
+  if (values.length == 0) {
+    JS.call(callback, JS.undefined());
+  } else if (values.length == 1) {
+    JS.call(callback, JS.undefined(), values[0]);
+  } else if (values.length == 2) {
+    JS.call(callback, JS.undefined(), values[0], values[1]);
+  } else {
+    JS.call(callback, JS.undefined(), values[0], values[1], values[2], values[3]);
+  }
+}
+
+export void callDevGraphHook<T>(T value, Owner? owner) {
+  if (!DEV_ENABLED) return;
+  JsValue ownerValue = if (owner == null) { null } else { JS.assume(owner) };
+  callDevHook("onGraph", [JS.assume(value), ownerValue]);
+}
+
+export void notifyDevStoreNodeUpdate(
+  JsValue state,
+  JsValue property,
+  JsValue value,
+  JsValue previous
+) {
+  if (!DEV_ENABLED) return;
+  callDevHook("onStoreNodeUpdate", [state, property, value, previous]);
+}
+
+void callDevOwnerHook(Owner owner) {
+  if (!DEV_ENABLED) return;
+  callDevHook("onOwner", [JS.assume(owner)]);
+}
+
+void callDevUpdateHook() {
+  if (!DEV_ENABLED) return;
+  callDevHook("onUpdate", []);
+}
+
+void flushGlobalQueue(GlobalQueue queue) {
+  if (queue._running) {
+    return;
+  }
+  queue._running = true;
+  try {
+    devCheckFlushStart();
+    bool hadZombies = zombieQueue._count > 0;
+    runHeap(dirtyQueue, (Computed<JsValue> node) => recomputeRaw(node, false));
+    if (zombieQueue._count > 0) {
+      if (hadZombies && heldPendingNodes.length > 0) {
+        runHeap(zombieQueue, (Computed<JsValue> node) => {
+          deleteFromHeap(node, zombieQueue);
+          node._flags = clearBits(node._flags, REACTIVE_ZOMBIE);
+          recomputeRaw(node, false);
+          node._flags |= REACTIVE_ZOMBIE;
+        });
+      } else {
+        runHeap(zombieQueue, (Computed<JsValue> node) => deleteFromHeap(node, zombieQueue));
+      }
+    }
+    commitPendingNodes();
+    queue.checkSources();
+    runReadyLaneEffects(EFFECT_RENDER);
+    runReadyLaneEffects(EFFECT_USER);
+    queue.run(EFFECT_RENDER);
+    queue.run(EFFECT_USER);
+    devCheckActiveOverrides();
+    devCensusCompanions();
+    if (
+      !scheduled &&
+      pendingNodes.length == 0 &&
+      actionFrames.length == 0 &&
+      ambientOptimisticNodes.length == 0 &&
+      ambientAffectsNodes.length == 0 &&
+      activeLanes.size == 0
+    ) {
+      devCheckQuiescent();
+    }
+  } finally {
+    queue._running = false;
+  }
+}
+
+T undefinedValue<T>() {
+  return JS.assume(JS.undefined());
+}
+
+bool defaultEqual<T>(T previous, T next) {
+  return JS.strictEqual(JS.assume(previous), JS.assume(next));
+}
+
+int clearBits(int value, int mask) {
+  return value ^ (value & mask);
+}
+
+void attachChild(Owner parent, Owner child) {
+  Owner? first = parent._firstChild;
+  child._parent = parent;
+  child._nextSibling = first;
+  child._prevSibling = null;
+  if (first != null) {
+    first._prevSibling = child;
+  }
+  parent._firstChild = child;
+}
+
+void detachChild(Owner child) {
+  Owner? parent = child._parent;
+  if (parent == null) {
+    return;
+  }
+  Owner? previous = child._prevSibling;
+  Owner? next = child._nextSibling;
+  if (previous != null) {
+    previous._nextSibling = next;
+  } else {
+    parent._firstChild = next;
+  }
+  if (next != null) {
+    next._prevSibling = previous;
+  }
+  child._prevSibling = null;
+  child._parent = null;
+}
+
+// graph.ts: generation stamps preserve the validated dependency prefix and
+// avoid an O(n^2) membership scan on non-consecutive repeated reads.
+bool reuseDependency(
+  Computed<JsValue> sub,
+  Signal<JsValue> dep,
+  Link? next,
+  bool pendingObserver
+) {
+  if (next == null || next._dep != dep) return false;
+  next._gen = sub._depGen;
+  next._pendingObserver = pendingObserver;
+  sub._depsTail = next;
+  return true;
+}
+
+export void link<T,U>(Signal<T> dep, Computed<U> sub, bool pendingObserver = false) {
+  Signal<JsValue> rawDep = JS.assume(dep);
+  Computed<JsValue> rawSub = JS.assume(sub);
+  Link? previousDep = rawSub._depsTail;
+  if (previousDep != null && previousDep._dep == rawDep) {
+    previousDep._pendingObserver = previousDep._pendingObserver && pendingObserver;
+    return;
+  }
+
+  Link? nextDep = null;
+  bool recomputing = (rawSub._flags & REACTIVE_RECOMPUTING_DEPS) != 0;
+  if (recomputing && previousDep != null) nextDep = previousDep._nextDep;
+  if (recomputing && previousDep == null) nextDep = rawSub._deps;
+  if (reuseDependency(rawSub, rawDep, nextDep, pendingObserver)) return;
+
+  Link? previousSub = rawDep._subsTail;
+  if (
+    previousSub != null &&
+    previousSub._sub == rawSub &&
+    (!recomputing || previousSub._gen == rawSub._depGen)
+  ) {
+    if (recomputing) {
+      previousSub._pendingObserver = previousSub._pendingObserver && pendingObserver;
+    } else {
+      previousSub._pendingObserver = pendingObserver;
+    }
+    return;
+  }
+
+  Link created = new Link(
+    rawDep,
+    rawSub,
+    nextDep,
+    previousSub,
+    rawSub._depGen,
+    pendingObserver
+  );
+  rawSub._depsTail = created;
+  rawDep._subsTail = created;
+  if (previousDep != null) {
+    previousDep._nextDep = created;
+  } else {
+    rawSub._deps = created;
+  }
+  if (previousSub != null) {
+    previousSub._nextSub = created;
+  } else {
+    rawDep._subs = created;
+  }
+}
+
+export Link? unlinkSubs(Link item) {
+  Signal<JsValue> dep = item._dep;
+  Link? nextDep = item._nextDep;
+  Link? nextSub = item._nextSub;
+  Link? previousSub = item._prevSub;
+  if (nextSub != null) {
+    nextSub._prevSub = previousSub;
+  } else {
+    dep._subsTail = previousSub;
+  }
+  if (previousSub != null) {
+    previousSub._nextSub = nextSub;
+  } else {
+    dep._subs = nextSub;
+    if (nextSub == null) {
+      (func()->void)? unobservedCallback = dep._unobserved;
+      if (unobservedCallback != null) {
+        unobservedCallback();
+      }
+      JsValue rawDep = JS.assume(dep);
+      if (rawDep["_computed"].truthy()) {
+        Computed<JsValue> computedDep = JS.assume(dep);
+        if (
+          (JS.number(rawDep["_config"]).toInt() & CONFIG_AUTO_DISPOSE) != 0 &&
+          (JS.number(rawDep["_flags"]).toInt() & REACTIVE_ZOMBIE) == 0 &&
+          (JS.number(rawDep["_statusFlags"]).toInt() & STATUS_PENDING) == 0
+        ) {
+          unobserved(computedDep);
+        }
+      }
+    }
+  }
+  return nextDep;
+}
+
+export void trimStaleDeps<T>(Computed<T> node) {
+  Link? tail = node._depsTail;
+  Link? staleLink = node._deps;
+  if (tail != null) {
+    staleLink = tail._nextDep;
+  }
+  while (staleLink != null) {
+    staleLink = unlinkSubs(staleLink);
+  }
+  if (tail != null) {
+    tail._nextDep = null;
+  } else {
+    node._deps = null;
+  }
+}
+
+export void unobserved<T>(Computed<T> node) {
+  JsValue debugNode = JS.assume(node);
+  JS.invoke(console, "log", "UNOBSERVED", debugNode["_name"], node._flags, node._disposed);
+  JS.invoke(console, "trace");
+  cancelAsyncWork(JS.assume(node));
+  deleteFromHeap(node, queueFor(node));
+  Link? dependency = node._deps;
+  while (dependency != null) {
+    dependency = unlinkSubs(dependency);
+  }
+  node._deps = null;
+  node._depsTail = null;
+  disposeChildren(node, true, false);
+}
+
+bool releaseIfSettledUnobserved(Computed<JsValue> node) {
+  if (
+    node._subs == null &&
+    (node._config & CONFIG_AUTO_DISPOSE) != 0 &&
+    (node._flags & REACTIVE_ZOMBIE) == 0 &&
+    (node._statusFlags & STATUS_PENDING) == 0
+  ) {
+    unobserved(node);
+    return true;
+  }
+  return false;
+}
+
+void cancelAsyncWork(Computed<JsValue> node) {
+  if (!node._inFlight && JS.isUndefined(node._asyncIterator)) return;
+  node._asyncEpoch += 1;
+  node._inFlight = false;
+  JsValue iterator = node._asyncIterator;
+  node._asyncIterator = JS.undefined();
+  if (!JS.isUndefined(iterator) && JS.typeOf(iterator["return"]) == "function") {
+    try {
+      JsValue returned = JS.invoke(iterator, "return");
+      if (isThenableValue(returned)) {
+        JS.invoke(
+          returned,
+          "then",
+          JS.undefined(),
+          JS.method1((JsValue _self, JsValue _failure) => JS.undefined())
+        );
+      }
+    } catch (JsValue _failure) {}
+  }
+}
+
+void stageOwnerState(Owner node) {
+  Owner? firstChild = node._firstChild;
+  CleanupEntry[] disposal = node._disposal;
+  if (firstChild == null && disposal.length == 0) return;
+  markDisposal(node);
+  node._firstChild = null;
+  node._childCount = 0;
+  node._disposal = [];
+  Owner? child = firstChild;
+  while (child != null) {
+    child._parent = null;
+    child = child._nextSibling;
+  }
+  deferredOwnerStates.push(new DeferredOwnerState(node, firstChild, disposal));
+}
+
+bool ownerHasPendingWork(Owner owner, Set<Owner> seen) {
+  if (seen.has(owner)) return false;
+  seen.add(owner);
+  JsValue rawOwner = JS.assume(owner);
+  if (rawOwner["_computed"].truthy()) {
+    Computed<JsValue> node = JS.assume(owner);
+    if (
+      (node._statusFlags & STATUS_PENDING) != 0 &&
+      (node._inFlight ||
+        ((node._statusFlags & STATUS_UNINITIALIZED) == 0 && !quietPending(node)))
+    ) return true;
+    for (int index = 0; index < node._pendingSources.length; index++) {
+      Computed<JsValue> source = node._pendingSources[index];
+      if (
+        (source._statusFlags & STATUS_PENDING) != 0 &&
+        (source._inFlight ||
+          ((source._statusFlags & STATUS_UNINITIALIZED) == 0 && !quietPending(source)))
+      ) return true;
+    }
+    Link? subscriber = node._subs;
+    while (subscriber != null) {
+      if (ownerHasPendingWork(subscriber._sub, seen)) return true;
+      subscriber = subscriber._nextSub;
+    }
+  }
+  return false;
+}
+
+void finalizeDeferredOwnerStates() {
+  DeferredOwnerState[] retained = [];
+  for (int index = 0; index < deferredOwnerStates.length; index++) {
+    DeferredOwnerState state = deferredOwnerStates[index];
+    if (
+      heldPendingNodes.length > 0 &&
+      ownerHasPendingWork(state.owner, new Set<Owner>())
+    ) {
+      retained.push(state);
+      continue;
+    }
+    Owner? child = state.firstChild;
+    while (child != null) {
+      Owner currentChild = JS.assume(child);
+      child = currentChild._nextSibling;
+      currentChild._nextSibling = null;
+      currentChild._prevSibling = null;
+      disposeChildren(currentChild, true, true);
+    }
+    for (int cleanupIndex = 0; cleanupIndex < state.disposal.length; cleanupIndex++) {
+      state.disposal[cleanupIndex].run();
+    }
+  }
+  deferredOwnerStates = retained;
+}
+
+// heap.ts: one circular linked bucket per graph height, matching upstream's
+// stable insertion/deletion behavior without array-splice queue churn.
+export Heap queueFor<T>(Computed<T> node) {
+  if ((node._flags & REACTIVE_ZOMBIE) != 0) {
+    return zombieQueue;
+  }
+  return dirtyQueue;
+}
+
+export void increaseHeapSize(int size, Heap heap) {
+  while (heap._heap.length < size) {
+    heap._heap.push(JS.assume(JS.undefined()));
+  }
+}
+
+void actualInsertIntoHeap(Computed<JsValue> node, Heap heap) {
+  Owner? parent = node._parent;
+  if (parent != null && parent._computed) {
+    Computed<JsValue> parentComputed = JS.assume(parent);
+    if (parentComputed._height >= node._height) {
+      node._height = parentComputed._height + 1;
+    }
+  }
+  int height = node._height;
+  increaseHeapSize(height + 1, heap);
+  Computed<JsValue>? first = heap._heap[height];
+  if (first == null) {
+    heap._heap[height] = node;
+    node._prevHeap = node;
+    node._nextHeap = JS.assume(JS.undefined());
+  } else {
+    Computed<JsValue> tail = first;
+    if (first._prevHeap != null) {
+      tail = JS.assume(first._prevHeap);
+    }
+    tail._nextHeap = node;
+    node._prevHeap = tail;
+    node._nextHeap = JS.assume(JS.undefined());
+    first._prevHeap = node;
+  }
+  heap._count += 1;
+  if (height > heap._max) {
+    heap._max = height;
+  }
+}
+
+export void insertIntoHeap<T>(Computed<T> value, Heap heap) {
+  Computed<JsValue> node = JS.assume(value);
+  int flags = node._flags;
+  if ((flags & (REACTIVE_IN_HEAP | REACTIVE_RECOMPUTING_DEPS | REACTIVE_MANUAL_WRITE)) != 0) {
+    return;
+  }
+  if ((flags & REACTIVE_CHECK) != 0) {
+    node._flags = clearBits(flags, REACTIVE_CHECK | REACTIVE_DIRTY) | REACTIVE_DIRTY | REACTIVE_IN_HEAP;
+  } else {
+    node._flags = flags | REACTIVE_IN_HEAP;
+    if (heap._marked && (flags & REACTIVE_DIRTY) == 0) {
+      heap._marked = false;
+    }
+  }
+  if ((flags & REACTIVE_IN_HEAP_HEIGHT) == 0) {
+    actualInsertIntoHeap(node, heap);
+  }
+}
+
+export void insertIntoHeapHeight<T>(Computed<T> value, Heap heap) {
+  Computed<JsValue> node = JS.assume(value);
+  int flags = node._flags;
+  if (
+    (flags &
+      (REACTIVE_IN_HEAP | REACTIVE_RECOMPUTING_DEPS | REACTIVE_IN_HEAP_HEIGHT | REACTIVE_MANUAL_WRITE)) !=
+    0
+  ) {
+    return;
+  }
+  node._flags = flags | REACTIVE_IN_HEAP_HEIGHT;
+  actualInsertIntoHeap(node, heap);
+}
+
+export void deleteFromHeap<T>(Computed<T> value, Heap heap) {
+  Computed<JsValue> node = JS.assume(value);
+  int flags = node._flags;
+  if ((flags & (REACTIVE_IN_HEAP | REACTIVE_IN_HEAP_HEIGHT)) == 0) {
+    return;
+  }
+  node._flags = clearBits(flags, REACTIVE_IN_HEAP | REACTIVE_IN_HEAP_HEIGHT);
+  int height = node._height;
+  if (height >= heap._heap.length) {
+    return;
+  }
+  Computed<JsValue>? first = heap._heap[height];
+  if (first == null) {
+    return;
+  }
+  Computed<JsValue>? next = node._nextHeap;
+  Computed<JsValue>? previous = node._prevHeap;
+  if (previous == node && next == null) {
+    heap._heap[height] = JS.assume(JS.undefined());
+  } else {
+    if (node == first) {
+      heap._heap[height] = next;
+      if (next != null) {
+        next._prevHeap = previous;
+      }
+    } else if (previous != null) {
+      previous._nextHeap = next;
+      if (next != null) {
+        next._prevHeap = previous;
+      } else {
+        first._prevHeap = previous;
+      }
+    }
+  }
+  node._prevHeap = node;
+  node._nextHeap = JS.assume(JS.undefined());
+  heap._count -= 1;
+}
+
+export void markNode<T>(Computed<T> value, int newState = 2) {
+  Computed<JsValue> node = JS.assume(value);
+  int flags = node._flags;
+  if ((flags & (REACTIVE_CHECK | REACTIVE_DIRTY)) >= newState) {
+    return;
+  }
+  node._flags = clearBits(flags, REACTIVE_CHECK | REACTIVE_DIRTY) | newState;
+  Link? subscriber = node._subs;
+  while (subscriber != null) {
+    markNode(subscriber._sub, REACTIVE_CHECK);
+    subscriber = subscriber._nextSub;
+  }
+}
+
+export void markHeap(Heap heap) {
+  if (heap._marked) {
+    return;
+  }
+  heap._marked = true;
+  for (int height = 0; height <= heap._max; height++) {
+    if (height >= heap._heap.length) {
+      break;
+    }
+    Computed<JsValue>? node = heap._heap[height];
+    while (node != null) {
+      if ((node._flags & REACTIVE_IN_HEAP) != 0) {
+        markNode(node);
+      }
+      node = node._nextHeap;
+    }
+  }
+}
+
+void adjustHeight(Computed<JsValue> node, Heap heap) {
+  deleteFromHeap(node, heap);
+  int newHeight = 0;
+  Link? dependency = node._deps;
+  while (dependency != null) {
+    Signal<JsValue> dep = dependency._dep;
+    if (dep._computed) {
+      Computed<JsValue> computedDep = JS.assume(dep);
+      if (computedDep._height >= newHeight) {
+        newHeight = computedDep._height + 1;
+      }
+    }
+    dependency = dependency._nextDep;
+  }
+  if (node._height != newHeight) {
+    node._height = newHeight;
+    Link? subscriber = node._subs;
+    while (subscriber != null) {
+      insertIntoHeapHeight(subscriber._sub, queueFor(subscriber._sub));
+      subscriber = subscriber._nextSub;
+    }
+  }
+}
+
+export void runHeap(Heap heap, func(Computed<JsValue>)->void recompute) {
+  heap._marked = false;
+  heap._min = 0;
+  while (heap._count > 0 && heap._min <= heap._max) {
+    if (heap._min >= heap._heap.length) {
+      break;
+    }
+    Computed<JsValue>? node = heap._heap[heap._min];
+    if (node == null) {
+      heap._min += 1;
+      continue;
+    }
+    Computed<JsValue> current = JS.assume(node);
+    if ((current._flags & REACTIVE_IN_HEAP) != 0) {
+      recompute(current);
+    } else {
+      adjustHeight(current, heap);
+    }
+  }
+  heap._max = 0;
+  heap._min = 0;
+}
+
+export void enqueueSub<T>(Computed<T> node) {
+  if (node._type == EFFECT_TRACKED) {
+    if (!node._modified) {
+      node._modified = true;
+      (func()->void)? runner = node._runEffect;
+      if (runner != null) {
+        node._queue.enqueue(EFFECT_USER, (int type) => runner());
+      }
+    }
+    return;
+  }
+  Heap heap = queueFor(node);
+  if (heap._min > node._height) {
+    heap._min = node._height;
+  }
+  insertIntoHeap(node, heap);
+}
+
+void insertSubsRaw(Signal<JsValue> node, bool optimistic) {
+  Link? subscriber = node._subs;
+  while (subscriber != null) {
+    Link currentSubscriber = JS.assume(subscriber);
+    if (reaskArmed) {
+      currentSubscriber._sub._flags = clearBits(currentSubscriber._sub._flags, REACTIVE_REASK);
+    }
+    if (
+      node._hasSnapshot &&
+      (currentSubscriber._sub._config & CONFIG_IN_SNAPSHOT_SCOPE) != 0
+    ) {
+      currentSubscriber._sub._flags |= REACTIVE_SNAPSHOT_STALE;
+      subscriber = currentSubscriber._nextSub;
+      continue;
+    }
+    if (optimistic) {
+      currentSubscriber._sub._flags |= REACTIVE_OPTIMISTIC_DIRTY;
+      for (int index = deferredTransitionEffects.length - 1; index >= 0; index--) {
+        if (deferredTransitionEffects[index] == currentSubscriber._sub) {
+          deferredTransitionEffects.splice(index, 1);
+        }
+      }
+      OptimisticLane? lane = node._optimisticLane;
+      if (lane == null) lane = currentOptimisticLane;
+      if (lane != null) {
+        assignOrMergeLaneRaw(currentSubscriber._sub, lane);
+      } else {
+        currentSubscriber._sub._optimisticLane = null;
+      }
+    }
+    if (!optimistic && !node._pendingCompanion && node._pendingOwner != 0) {
+      currentSubscriber._sub._pendingOwner = node._pendingOwner;
+    }
+    enqueueSub(currentSubscriber._sub);
+    subscriber = currentSubscriber._nextSub;
+  }
+}
+
+void insertOptimisticCorrectionSubs(Computed<JsValue> node, OptimisticLane? lane) {
+  Link? subscriber = node._subs;
+  while (subscriber != null) {
+    Link currentSubscriber = JS.assume(subscriber);
+    Computed<JsValue> dependent = currentSubscriber._sub;
+    if (dependent._asyncCapable) {
+      dependent._flags |= REACTIVE_OPTIMISTIC_DIRTY;
+      if (lane != null) assignOrMergeLaneRaw(JS.assume(dependent), lane);
+      enqueueSub(dependent);
+    } else {
+      rememberGatedSubscriber(deferredCommitSubscribers, dependent);
+    }
+    subscriber = subscriber._nextSub;
+  }
+}
+
+export void insertSubs<T>(Signal<T> node, bool optimistic = false) {
+  Signal<JsValue> raw = JS.assume(node);
+  insertSubsRaw(raw, optimistic);
+}
+
+// owner.ts
+export void markDisposal(Owner owner) {
+  Owner? child = owner._firstChild;
+  while (child != null) {
+    JsValue rawChild = JS.assume(child);
+    if (rawChild["_computed"].truthy()) {
+      Computed<JsValue> computedChild = JS.assume(child);
+      int flags = computedChild._flags;
+      computedChild._flags = flags | REACTIVE_ZOMBIE;
+      if ((flags & (REACTIVE_IN_HEAP | REACTIVE_IN_HEAP_HEIGHT)) != 0) {
+        Heap previousQueue = if ((flags & REACTIVE_ZOMBIE) != 0) { zombieQueue } else { dirtyQueue };
+        deleteFromHeap(computedChild, previousQueue);
+        if ((flags & REACTIVE_IN_HEAP) != 0) insertIntoHeap(computedChild, zombieQueue);
+        else insertIntoHeapHeight(computedChild, zombieQueue);
+      }
+    }
+    markDisposal(child);
+    child = child._nextSibling;
+  }
+}
+
+void runDisposal(Owner owner) {
+  CleanupEntry[] entries = owner._disposal;
+  owner._disposal = [];
+  for (int index = 0; index < entries.length; index++) {
+    entries[index].run();
+  }
+}
+
+export void disposeChildren(Owner owner, bool self = false, bool zombie = false) {
+  if (owner._disposed) {
+    return;
+  }
+  if (self) {
+    owner._disposed = true;
+    clearDevSignals(owner);
+  }
+  Owner? child = owner._firstChild;
+  owner._firstChild = null;
+  while (child != null) {
+    Owner? next = child._nextSibling;
+    if (child._computed) {
+      Computed<JsValue> computedChild = JS.assume(child);
+      cancelAsyncWork(computedChild);
+      deleteFromHeap(computedChild, queueFor(computedChild));
+      Link? dependency = computedChild._deps;
+      while (dependency != null) {
+        dependency = unlinkSubs(dependency);
+      }
+      computedChild._deps = null;
+      computedChild._depsTail = null;
+      computedChild._flags |= REACTIVE_DISPOSED;
+      computedChild._asyncEpoch += 1;
+    }
+    disposeChildren(child, true, zombie);
+    child = next;
+  }
+  owner._childCount = 0;
+  runDisposal(owner);
+  if (self) {
+    if (owner._computed) {
+      Computed<JsValue> computedOwner = JS.assume(owner);
+      cancelAsyncWork(computedOwner);
+      (func()->void)? effectCleanup = computedOwner._effectCleanup;
+      if (effectCleanup != null) {
+        computedOwner._effectCleanup = null;
+        effectCleanup();
+      }
+      ExternalSource? source = computedOwner._externalSource;
+      if (source != null) {
+        computedOwner._externalSource = null;
+        source.dispose();
+      }
+    }
+    detachChild(owner);
+  }
+}
+
+export void dispose<T>(Computed<T> node) {
+  if (node._disposed) {
+    return;
+  }
+  cancelAsyncWork(JS.assume(node));
+  deleteFromHeap(node, queueFor(node));
+  Link? dependency = node._deps;
+  while (dependency != null) {
+    dependency = unlinkSubs(dependency);
+  }
+  node._deps = null;
+  node._depsTail = null;
+  node._flags |= REACTIVE_DISPOSED;
+  node._asyncEpoch += 1;
+  disposeChildren(node, true, false);
+}
+
+export string getNextChildId(Owner owner) {
+  Owner counter = owner;
+  while ((counter._config & CONFIG_TRANSPARENT) != 0 && counter._parent != null) {
+    counter = JS.assume(counter._parent);
+  }
+  if (counter.id == null) {
+    throw JS.construct(Error, "Cannot get child id from owner without an id");
+  }
+  int child = counter._childCount;
+  counter._childCount += 1;
+  string prefix = JS.assume(counter.id);
+  return `${prefix}${child}`;
+}
+
+export string peekNextChildId(Owner owner) {
+  Owner counter = owner;
+  while ((counter._config & CONFIG_TRANSPARENT) != 0 && counter._parent != null) {
+    counter = JS.assume(counter._parent);
+  }
+  if (counter.id == null) {
+    throw JS.construct(Error, "Cannot get child id from owner without an id");
+  }
+  string prefix = JS.assume(counter.id);
+  return `${prefix}${counter._childCount}`;
+}
+
+export Owner? getObserver() {
+  if (pendingCheckActive || latestReadActive) {
+    return context;
+  }
+  if (tracking) {
+    return context;
+  }
+  return null;
+}
+
+export Owner? getOwner() {
+  return context;
+}
+
+export func()->void cleanup(func()->void callback) {
+  Owner? owner = context;
+  if (owner != null) {
+    owner._disposal.push(new CleanupEntry(callback));
+  }
+  return callback;
+}
+
+export bool isDisposed(Owner owner) {
+  return owner._disposed;
+}
+
+export Root createOwner(string? id = null, bool transparent = false) {
+  Owner? parent = context;
+  Queue queue = globalQueue;
+  if (parent != null) {
+    queue = parent._queue;
+  }
+  int config = 0;
+  if (transparent) {
+    config = CONFIG_TRANSPARENT;
+  }
+  Root owner = new Root(parent, queue, config);
+  if (id != null) {
+    owner.id = id;
+  } else if (parent != null && transparent) {
+    owner.id = parent.id;
+  } else if (parent != null && parent.id != null) {
+    owner.id = getNextChildId(parent);
+  }
+  if (parent != null) {
+    if (parent._root) {
+      Root parentRoot = JS.assume(parent);
+      owner._parentComputed = parentRoot._parentComputed;
+    } else if (parent._computed) {
+      owner._parentComputed = JS.assume(parent);
+    }
+  }
+  if (parent != null) {
+    attachChild(parent, owner);
+  }
+  callDevOwnerHook(owner);
+  return owner;
+}
+
+export T runWithOwner<T>(Owner? owner, func()->T callback) {
+  if (DEV_ENABLED && owner != null && owner._disposed) {
+    string message = "[RUN_WITH_DISPOSED_OWNER] runWithOwner called with a disposed owner.";
+    emitDiagnostic(JS.object(
+      "code", "RUN_WITH_DISPOSED_OWNER",
+      "kind", "owner",
+      "severity", "warn",
+      "message", message
+    ));
+    JS.invoke(console, "warn", message);
+  }
+  Owner? previousOwner = context;
+  bool previousTracking = tracking;
+  context = owner;
+  tracking = false;
+  try {
+    return callback();
+  } finally {
+    context = previousOwner;
+    tracking = previousTracking;
+  }
+}
+
+export T createRoot<T>(func(func()->void)->T initializer) {
+  Root owner = createOwner();
+  return runWithOwner(owner, () => initializer(() => owner.dispose()));
+}
+
+// core.ts
+bool ownerInSnapshotScope(Owner? owner) {
+  while (owner != null) {
+    if (owner._snapshotScope) return true;
+    owner = owner._parent;
+  }
+  return false;
+}
+
+int configFromOptions<T>(NodeOptions<T>? options, bool computedNode) {
+  if (options == null) {
+    int defaultConfig = 0;
+    if (computedNode && context == null) defaultConfig |= CONFIG_AUTO_DISPOSE;
+    if (computedNode && snapshotCaptureActive && ownerInSnapshotScope(context)) {
+      defaultConfig |= CONFIG_IN_SNAPSHOT_SCOPE;
+    }
+    return defaultConfig;
+  }
+  int config = 0;
+  if (options.ownedWrite) config |= CONFIG_OWNED_WRITE;
+  if (options.noSnapshot) config |= CONFIG_NO_SNAPSHOT;
+  if (options.transparent) config |= CONFIG_TRANSPARENT;
+  if (options.sync) config |= CONFIG_SYNC;
+  if (computedNode && (context == null || options.lazy)) config |= CONFIG_AUTO_DISPOSE;
+  if (computedNode && snapshotCaptureActive && ownerInSnapshotScope(context)) {
+    config |= CONFIG_IN_SNAPSHOT_SCOPE;
+  }
+  return config;
+}
+
+void captureSnapshot<T>(Signal<T> node) {
+  if (
+    !snapshotCaptureActive ||
+    projectionWriteActive ||
+    (node._config & CONFIG_NO_SNAPSHOT) != 0
+  ) return;
+  node._snapshotValue = node._value;
+  node._hasSnapshot = true;
+  Signal<JsValue> rawNode = JS.assume(node);
+  for (int index = 0; index < snapshotSources.length; index++) {
+    if (snapshotSources[index] == rawNode) return;
+  }
+  snapshotSources.push(rawNode);
+}
+
+export Signal<T> signal<T>(T value, NodeOptions<T>? options = null) {
+  (func(T,T)->bool)? optionEquals = null;
+  if (options != null) {
+    optionEquals = options.equals;
+  }
+  func(T,T)->bool equals = (T previous, T next) => defaultEqual(previous, next);
+  if (optionEquals != null) {
+    equals = optionEquals;
+  }
+  bool enabled = options == null || !options.equalsFalse;
+  Queue queue = globalQueue;
+  if (context != null) queue = context._queue;
+  Signal<T> node = new Signal(value, equals, enabled, configFromOptions(options, false), queue);
+  node._time = clock;
+  if (options != null) {
+    node.id = options.id;
+    node._unobserved = options.unobserved;
+    JsValue rawNode = JS.assume(node);
+    rawNode["_name"] = if (options.name == null) { "signal" } else { JS.assume(options.name) };
+  } else if (DEV_ENABLED) {
+    JsValue rawNode = JS.assume(node);
+    rawNode["_name"] = "signal";
+  }
+  captureSnapshot(node);
+  return node;
+}
+
+export Signal<T> optimisticSignal<T>(T value, NodeOptions<T>? options = null) {
+  installOptimisticEngine();
+  Signal<T> node = signal(value, options);
+  node._optimistic = true;
+  return node;
+}
+
+void setupComputed<T>(Computed<T> node, NodeOptions<T>? options) {
+  Owner? parent = context;
+  if (parent != null && (parent._config & CONFIG_CHILDREN_FORBIDDEN) != 0) {
+    emitDiagnostic(JS.object(
+      "code", "PRIMITIVE_IN_FORBIDDEN_SCOPE",
+      "kind", "lifecycle",
+      "severity", "error",
+      "message", "Cannot create reactive primitives inside createTrackedEffect or owner-backed onSettled"
+    ));
+    throw JS.construct(
+      Error,
+      "Cannot create reactive primitives inside createTrackedEffect or owner-backed onSettled"
+    );
+  }
+  node._parent = parent;
+  if (parent != null) {
+    attachChild(parent, node);
+    Computed<JsValue>? parentComputed = null;
+    if (parent._computed) parentComputed = JS.assume(parent);
+    else if (parent._root) {
+      Root parentRoot = JS.assume(parent);
+      parentComputed = parentRoot._parentComputed;
+    }
+    if (parentComputed != null) node._height = parentComputed._height + 1;
+  }
+  if (options != null) {
+    if (options.id != null) {
+      node.id = options.id;
+    } else if (parent != null && options.transparent) {
+      node.id = parent.id;
+    } else if (parent != null && parent.id != null) {
+      node.id = getNextChildId(parent);
+    }
+    node._unobserved = options.unobserved;
+    if (options.name != null) {
+      JsValue rawNode = JS.assume(node);
+      rawNode["_name"] = JS.assume(options.name);
+    }
+    if (options.lazy) {
+      node._flags |= REACTIVE_LAZY;
+    }
+  }
+  callDevOwnerHook(node);
+
+  ExternalSourceConfig? config = externalSourceConfig;
+  if (config != null) {
+    func()->T original = node._fn;
+    ExternalSource source = config.factory(
+      (JsValue previous) => {
+        JsValue result = JS.assume(original());
+        return result;
+      },
+      () => refreshComputed(node)
+    );
+    node._externalSource = source;
+    node._fn = () => {
+      T result = JS.assume(source.track(JS.assume(node._value)));
+      return result;
+    };
+  }
+}
+
+export Computed<T> computed<T>(func()->T compute, NodeOptions<T>? options = null) {
+  T seed = undefinedValue();
+  bool loading = options != null && options.hasLoadingValue;
+  if (options != null && options.hasLoadingValue) seed = options.loadingValue;
+  (func(T,T)->bool)? optionEquals = null;
+  if (options != null) {
+    optionEquals = options.equals;
+  }
+  func(T,T)->bool equals = (T previous, T next) => defaultEqual(previous, next);
+  if (optionEquals != null) {
+    equals = optionEquals;
+  }
+  bool enabled = options == null || !options.equalsFalse;
+  Queue queue = globalQueue;
+  if (context != null) queue = context._queue;
+  Computed<T> node = new Computed(seed, compute, equals, enabled, configFromOptions(options, true), queue);
+  if (loading) {
+    node._initialized = true;
+    node._loading = true;
+    node._statusFlags = STATUS_NONE;
+  }
+  node._time = clock;
+  setupComputed(node, options);
+  if (options == null || !options.lazy) {
+    recomputeRaw(JS.assume(node), true);
+    if ((node._statusFlags & STATUS_PENDING) == 0) {
+      Signal<T> snapshotNode = JS.assume(node);
+      captureSnapshot(snapshotNode);
+    }
+  }
+  return node;
+}
+
+bool isThenableValue(JsValue value) {
+  if (JS.isNullish(value)) {
+    return false;
+  }
+  string kind = JS.typeOf(value);
+  if (kind != "object" && kind != "function") {
+    return false;
+  }
+  return JS.typeOf(value["then"]) == "function";
+}
+
+bool isAsyncIterableValue(JsValue value) {
+  if (JS.isNullish(value)) return false;
+  string kind = JS.typeOf(value);
+  if (kind != "object" && kind != "function") return false;
+  JsValue symbolConstructor = JS.assume(Symbol);
+  JsValue asyncIterator = symbolConstructor["asyncIterator"];
+  return JS.typeOf(value[asyncIterator]) == "function";
+}
+
+bool isStatusError(JsValue failure) {
+  if (JS.isNullish(failure)) return false;
+  StatusError candidate = JS.assume(failure);
+  return candidate._kind == "status";
+}
+
+Computed<JsValue>? pendingErrorSource(JsValue failure) {
+  if (!isNotReadyError(failure)) return null;
+  NotReadyError pending = JS.assume(failure);
+  if (JS.isNullish(pending.source)) return null;
+  return JS.assume(pending.source);
+}
+
+int pendingSourceIndex(Computed<JsValue> node, Computed<JsValue> source) {
+  for (int index = 0; index < node._pendingSources.length; index++) {
+    if (node._pendingSources[index] == source) return index;
+  }
+  return -1;
+}
+
+void clearPendingSources(Computed<JsValue> node) {
+  node._pendingSources = [];
+}
+
+void enqueueOptimisticCorrections(Computed<JsValue> node) {
+  Link? subscriber = node._subs;
+  while (subscriber != null) {
+    Link currentSubscriber = JS.assume(subscriber);
+    Computed<JsValue> dependent = currentSubscriber._sub;
+    JsValue rawDependent = JS.assume(dependent);
+    if (rawDependent["_optimistic"].truthy()) {
+      if (rawDependent["_overrideActive"].truthy()) {
+        bool deferCorrection = false;
+        int owner = JS.number(rawDependent["_overrideOwner"]).toInt();
+        if (owner != 0) {
+          ActionFrame? frame = actionFrame(owner);
+          if (frame != null && frame.entangled && frame.activeCalls > 0) {
+            deferCorrection = true;
+          }
+        }
+        if (deferCorrection) {
+          subscriber = currentSubscriber._nextSub;
+          continue;
+        }
+        dependent._hadAsyncDependency = true;
+        dependent._optimisticConfirmed = true;
+        enqueueSub(dependent);
+      }
+    }
+    subscriber = currentSubscriber._nextSub;
+  }
+}
+
+void settleAsyncValue(Computed<JsValue> node, JsValue value) {
+  bool firstValue = !node._initialized;
+  bool wasLoading = node._loading;
+  if (firstValue) node._pendingOwner = 0;
+  node._inFlight = false;
+  ambientAffectsBlocked = false;
+  node._hadAsyncDependency = false;
+  node._initialized = true;
+  bool equalityEnabled = node._equalsEnabled;
+  if (firstValue) node._equalsEnabled = false;
+  bool previousReporterWrites = asyncReporterWritesAllowed;
+  asyncReporterWritesAllowed = true;
+  try {
+    bool previousCompanionPause = companionUpdatesPaused;
+    companionUpdatesPaused = true;
+    try {
+      clearStatus(node, true);
+    } finally {
+      companionUpdatesPaused = previousCompanionPause;
+    }
+    bool previousProjectionWrite = projectionWriteActive;
+    if (node._optimistic) projectionWriteActive = true;
+    try {
+      Signal<JsValue> settledNode = JS.assume(node);
+      OptimisticLane? settledLane = resolveLane(settledNode);
+      if (settledLane != null && !node._optimistic) {
+        bool changed = firstValue || !node._equalsEnabled || !node._equals(node._value, value);
+        node._value = value;
+        node._pendingValue = value;
+        node._hasPending = false;
+        if (changed) {
+          Computed<JsValue>? latestShadow = node._latestValueComputed;
+          if (latestShadow != null) {
+            Signal<JsValue> latestSignal = JS.assume(latestShadow);
+            if (resolveLane(latestSignal) == null) {
+              latestShadow._optimisticLane = getOrCreateLane(latestSignal);
+            }
+          }
+          insertSubsRaw(node, true);
+        }
+      } else {
+        setSignal(node, value);
+      }
+      enqueueOptimisticCorrections(node);
+      if (firstValue && settledLane == null) {
+        node._value = value;
+        node._pendingValue = value;
+        node._hasPending = false;
+      }
+    } catch (JsValue failure) {
+      notifyStatus(node, STATUS_ERROR, failure);
+    } finally {
+      projectionWriteActive = previousProjectionWrite;
+    }
+    clearLanePending(node);
+    updatePendingCompanions(node);
+    settlePendingSource(node);
+    deleteFromHeap(node, queueFor(node));
+    node._flags = clearBits(node._flags, REACTIVE_DIRTY | REACTIVE_CHECK);
+    if (!wasLoading || !node._hasPending) node._loading = false;
+    releaseIfSettledUnobserved(node);
+  } catch (JsValue failure) {
+    notifyStatus(node, STATUS_ERROR, failure);
+  } finally {
+    asyncReporterWritesAllowed = previousReporterWrites;
+    node._equalsEnabled = equalityEnabled;
+  }
+  schedule();
+  if (!tracking) flush();
+}
+
+bool commitAsyncYield(Computed<JsValue> node, JsValue value) {
+  bool firstValue = !node._initialized;
+  node._initialized = true;
+  node._asyncHadValue = true;
+  ambientAffectsBlocked = false;
+  node._hadAsyncDependency = false;
+  bool equalityEnabled = node._equalsEnabled;
+  if (firstValue) node._equalsEnabled = false;
+  bool previousReporterWrites = asyncReporterWritesAllowed;
+  asyncReporterWritesAllowed = true;
+  try {
+    bool previousCompanionPause = companionUpdatesPaused;
+    companionUpdatesPaused = true;
+    try {
+      clearStatus(node, true);
+    } finally {
+      companionUpdatesPaused = previousCompanionPause;
+    }
+    bool previousProjectionWrite = projectionWriteActive;
+    if (node._optimistic) projectionWriteActive = true;
+    try {
+      setSignal(node, value);
+      if (firstValue) {
+        node._value = value;
+        node._pendingValue = value;
+        node._hasPending = false;
+      }
+    } catch (JsValue failure) {
+      notifyStatus(node, STATUS_ERROR, failure);
+    } finally {
+      projectionWriteActive = previousProjectionWrite;
+    }
+    settlePendingSource(node);
+    updatePendingCompanions(node);
+    node._loading = false;
+  } catch (JsValue failure) {
+    notifyStatus(node, STATUS_ERROR, failure);
+  } finally {
+    asyncReporterWritesAllowed = previousReporterWrites;
+    node._equalsEnabled = equalityEnabled;
+  }
+  return releaseIfSettledUnobserved(node);
+}
+
+void failAsyncIterable(Computed<JsValue> node, JsValue failure, int epoch) {
+  if (!node._disposed && node._asyncEpoch == epoch) {
+    bool previousReporterWrites = asyncReporterWritesAllowed;
+    asyncReporterWritesAllowed = true;
+    node._inFlight = false;
+    ambientAffectsBlocked = false;
+    node._asyncIterator = JS.undefined();
+    try {
+      notifyStatus(node, STATUS_ERROR, failure);
+      clearLanePending(node);
+      settlePendingSource(node);
+      schedule();
+      if (!tracking) flush();
+    } finally {
+      asyncReporterWritesAllowed = previousReporterWrites;
+    }
+  }
+}
+
+void consumeAsyncIterator(Computed<JsValue> node, JsValue iterator, int epoch) {
+  if (node._disposed || node._asyncEpoch != epoch) return;
+  JsValue rawStep = JS.undefined();
+  try {
+    rawStep = JS.invoke(iterator, "next");
+  } catch (JsValue failure) {
+    failAsyncIterable(node, failure, epoch);
+    return;
+  }
+  if (!isThenableValue(rawStep)) {
+    if (rawStep["done"].truthy()) {
+      node._inFlight = false;
+      node._asyncIterator = JS.undefined();
+      if (!node._asyncHadValue) settleAsyncValue(node, JS.undefined());
+      else {
+        clearStatus(node, true);
+        clearLanePending(node);
+        settlePendingSource(node);
+        schedule();
+        if (!tracking) flush();
+      }
+    } else {
+      bool released = commitAsyncYield(node, rawStep["value"]);
+      flush();
+      if (!released) consumeAsyncIterator(node, iterator, epoch);
+    }
+    return;
+  }
+  JS.invoke(
+    rawStep,
+    "then",
+    JS.method1((JsValue _self, JsValue step) => {
+      if (node._disposed || node._asyncEpoch != epoch) return JS.undefined();
+      if (step["done"].truthy()) {
+        node._inFlight = false;
+        node._asyncIterator = JS.undefined();
+        if (!node._asyncHadValue) settleAsyncValue(node, JS.undefined());
+        else {
+          clearStatus(node, true);
+          clearLanePending(node);
+          settlePendingSource(node);
+          schedule();
+          if (!tracking) flush();
+        }
+        return JS.undefined();
+      }
+      bool released = commitAsyncYield(node, step["value"]);
+      flush();
+      if (!released) consumeAsyncIterator(node, iterator, epoch);
+      return JS.undefined();
+    }),
+    JS.method1((JsValue _self, JsValue failure) => {
+      failAsyncIterable(node, failure, epoch);
+      return JS.undefined();
+    })
+  );
+}
+
+void consumeAsyncIterable(Computed<JsValue> node, JsValue iterable, int epoch) {
+  JsValue symbolConstructor = JS.assume(Symbol);
+  JsValue asyncIterator = symbolConstructor["asyncIterator"];
+  JsValue iterator = JS.call(iterable[asyncIterator], iterable);
+  node._asyncIterator = iterator;
+  consumeAsyncIterator(node, iterator, epoch);
+}
+
+void runDynamicComputed(Computed<JsValue> node, JsValue task) {
+  node._asyncEpoch += 1;
+  int epoch = node._asyncEpoch;
+  node._inFlight = true;
+  node._asyncCapable = true;
+  node._asyncHadValue = false;
+  rememberActionAsync(node);
+  OptimisticLane? activeLane = currentOptimisticLane;
+  if (activeLane != null) {
+    OptimisticLane lane = findLane(activeLane);
+    Signal<JsValue> sourceNode = JS.assume(node);
+    if (lane._source != sourceNode) {
+      addLanePending(lane, node);
+      node._optimisticLane = lane;
+    }
+  }
+  JsValue pendingFailure = JS.assume(new NotReadyError(JS.assume(node)));
+  if (!node._loading) notifyStatus(node, STATUS_PENDING, pendingFailure);
+  if (isAsyncIterableValue(task)) {
+    node._asyncHadValue = false;
+    consumeAsyncIterable(node, task, epoch);
+    return;
+  }
+  JS.invoke(
+    task,
+    "then",
+    JS.method1((JsValue _self, JsValue value) => {
+      if (!node._disposed && node._asyncEpoch == epoch) {
+        if ((node._flags & (REACTIVE_DIRTY | REACTIVE_OPTIMISTIC_DIRTY)) != 0) {
+          return JS.undefined();
+        }
+        settleAsyncValue(node, value);
+      }
+      return JS.undefined();
+    }),
+    JS.method1((JsValue _self, JsValue failure) => {
+      if (!node._disposed && node._asyncEpoch == epoch) {
+        bool previousReporterWrites = asyncReporterWritesAllowed;
+        asyncReporterWritesAllowed = true;
+        try {
+          node._inFlight = false;
+          bool pendingFailureIsRetryable = isNotReadyError(failure);
+          if (DEV_ENABLED && pendingFailureIsRetryable) {
+            Computed<JsValue>? pendingSource = pendingErrorSource(failure);
+            if (pendingSource != null && !retryReaches(node, pendingSource)) {
+              pendingFailureIsRetryable = false;
+              failure = JS.construct(
+                Error,
+                "Read of an unresolved async source after an `await`. Reads inside async computations only register as dependencies before the first `await`; read it before the first `await`."
+              );
+            }
+          }
+          if (pendingFailureIsRetryable) {
+            NotReadyError pendingFailure = JS.assume(failure);
+            if (node._loading) {
+              parkLoadingWindow(node, pendingFailure);
+            } else {
+              node._blocked = true;
+              notifyStatus(node, STATUS_PENDING, failure);
+            }
+          } else {
+            notifyStatus(node, STATUS_ERROR, failure);
+          }
+          clearLanePending(node);
+          settlePendingSource(node);
+          if (!pendingFailureIsRetryable) releaseSettledDependents(node);
+          schedule();
+        } finally {
+          asyncReporterWritesAllowed = previousReporterWrites;
+        }
+      }
+      return JS.undefined();
+    })
+  );
+}
+
+export Computed<JsValue> computedDynamic(
+  func(JsValue)->JsValue compute,
+  NodeOptions<JsValue>? options = null,
+  JsValue initial = JS.undefined(),
+  bool hasInitial = false
+) {
+  JsValue previous = initial;
+  if (hasInitial && options != null) {
+    options.hasLoadingValue = true;
+    options.loadingValue = initial;
+  }
+  Computed<JsValue> node = computed(() => {
+    JsValue result = compute(previous);
+    if (!isThenableValue(result)) previous = result;
+    return result;
+  }, options);
+  return node;
+}
+
+export Computed<T> computedWithPrev<T>(T seed, func(T)->T compute, NodeOptions<T>? options = null) {
+  T current = seed;
+  Computed<T> node = computed(() => {
+    current = compute(current);
+    return current;
+  }, options);
+  return node;
+}
+
+bool computedValueChanged(Computed<JsValue> node, JsValue previous, JsValue next) {
+  JsValue raw = JS.assume(node);
+  if (!raw["_initialized"].truthy()) return true;
+  if (!raw["_equalsEnabled"].truthy()) return true;
+  return !JS.call(raw["_equals"], JS.undefined(), previous, next).truthy();
+}
+
+export Computed<T> optimisticComputed<T>(func()->T compute, NodeOptions<T>? options = null) {
+  installOptimisticEngine();
+  Computed<T> node = computed(compute, options);
+  node._optimistic = true;
+  if (node._pendingSources.length > 0) node._optimisticAsyncBacked = true;
+  return node;
+}
+
+export Computed<T> computedAsync<T>(func()->Task<T> compute, NodeOptions<T>? options = null) {
+  NodeOptions<T>? actualOptions = options;
+  T seed = undefinedValue();
+  (func(T,T)->bool)? optionEquals = null;
+  if (actualOptions != null) {
+    optionEquals = actualOptions.equals;
+  }
+  func(T,T)->bool equals = (T previous, T next) => previous == next;
+  if (optionEquals != null) {
+    equals = optionEquals;
+  }
+  bool enabled = actualOptions == null || !actualOptions.equalsFalse;
+  Queue queue = globalQueue;
+  if (context != null) queue = context._queue;
+  Computed<T> node = new Computed(seed, () => seed, equals, enabled, configFromOptions(actualOptions, true), queue);
+  node._time = clock;
+  node._asyncFn = compute;
+  setupComputed(node, actualOptions);
+  if (actualOptions == null || !actualOptions.lazy) {
+    recomputeRaw(JS.assume(node), true);
+  }
+  return node;
+}
+
+void runAsyncComputed(Computed<JsValue> node) {
+  (func()->Task<JsValue>)? compute = JS.assume(node._asyncFn);
+  if (compute == null) {
+    return;
+  }
+  node._asyncEpoch += 1;
+  int epoch = node._asyncEpoch;
+  Task<JsValue> task = compute();
+  node._inFlight = true;
+  node._asyncCapable = true;
+  rememberActionAsync(node);
+  OptimisticLane? activeLane = currentOptimisticLane;
+  if (activeLane != null) {
+    OptimisticLane lane = findLane(activeLane);
+    Signal<JsValue> sourceNode = JS.assume(node);
+    if (lane._source != sourceNode) {
+      addLanePending(lane, node);
+      node._optimisticLane = lane;
+    }
+  }
+  notifyStatus(node, STATUS_PENDING, JS.assume(new NotReadyError(JS.assume(node))));
+  JsValue rawTask = JS.assume(task);
+  JS.invoke(
+    rawTask,
+    "then",
+    JS.method1((JsValue _self, JsValue value) => {
+      if (!node._disposed && node._asyncEpoch == epoch) {
+        if ((node._flags & (REACTIVE_DIRTY | REACTIVE_OPTIMISTIC_DIRTY)) != 0) {
+          return JS.undefined();
+        }
+        settleAsyncValue(node, value);
+      }
+      return JS.undefined();
+    }),
+    JS.method1((JsValue _self, JsValue failure) => {
+      if (!node._disposed && node._asyncEpoch == epoch) {
+        bool previousReporterWrites = asyncReporterWritesAllowed;
+        asyncReporterWritesAllowed = true;
+        try {
+          node._inFlight = false;
+          bool pendingFailureIsRetryable = isNotReadyError(failure);
+          if (DEV_ENABLED && pendingFailureIsRetryable) {
+            Computed<JsValue>? pendingSource = pendingErrorSource(failure);
+            if (pendingSource != null && !retryReaches(node, pendingSource)) {
+              pendingFailureIsRetryable = false;
+              failure = JS.construct(
+                Error,
+                "Read of an unresolved async source after an `await`. Reads inside async computations only register as dependencies before the first `await`; read it before the first `await`."
+              );
+            }
+          }
+          if (pendingFailureIsRetryable) {
+            NotReadyError pendingFailure = JS.assume(failure);
+            if (node._loading) {
+              parkLoadingWindow(node, pendingFailure);
+            } else {
+              node._blocked = true;
+              notifyStatus(node, STATUS_PENDING, failure);
+            }
+          } else {
+            notifyStatus(node, STATUS_ERROR, failure);
+          }
+          clearLanePending(node);
+          settlePendingSource(node);
+          if (!pendingFailureIsRetryable) releaseSettledDependents(node);
+          schedule();
+        } finally {
+          asyncReporterWritesAllowed = previousReporterWrites;
+        }
+      }
+      return JS.undefined();
+    })
+  );
+}
+
+void recomputeRaw(Computed<JsValue> node, bool create) {
+  JsValue debugNode = JS.assume(node);
+  JS.invoke(console, "log", "RECOMPUTE", debugNode["_name"], create, node._flags);
+  if (node._disposed || (node._flags & REACTIVE_ZOMBIE) != 0) {
+    return;
+  }
+  Signal<JsValue> laneNode = JS.assume(node);
+  if (
+    !create &&
+    node._isEffect &&
+    (node._flags & REACTIVE_OPTIMISTIC_DIRTY) == 0 &&
+    (
+      effectBlockedByLatestTransition(node) ||
+      (effectDependenciesBlocked(node) && !effectObservesPendingCompanion(node)) ||
+      (!transitionWorkBlocked() && optimisticWorkPending() && resolveLane(laneNode) != null)
+    )
+  ) {
+    deleteFromHeap(node, queueFor(node));
+    node._flags = clearBits(node._flags, REACTIVE_DIRTY | REACTIVE_CHECK);
+    bool present = false;
+    for (int index = 0; index < deferredTransitionEffects.length; index++) {
+      if (deferredTransitionEffects[index] == node) present = true;
+    }
+    if (!present) deferredTransitionEffects.push(node);
+    return;
+  }
+  deleteFromHeap(node, queueFor(node));
+  if (!create) {
+    cancelAsyncWork(node);
+    stageOwnerState(JS.assume(node));
+    clearDevSignals(node);
+  }
+
+  Owner? previousOwner = context;
+  bool previousTracking = tracking;
+  bool previousLatest = latestReadActive;
+  string? previousStrictRead = strictRead;
+  OptimisticLane? previousLane = currentOptimisticLane;
+  JsValue outgoingError = JS.undefined();
+  bool hadOutgoingError = (node._statusFlags & STATUS_ERROR) != 0;
+  if (hadOutgoingError) outgoingError = node._error;
+  bool hadReask = (node._flags & REACTIVE_REASK) != 0;
+  bool wasPending = (node._statusFlags & STATUS_PENDING) != 0;
+  bool hadAsyncDependency = node._hadAsyncDependency;
+  JsValue rawRecomputeNode = JS.assume(node);
+  bool hadOverride = rawRecomputeNode["_overrideActive"].truthy();
+  context = node;
+  tracking = true;
+  latestReadActive = false;
+  strictRead = null;
+  node._depsTail = null;
+  node._depGen += 1;
+  bool optimisticDirty = (node._flags & REACTIVE_OPTIMISTIC_DIRTY) != 0;
+  for (int index = deferredTransitionEffects.length - 1; index >= 0; index--) {
+    if (deferredTransitionEffects[index] == node) deferredTransitionEffects.splice(index, 1);
+  }
+  node._flags = REACTIVE_RECOMPUTING_DEPS;
+  OptimisticLane? recomputeLane = resolveLane(laneNode);
+  if (
+    recomputeLane != null &&
+    (optimisticDirty || (!hadAsyncDependency && transitionWorkBlocked()))
+  ) {
+    optimisticDirty = true;
+    currentOptimisticLane = recomputeLane;
+  } else if (!create && optimisticEngineInstalled && transitionWorkBlocked()) {
+    Link? dependency = node._deps;
+    while (dependency != null) {
+      Computed<JsValue> dependencyNode = JS.assume(dependency._dep);
+      if ((dependencyNode._flags & REACTIVE_OPTIMISTIC_DIRTY) != 0) {
+        OptimisticLane? dependencyLane = resolveLane(dependency._dep);
+        if (dependencyLane != null) {
+          optimisticDirty = true;
+          node._flags |= REACTIVE_OPTIMISTIC_DIRTY;
+          assignOrMergeLaneRaw(laneNode, dependencyLane);
+          recomputeLane = dependencyLane;
+          currentOptimisticLane = dependencyLane;
+          break;
+        }
+      }
+      dependency = dependency._nextDep;
+    }
+  }
+  bool succeeded = false;
+  JsValue value = JS.undefined();
+  try {
+    if (node._asyncFn != null) {
+      node._reask = hadReask && !(wasPending && !node._reask);
+      runAsyncComputed(node);
+    } else {
+      value = JS.assume(node._fn());
+      if (
+        DEV_ENABLED &&
+        (node._config & CONFIG_SYNC) != 0 &&
+        (isThenableValue(value) || isAsyncIterableValue(value))
+      ) {
+        string shape = if (isThenableValue(value)) { "a Promise" } else { "an AsyncIterable" };
+        string message =
+          `[SYNC_NODE_RECEIVED_ASYNC] A computed/effect created with sync: true returned ${shape}.`;
+        emitDiagnostic(JS.object(
+          "code", "SYNC_NODE_RECEIVED_ASYNC",
+          "kind", "lifecycle",
+          "severity", "error",
+          "message", message
+        ));
+        throw JS.construct(Error, message);
+      }
+      if (isThenableValue(value) || isAsyncIterableValue(value)) {
+        node._reask = hadReask && !(wasPending && !node._reask);
+        if (!optimisticDirty) {
+          Link? dependency = node._deps;
+          while (dependency != null) {
+            JsValue rawDependency = JS.assume(dependency._dep);
+            if (rawDependency["_overrideActive"].truthy()) {
+              node._reask = true;
+              break;
+            }
+            dependency = dependency._nextDep;
+          }
+        }
+        runDynamicComputed(node, value);
+        if (node._loading) clearStatus(node, create);
+      } else {
+        node._loading = false;
+        clearStatus(node, create);
+        clearLanePending(node);
+        succeeded = true;
+      }
+    }
+  } catch (JsValue failure) {
+    if (halted) throw failure;
+    if (isNotReadyError(failure)) {
+      NotReadyError pendingFailure = JS.assume(failure);
+      if (node._loading) {
+        parkLoadingWindow(node, pendingFailure);
+      } else {
+        node._blocked = true;
+        node._reask = hadReask && !(wasPending && !node._reask);
+        OptimisticLane? lane = currentOptimisticLane;
+        if (lane != null) {
+          OptimisticLane rootLane = findLane(lane);
+          Signal<JsValue> sourceNode = JS.assume(node);
+          if (rootLane._source != sourceNode) addLanePending(rootLane, node);
+        }
+        notifyStatus(node, STATUS_PENDING, failure);
+      }
+    } else {
+      notifyStatus(node, STATUS_ERROR, failure);
+    }
+  } finally {
+    int snapshotFlags = if (create) {
+      node._flags & REACTIVE_SNAPSHOT_STALE
+    } else {
+      REACTIVE_NONE
+    };
+    node._flags = snapshotFlags;
+    tracking = previousTracking;
+    latestReadActive = previousLatest;
+    strictRead = previousStrictRead;
+    currentOptimisticLane = previousLane;
+    context = previousOwner;
+  }
+
+  trimStaleDeps(node);
+  if (!succeeded) {
+    return;
+  }
+  bool authoritativeCorrection = rawRecomputeNode["_optimisticConfirmed"].truthy();
+  if (authoritativeCorrection && node._overrideOwner != 0) {
+    ActionFrame? ownerFrame = actionFrame(node._overrideOwner);
+    if (ownerFrame != null && ownerFrame.entangled && ownerFrame.activeCalls > 0) {
+      authoritativeCorrection = false;
+      node._optimisticConfirmed = false;
+    }
+  }
+  if (authoritativeCorrection) optimisticDirty = true;
+  node._hadAsyncDependency = false;
+  JsValue previous = node._value;
+  if (node._overrideActive) previous = node._overrideValue;
+  else if (node._hasPending) previous = node._pendingValue;
+  bool changed = false;
+  try {
+    changed = computedValueChanged(node, previous, value);
+  } catch (JsValue failure) {
+    notifyStatus(node, STATUS_ERROR, failure);
+    return;
+  }
+  node._initialized = true;
+  if (create) {
+    node._value = value;
+    node._pendingValue = value;
+    node._hasPending = false;
+  } else if (changed) {
+    if (optimisticDirty) {
+      node._value = value;
+      node._pendingValue = value;
+      node._hasPending = false;
+      if (authoritativeCorrection) {
+        node._overrideValue = value;
+        node._optimisticConfirmed = true;
+        node._statusFlags = clearBits(node._statusFlags, STATUS_UNINITIALIZED);
+      }
+    } else {
+      if (!node._hasPending) {
+        queuePendingNodeRaw(node);
+      }
+      node._pendingValue = value;
+      node._hasPending = true;
+      trackDevNode(devHeldPendingNodes, node);
+      updatePendingCompanions(node);
+    }
+    if (authoritativeCorrection) insertOptimisticCorrectionSubs(node, recomputeLane);
+    else if (!node._overrideActive || optimisticDirty) insertSubsRaw(node, optimisticDirty);
+  } else if (hadOverride) {
+    if (!node._hasPending) queuePendingNodeRaw(node);
+    node._pendingValue = value;
+    node._hasPending = true;
+    trackDevNode(devHeldPendingNodes, node);
+  }
+  if (node._isEffect && (create || changed)) {
+    node._modified = true;
+    if (!create) {
+      (func()->void)? runner = node._runEffect;
+      if (runner != null) {
+        OptimisticLane? enqueueLane = currentOptimisticLane;
+        int enqueueAction = currentActionId;
+        if (optimisticDirty && recomputeLane != null) currentOptimisticLane = recomputeLane;
+        if (!optimisticDirty && node._pendingOwner != 0) currentActionId = node._pendingOwner;
+        node._queue.enqueue(node._type, (int type) => runner());
+        currentActionId = enqueueAction;
+        currentOptimisticLane = enqueueLane;
+      }
+    }
+  }
+  if (hadOutgoingError && !changed) {
+    settleErroredDependents(node, outgoingError);
+  }
+}
+
+export void recompute<T>(Computed<T> node, bool create = false) {
+  recomputeRaw(JS.assume(node), create);
+}
+
+export void prepareComputed<T>(Computed<T> node, bool refresh = false) {
+  if ((node._flags & REACTIVE_LAZY) != 0) {
+    JsValue debugNode = JS.assume(node);
+    JS.invoke(console, "log", "PREPARE lazy", debugNode["_name"]);
+    node._flags = clearBits(node._flags, REACTIVE_LAZY);
+    recompute(node, true);
+  } else if ((node._flags & REACTIVE_DISPOSED) != 0 || node._disposed) {
+    JsValue debugNode = JS.assume(node);
+    JS.invoke(console, "log", "PREPARE disposed", debugNode["_name"], node._flags, node._disposed);
+    node._disposed = false;
+    node._flags = clearBits(node._flags, REACTIVE_DISPOSED);
+    recompute(node, true);
+  } else if (refresh && (node._flags & (REACTIVE_DIRTY | REACTIVE_CHECK | REACTIVE_IN_HEAP)) != 0) {
+    recompute(node, false);
+  }
+}
+
+T latestReadNode<T>(Signal<T> node, bool computedKind) {
+  JsValue rawNode = JS.assume(node);
+  JsValue rawShadow = rawNode["_latestValueComputed"];
+  if (JS.isNullish(rawShadow)) {
+    Owner? previousOwner = context;
+    bool previousTracking = tracking;
+    bool previousLatest = latestReadActive;
+    bool previousPending = pendingCheckActive;
+    context = null;
+    tracking = false;
+    latestReadActive = false;
+    pendingCheckActive = false;
+    Computed<T> shadow = computed(() => readInternal(node, computedKind));
+    shadow._parentSource = JS.assume(node);
+    rawNode["_latestValueComputed"] = JS.assume(shadow);
+    rawShadow = JS.assume(shadow);
+    context = previousOwner;
+    tracking = previousTracking;
+    latestReadActive = previousLatest;
+    pendingCheckActive = previousPending;
+  }
+  Computed<T> shadow = JS.assume(rawShadow);
+  bool previousLatest = latestReadActive;
+  latestReadActive = false;
+  try {
+    if (computedKind) {
+      Computed<T> sourceComputed = JS.assume(node);
+      prepareComputed(sourceComputed, true);
+    }
+    prepareComputed(shadow, true);
+    T value = readComputed(shadow);
+    if (shadow._hasPending) return shadow._pendingValue;
+    return value;
+  } catch (JsValue failure) {
+    bool initialized = true;
+    if (computedKind) {
+      Computed<T> sourceComputed = JS.assume(node);
+      initialized = sourceComputed._initialized;
+    }
+    if (isNotReadyError(failure) && initialized) {
+      if (node._hasPending) return node._pendingValue;
+      return node._value;
+    }
+    throw failure;
+  } finally {
+    latestReadActive = previousLatest;
+  }
+}
+
+void collectPendingProbeNode(Signal<JsValue> node) {
+  if (node._affectsCount > 0) pendingProbeFound = true;
+  for (int index = 0; index < pendingProbeNodes.length; index++) {
+    if (pendingProbeNodes[index] == node) return;
+  }
+  pendingProbeNodes.push(node);
+}
+
+bool ownerObservesPendingValue(Signal<JsValue> node, Owner? owner) {
+  if (owner == null || !owner._computed) return false;
+  JsValue rawNode = JS.assume(node);
+  JsValue rawPendingSignal = rawNode["_pendingSignal"];
+  if (JS.isNullish(rawPendingSignal)) return false;
+  Signal<bool> pendingSignal = JS.assume(rawPendingSignal);
+  bool visiblePending = pendingSignal._value;
+  if (pendingSignal._overrideActive) visiblePending = pendingSignal._overrideValue;
+  else if (pendingSignal._hasPending) visiblePending = pendingSignal._pendingValue;
+  if (!visiblePending) return false;
+  Computed<JsValue> ownerNode = JS.assume(owner);
+  Signal<JsValue> pendingDependency = JS.assume(rawPendingSignal);
+  Link? dependency = ownerNode._deps;
+  while (dependency != null) {
+    if (dependency._dep == pendingDependency) return true;
+    dependency = dependency._nextDep;
+  }
+  return false;
+}
+
+T readInternal<T>(Signal<T> node, bool computedKind) {
+  if (computedKind) {
+    Computed<T> computedForPrepare = JS.assume(node);
+    prepareComputed(computedForPrepare, latestReadActive);
+  }
+  Owner? owner = context;
+  if (owner != null && owner._root) {
+    Root rootOwner = JS.assume(owner);
+    owner = rootOwner._parentComputed;
+  }
+  if (owner != null && owner._computed && tracking) {
+    Computed<JsValue> ownerNode = JS.assume(owner);
+    if (computedKind) {
+      Computed<T> dependency = JS.assume(node);
+      if (
+        !JS.strictEqual(JS.assume(dependency), JS.assume(ownerNode)) &&
+        (dependency._flags & (REACTIVE_DIRTY | REACTIVE_CHECK | REACTIVE_IN_HEAP)) != 0
+      ) {
+        recompute(dependency, false);
+      }
+    }
+    link(node, ownerNode, pendingCheckActive);
+    if (computedKind) {
+      Computed<T> dependency = JS.assume(node);
+      if (
+        dependency._height >= ownerNode._height &&
+        !JS.strictEqual(JS.assume(dependency._parent), JS.assume(ownerNode))
+      ) {
+        ownerNode._height = dependency._height + 1;
+      }
+    }
+  }
+  if (pendingCheckActive) {
+    collectPendingProbeNode(JS.assume(node));
+    if (computedKind) {
+      Computed<T> computedNode = JS.assume(node);
+      if (
+        (computedNode._statusFlags & STATUS_PENDING) != 0 &&
+        (computedNode._statusFlags & STATUS_UNINITIALIZED) != 0 &&
+        owner != null &&
+        owner._computed
+      ) {
+        throw computedNode._error;
+      }
+    }
+  }
+  if (computedKind) {
+    Computed<T> computedNode = JS.assume(node);
+    if (
+      DEV_ENABLED &&
+      strictRead != null &&
+      !pendingCheckActive &&
+      (computedNode._statusFlags & STATUS_PENDING) != 0
+    ) {
+      throwPendingUntrackedReadDiagnostic(
+        JS.assume(strictRead),
+        owner,
+        JS.assume(node)
+      );
+    }
+    if ((computedNode._statusFlags & STATUS_ERROR) != 0) {
+      throw computedNode._error;
+    }
+    if ((computedNode._statusFlags & STATUS_PENDING) != 0) {
+      bool trackedPendingRead = owner != null && owner._computed;
+      bool latestUninitialized = latestReadActive && !computedNode._initialized;
+      bool observesPending = ownerObservesPendingValue(JS.assume(node), owner);
+      if (
+        !pendingCheckActive &&
+        !node._overrideActive &&
+        (latestUninitialized ||
+          (!latestReadActive &&
+            ((trackedPendingRead && !observesPending) || !computedNode._initialized)))
+      ) {
+        if (trackedPendingRead && !tracking) {
+          Computed<JsValue> ownerNode = JS.assume(owner);
+          link(node, ownerNode, false);
+        }
+        throw computedNode._error;
+      }
+    }
+  }
+  if (node._hasSnapshot && node._parentSource != null) {
+    Signal<JsValue> parentSource = JS.assume(node._parentSource);
+    if (parentSource._computed) {
+      Computed<JsValue> parentComputed = JS.assume(parentSource);
+      if ((parentComputed._statusFlags & STATUS_PENDING) != 0) node._hasSnapshot = false;
+    }
+  }
+  if (DEV_ENABLED && strictRead != null) {
+    warnStrictReadUntrackedDiagnostic(JS.assume(strictRead), owner, JS.assume(node));
+  }
+  if (
+    snapshotCaptureActive &&
+    owner != null &&
+    owner._computed &&
+    (owner._config & CONFIG_IN_SNAPSHOT_SCOPE) != 0 &&
+    node._hasSnapshot
+  ) {
+    T current = if (node._hasPending) { node._pendingValue } else { node._value };
+    if (!JS.strictEqual(JS.assume(current), JS.assume(node._snapshotValue))) {
+      Computed<JsValue> ownerNode = JS.assume(owner);
+      ownerNode._flags |= REACTIVE_SNAPSHOT_STALE;
+    }
+    return node._snapshotValue;
+  }
+  T result = node._value;
+  if (node._overrideActive) result = node._overrideValue;
+  else if (
+    currentOptimisticLane != null &&
+    node._hasPending &&
+    !computedKind &&
+    owner != null &&
+    owner._computed
+  ) {
+    Computed<JsValue> gated = JS.assume(owner);
+    OptimisticLane activeLane = findLane(JS.assume(currentOptimisticLane));
+    ActionFrame? frame = actionFrame(activeLane._transition);
+    if (frame != null) rememberGatedSubscriber(frame.gated, gated);
+    else rememberGatedSubscriber(deferredCommitSubscribers, gated);
+    result = node._value;
+  }
+  else if (latestReadActive && node._hasPending) {
+    result = node._pendingValue;
+  }
+  else if (
+    !latestReadActive &&
+    owner != null &&
+    owner._computed &&
+    node._hasPending &&
+    !ownerObservesPendingValue(JS.assume(node), owner)
+  ) {
+    if (currentOptimisticLane == null) result = node._pendingValue;
+  }
+  if (
+    owner == null &&
+    computedKind &&
+    (node._config & CONFIG_AUTO_DISPOSE) != 0 &&
+    node._subs == null
+  ) {
+    Computed<T> computedNode = JS.assume(node);
+    if ((computedNode._statusFlags & STATUS_PENDING) == 0) unobserved(computedNode);
+  }
+  return result;
+}
+
+export T read<T>(Signal<T> node) {
+  if (latestReadActive) return latestReadNode(node, false);
+  return readInternal(node, false);
+}
+
+export T readComputed<T>(Computed<T> node) {
+  Signal<T> source = JS.assume(node);
+  if (latestReadActive) return latestReadNode(source, true);
+  return readInternal(source, true);
+}
+
+export T setSignal<T>(Signal<T> node, T value) {
+  if (
+    DEV_ENABLED &&
+    context != null &&
+    node._userWritable &&
+    (node._config & CONFIG_OWNED_WRITE) == 0 &&
+    (context._config & CONFIG_CHILDREN_FORBIDDEN) == 0
+  ) {
+    string message =
+      "[REACTIVE_WRITE_IN_OWNED_SCOPE] Writing to reactive state inside an owned scope (component, computation) is not allowed. Move the write outside or set the `ownedWrite` option if this is intentional.";
+    JsValue rawNode = JS.assume(node);
+    emitDiagnostic(JS.object(
+      "code", "REACTIVE_WRITE_IN_OWNED_SCOPE",
+      "kind", "write",
+      "severity", "error",
+      "message", message,
+      "nodeName", rawNode["_name"],
+      "data", JS.object("operation", "setSignal")
+    ));
+    throw JS.construct(Error, message);
+  }
+  if (node._optimistic && optimisticEngineInstalled && !projectionWriteActive) {
+    return optimisticWrite(node, value);
+  }
+  T previous = node._value;
+  if (
+    node._queuedPending &&
+    node._pendingOwner != 0 &&
+    currentActionId != 0 &&
+    node._pendingOwner != currentActionId
+  ) {
+    currentActionId = mergeActionOwners(node._pendingOwner, currentActionId);
+  }
+  if (node._hasPending) {
+    previous = node._pendingValue;
+  }
+  if (node._equalsEnabled && node._equals(previous, value)) {
+    return value;
+  }
+  if (!node._hasPending) {
+    queuePendingNodeRaw(JS.assume(node));
+  }
+  node._pendingValue = value;
+  node._hasPending = true;
+  trackDevNode(devHeldPendingNodes, JS.assume(node));
+  node._time = clock;
+  updatePendingCompanions(JS.assume(node));
+  bool deferSubscribers = false;
+  JsValue rawNode = JS.assume(node);
+  JsValue rawValue = JS.assume(value);
+  if (
+    rawNode["_pendingCompanion"].truthy() &&
+    !rawValue.truthy() &&
+    !JS.isNullish(rawNode["_parentSource"])
+  ) {
+    Signal<JsValue> parent = JS.assume(rawNode["_parentSource"]);
+    deferSubscribers = parent._hasPending;
+  }
+  if (deferSubscribers) {
+    Link? subscriber = node._subs;
+    while (subscriber != null) {
+      bool present = false;
+      for (int index = 0; index < deferredCommitSubscribers.length; index++) {
+        if (deferredCommitSubscribers[index] == subscriber._sub) present = true;
+      }
+      if (!present) deferredCommitSubscribers.push(subscriber._sub);
+      subscriber = subscriber._nextSub;
+    }
+  } else {
+    insertSubsRaw(JS.assume(node), false);
+  }
+  schedule();
+  return value;
+}
+
+export T updateSignal<T>(Signal<T> node, func(T)->T update) {
+  T previous = node._value;
+  if (node._overrideActive) {
+    previous = node._overrideValue;
+  } else if (!node._optimistic && node._hasPending) {
+    previous = node._pendingValue;
+  }
+  return setSignal(node, update(previous));
+}
+
+export T setMemo<T>(Computed<T> node, T value) {
+  T result = setSignal(node, value);
+  suppressComputedRecompute(node);
+  return result;
+}
+
+export void suppressComputedRecompute<T>(Computed<T> node) {
+  deleteFromHeap(node, queueFor(node));
+  bool alreadyManual = (node._flags & REACTIVE_MANUAL_WRITE) != 0;
+  node._flags = clearBits(node._flags, REACTIVE_DIRTY | REACTIVE_CHECK) | REACTIVE_MANUAL_WRITE;
+  if (!alreadyManual) pendingManualNodes.push(JS.assume(node));
+  schedule();
+}
+
+export bool isEqual<T>(T previous, T next) {
+  return defaultEqual(previous, next);
+}
+
+export T untrack<T>(func()->T callback, string? strictReadLabel = null) {
+  bool previousTracking = tracking;
+  string? previousStrictRead = strictRead;
+  tracking = false;
+  if (DEV_ENABLED) strictRead = strictReadLabel;
+  try {
+    ExternalSourceConfig? config = externalSourceConfig;
+    if (config != null && JS.typeOf(config.untrack) == "function") {
+      JsValue wrapped = JS.method0((JsValue _self) => {
+        T value = callback();
+        JsValue result = JS.assume(value);
+        return result;
+      });
+      return JS.assume(JS.call(config.untrack, JS.undefined(), wrapped));
+    }
+    return callback();
+  } finally {
+    tracking = previousTracking;
+    strictRead = previousStrictRead;
+  }
+}
+
+export T staleValues<T>(func()->T callback, bool enabled = true) {
+  bool previous = stale;
+  stale = enabled;
+  try {
+    return callback();
+  } finally {
+    stale = previous;
+  }
+}
+
+void refreshComputed<T>(Computed<T> node) {
+  if (node._disposed || (node._flags & REACTIVE_MANUAL_WRITE) != 0) {
+    return;
+  }
+  if ((node._flags & (REACTIVE_DIRTY | REACTIVE_CHECK | REACTIVE_IN_HEAP)) == 0) {
+    node._flags |= REACTIVE_REASK;
+    armReaskClear();
+  }
+  Link? subscriber = node._subs;
+  while (subscriber != null) {
+    Computed<JsValue> optimistic = subscriber._sub;
+    JsValue rawOptimistic = JS.assume(optimistic);
+    if (rawOptimistic["_overrideActive"].truthy()) {
+      Link? downstream = optimistic._subs;
+      while (downstream != null) {
+        downstream._sub._flags |= REACTIVE_REASK;
+        downstream = downstream._nextSub;
+      }
+    }
+    subscriber = subscriber._nextSub;
+  }
+  node._flags = clearBits(node._flags, REACTIVE_CHECK) | REACTIVE_DIRTY;
+  insertIntoHeap(node, queueFor(node));
+  schedule();
+}
+
+export void refresh<T>(Computed<T> node) {
+  refreshComputed(node);
+}
+
+export void setSnapshotCapture(bool active) {
+  snapshotCaptureActive = active;
+}
+
+export void markSnapshotScope(Owner owner) {
+  owner._snapshotScope = true;
+}
+
+export void releaseSnapshotScope(Owner owner) {
+  owner._snapshotScope = false;
+  releaseSnapshotSubtree(owner);
+  schedule();
+}
+
+void releaseSnapshotSubtree(Owner owner) {
+  Owner? child = owner._firstChild;
+  while (child != null) {
+    Owner current = JS.assume(child);
+    child = current._nextSibling;
+    if (current._snapshotScope) continue;
+    if (current._computed) {
+      Computed<JsValue> computedChild = JS.assume(current);
+      computedChild._config = clearBits(computedChild._config, CONFIG_IN_SNAPSHOT_SCOPE);
+      if ((computedChild._flags & REACTIVE_SNAPSHOT_STALE) != 0) {
+        computedChild._flags = clearBits(computedChild._flags, REACTIVE_SNAPSHOT_STALE) |
+          REACTIVE_DIRTY;
+        if (dirtyQueue._min > computedChild._height) dirtyQueue._min = computedChild._height;
+        insertIntoHeap(computedChild, dirtyQueue);
+      }
+    }
+    releaseSnapshotSubtree(current);
+  }
+}
+
+export void clearSnapshots() {
+  for (int index = 0; index < snapshotSources.length; index++) {
+    snapshotSources[index]._hasSnapshot = false;
+  }
+  snapshotSources = [];
+  snapshotCaptureActive = false;
+}
+
+export void setPendingCheckActive(bool value) {
+  pendingCheckActive = value;
+}
+
+export bool pendingCheckIsActive() {
+  return pendingCheckActive;
+}
+
+export void markPendingProbeFound() {
+  if (pendingCheckActive) pendingProbeFound = true;
+}
+
+export void setLatestReadActive(bool value) {
+  latestReadActive = value;
+}
+
+export void setContextInternal(Owner? value) {
+  context = value;
+}
+
+// scheduler.ts
+void queuePendingNodeRaw(Signal<JsValue> value) {
+  if (value._queuedPending) {
+    return;
+  }
+  value._queuedPending = true;
+  int owner = value._pendingOwner;
+  if (value._pendingCompanion) owner = 0;
+  else if (owner == 0) owner = currentActionId;
+  ActionFrame? frame = actionFrame(owner);
+  if (frame != null) {
+    value._pendingOwner = owner;
+    frame.pending.push(value);
+  } else {
+    value._pendingOwner = 0;
+    pendingNodes.push(value);
+  }
+}
+
+export void queuePendingNode<T>(Signal<T> value) {
+  Signal<JsValue> raw = JS.assume(value);
+  queuePendingNodeRaw(raw);
+}
+
+bool blocksPendingCommit(Signal<JsValue> source, Set<Signal<JsValue> > seen) {
+  if (source._pendingCompanion) return false;
+  if (seen.has(source)) return false;
+  seen.add(source);
+  JsValue rawSource = JS.assume(source);
+  if (rawSource["_computed"].truthy()) {
+    Computed<JsValue> computedSource = JS.assume(source);
+    if (
+      !computedSource._isEffect &&
+      !computedSource._loading &&
+      computedSource._inFlight &&
+      !computedSource._asyncHadValue
+    ) {
+      return true;
+    }
+    if (
+      !computedSource._isEffect &&
+      (computedSource._statusFlags & STATUS_PENDING) != 0 &&
+      (computedSource._inFlight ||
+        ((computedSource._statusFlags & STATUS_UNINITIALIZED) == 0 && !quietPending(computedSource)))
+    ) return true;
+    if (computedSource._isEffect) {
+      for (int index = 0; index < computedSource._pendingSources.length; index++) {
+        Computed<JsValue> pendingSource = computedSource._pendingSources[index];
+        if ((pendingSource._statusFlags & STATUS_PENDING) != 0 && pendingSource._inFlight) {
+          return true;
+        }
+      }
+    }
+  }
+  Link? subscriber = source._subs;
+  while (subscriber != null) {
+    Signal<JsValue> dependent = JS.assume(subscriber._sub);
+    if (blocksPendingCommit(dependent, seen)) return true;
+    subscriber = subscriber._nextSub;
+  }
+  if (JS.isNullish(rawSource["_parentSource"]) && rawSource["_computed"].truthy()) {
+    Computed<JsValue> computedSource = JS.assume(source);
+    Link? dependency = computedSource._deps;
+    while (dependency != null) {
+      Signal<JsValue> upstream = dependency._dep;
+      if (upstream._hasPending && blocksPendingCommit(upstream, seen)) return true;
+      dependency = dependency._nextDep;
+    }
+  }
+  return false;
+}
+
+bool optimisticNodeBlocked(Signal<JsValue> node) {
+  if (node._computed) {
+    Computed<JsValue> computedNode = JS.assume(node);
+    if (
+      computedNode._overrideActive &&
+      (
+        (computedNode._inFlight && !computedNode._asyncHadValue) ||
+        ((computedNode._statusFlags & STATUS_PENDING) != 0 && isNotReadyError(computedNode._error))
+      )
+    ) return true;
+  }
+  OptimisticLane? lane = resolveLane(node);
+  return lane != null && lane._pendingAsyncValues.length > 0;
+}
+
+bool optimisticStoreBlocked(JsValue store) {
+  JsValue refreshNode = store["refresh"];
+  return refreshNode.truthy() &&
+    (JS.number(refreshNode["_statusFlags"]).toInt() & STATUS_PENDING) != 0;
+}
+
+bool actionFrameBlocked(ActionFrame frame) {
+  for (int index = 0; index < frame.asyncNodes.length; index++) {
+    Computed<JsValue> node = frame.asyncNodes[index];
+    if (!node._loading && node._inFlight && !node._asyncHadValue) return true;
+  }
+  for (int index = 0; index < frame.pending.length; index++) {
+    if (blocksPendingCommit(frame.pending[index], new Set<Signal<JsValue> >())) return true;
+  }
+  for (int index = 0; index < frame.nodes.length; index++) {
+    if (optimisticNodeBlocked(frame.nodes[index])) return true;
+  }
+  for (int index = 0; index < frame.stores.length; index++) {
+    if (optimisticStoreBlocked(frame.stores[index])) return true;
+  }
+  return false;
+}
+
+bool transitionWorkBlocked() {
+  for (int index = 0; index < pendingNodes.length; index++) {
+    if (blocksPendingCommit(pendingNodes[index], new Set<Signal<JsValue> >())) return true;
+  }
+  for (int index = 0; index < heldPendingNodes.length; index++) {
+    if (blocksPendingCommit(heldPendingNodes[index], new Set<Signal<JsValue> >())) return true;
+  }
+  for (int index = 0; index < ambientOptimisticNodes.length; index++) {
+    if (optimisticNodeBlocked(ambientOptimisticNodes[index])) return true;
+  }
+  for (int index = 0; index < ambientOptimisticStores.length; index++) {
+    if (optimisticStoreBlocked(ambientOptimisticStores[index])) return true;
+  }
+  return false;
+}
+
+bool optimisticWorkPending() {
+  if (ambientOptimisticNodes.length > 0 || ambientOptimisticStores.length > 0) return true;
+  for (int index = 0; index < actionFrames.length; index++) {
+    ActionFrame frame = actionFrames[index];
+    if (frame.nodes.length > 0 || frame.stores.length > 0) return true;
+  }
+  return false;
+}
+
+bool effectBlockedByLatestTransition(Computed<JsValue> effectNode) {
+  Link? dependency = effectNode._deps;
+  while (dependency != null) {
+    Signal<JsValue> source = dependency._dep;
+    JsValue rawSource = JS.assume(source);
+    if (
+      !source._pendingCompanion &&
+      !JS.isNullish(rawSource["_parentSource"]) &&
+      source._hasPending &&
+      blocksPendingCommit(source, new Set<Signal<JsValue> >())
+    ) return true;
+    dependency = dependency._nextDep;
+  }
+  return false;
+}
+
+bool effectDependenciesBlocked(Computed<JsValue> effectNode) {
+  Link? dependency = effectNode._deps;
+  while (dependency != null) {
+    Signal<JsValue> source = dependency._dep;
+    if (blocksPendingCommit(source, new Set<Signal<JsValue> >())) return true;
+    if (source._queuedPending) {
+      for (int index = 0; index < heldPendingNodes.length; index++) {
+        if (heldPendingNodes[index] == source) return true;
+      }
+      if (source._pendingOwner != 0 && actionFrame(source._pendingOwner) != null) return true;
+      if (source._pendingOwner == 0) {
+        for (int index = 0; index < pendingNodes.length; index++) {
+          if (blocksPendingCommit(pendingNodes[index], new Set<Signal<JsValue> >())) return true;
+        }
+      }
+    }
+    dependency = dependency._nextDep;
+  }
+  return false;
+}
+
+bool effectObservesPendingCompanion(Computed<JsValue> effectNode) {
+  Link? dependency = effectNode._deps;
+  while (dependency != null) {
+    Signal<JsValue> source = dependency._dep;
+    if (source._pendingCompanion && source._value.truthy()) return true;
+    dependency = dependency._nextDep;
+  }
+  return false;
+}
+
+void releaseHeldPendingNodes() {
+  Signal<JsValue>[] retained = [];
+  for (int index = 0; index < heldPendingNodes.length; index++) {
+    Signal<JsValue> node = heldPendingNodes[index];
+    if (blocksPendingCommit(node, new Set<Signal<JsValue> >())) retained.push(node);
+    else pendingNodes.push(node);
+  }
+  heldPendingNodes = retained;
+}
+
+void releaseDeferredTransitionEffects() {
+  int effectCount = deferredTransitionEffects.length;
+  Computed<JsValue>[] retained = [];
+  for (int index = 0; index < effectCount; index++) {
+    Computed<JsValue> effectNode = deferredTransitionEffects[index];
+    bool blocked = effectDependenciesBlocked(effectNode);
+    Signal<JsValue> effectSignal = JS.assume(effectNode);
+    if (!blocked && resolveLane(effectSignal) != null) blocked = true;
+    if (blocked) retained.push(effectNode);
+    else enqueueSub(effectNode);
+  }
+  deferredTransitionEffects.splice(0, effectCount);
+  for (int index = 0; index < retained.length; index++) {
+    deferredTransitionEffects.push(retained[index]);
+  }
+}
+
+void commitPendingNodes() {
+  int pendingCount = pendingNodes.length;
+  bool batchBlocked = false;
+  for (int index = 0; index < pendingCount; index++) {
+    if (blocksPendingCommit(pendingNodes[index], new Set<Signal<JsValue> >())) {
+      batchBlocked = true;
+      break;
+    }
+  }
+  for (int index = 0; index < pendingCount; index++) {
+    Signal<JsValue> node = pendingNodes[index];
+    if (batchBlocked) {
+      heldPendingNodes.push(node);
+      continue;
+    }
+    node._queuedPending = false;
+    node._pendingOwner = 0;
+    if (node._hasPending) {
+      node._value = node._pendingValue;
+      node._hasPending = false;
+      updatePendingCompanions(node);
+    }
+    JsValue rawNode = JS.assume(node);
+    if (rawNode["_computed"].truthy()) {
+      Computed<JsValue> computedNode = JS.assume(node);
+      computedNode._loading = false;
+      computedNode._flags = clearBits(computedNode._flags, REACTIVE_MANUAL_WRITE);
+      if ((computedNode._statusFlags & STATUS_PENDING) == 0) {
+        computedNode._statusFlags = clearBits(computedNode._statusFlags, STATUS_UNINITIALIZED);
+      }
+    }
+  }
+  pendingNodes.splice(0, pendingCount);
+  if (!batchBlocked && heldPendingNodes.length == 0 && deferredCommitSubscribers.length > 0) {
+    int subscriberCount = deferredCommitSubscribers.length;
+    for (int index = 0; index < subscriberCount; index++) {
+      enqueueSub(deferredCommitSubscribers[index]);
+    }
+    deferredCommitSubscribers.splice(0, subscriberCount);
+  }
+  if (!batchBlocked) {
+    releaseDeferredTransitionEffects();
+  }
+  for (int index = 0; index < pendingManualNodes.length; index++) {
+    Computed<JsValue> node = pendingManualNodes[index];
+    node._flags = clearBits(node._flags, REACTIVE_MANUAL_WRITE);
+  }
+  pendingManualNodes = [];
+}
+
+void commitActionPending(ActionFrame frame) {
+  Signal<JsValue>[] nodes = frame.pending;
+  frame.pending = [];
+  for (int index = 0; index < nodes.length; index++) {
+    Signal<JsValue> node = nodes[index];
+    if (node._pendingOwner != frame.id) continue;
+    node._queuedPending = false;
+    node._pendingOwner = 0;
+    if (node._hasPending) {
+      node._value = node._pendingValue;
+      node._hasPending = false;
+    }
+    if (node._computed) {
+      Computed<JsValue> computedNode = JS.assume(node);
+      computedNode._loading = false;
+      computedNode._flags = clearBits(computedNode._flags, REACTIVE_MANUAL_WRITE);
+      if ((computedNode._statusFlags & STATUS_PENDING) == 0) {
+        computedNode._statusFlags = clearBits(computedNode._statusFlags, STATUS_UNINITIALIZED);
+      }
+    }
+  }
+  for (int index = 0; index < frame.gated.length; index++) enqueueSub(frame.gated[index]);
+  frame.gated = [];
+}
+
+void rememberGatedSubscriber(Computed<JsValue>[] subscribers, Computed<JsValue> node) {
+  for (int index = 0; index < subscribers.length; index++) {
+    if (subscribers[index] == node) return;
+  }
+  subscribers.push(node);
+}
+
+export void schedule() {
+  if (halted) {
+    if (!haltNotified) {
+      haltNotified = true;
+      JS.invoke(
+        console,
+        "error",
+        "[REACTIVITY_HALTED] Update ignored: the reactive system was halted by an earlier uncaught error."
+      );
+    }
+    return;
+  }
+  if (scheduled) {
+    return;
+  }
+  scheduled = true;
+  if (!flushing && !globalQueue._running) {
+    queueMicrotask(() => flush());
+  }
+}
+
+void resolveAmbientOptimistic(bool storeBlocked) {
+  if (ambientOptimisticNodes.length == 0) {
+    ambientOptimisticBlocked = storeBlocked;
+    return;
+  }
+  if (storeBlocked) {
+    ambientOptimisticBlocked = true;
+    return;
+  }
+  Signal<JsValue>[] ready = [];
+  Signal<JsValue>[] retained = [];
+  for (int index = 0; index < ambientOptimisticNodes.length; index++) {
+    Signal<JsValue> node = ambientOptimisticNodes[index];
+    JsValue rawNode = JS.assume(node);
+    bool blocked = false;
+    if (rawNode["_computed"].truthy()) {
+      Computed<JsValue> computedNode = JS.assume(node);
+      blocked =
+        (computedNode._statusFlags & STATUS_PENDING) != 0 &&
+        (computedNode._statusFlags & STATUS_UNINITIALIZED) == 0;
+      if (
+        rawNode["_optimisticAsyncBacked"].truthy() &&
+        rawNode["_optimisticHadLaneWork"].truthy() &&
+        rawNode["_overrideActive"].truthy() &&
+        !rawNode["_optimisticConfirmed"].truthy()
+      ) blocked = true;
+    }
+    OptimisticLane? lane = resolveLane(node);
+    if (lane != null && lane._pendingAsyncValues.length > 0) blocked = true;
+    if (blocked) retained.push(node);
+    else ready.push(node);
+  }
+  if (ready.length > 0) resolveOptimisticNodes(ready, false);
+  ambientOptimisticNodes = retained;
+  ambientOptimisticBlocked = retained.length > 0;
+}
+
+JsValue[] clearOptimisticStores(JsValue[] stores) {
+  JsValue[] blocked = [];
+  for (int index = 0; index < stores.length; index++) {
+    JsValue clear = stores[index]["_clearOptimistic"];
+    if (JS.typeOf(clear) == "function" && JS.call(clear, stores[index]).truthy()) {
+      blocked.push(stores[index]);
+    }
+  }
+  stores.splice(0, stores.length);
+  return blocked;
+}
+
+bool resolveAmbientOptimisticStores() {
+  if (ambientOptimisticStores.length == 0) return false;
+  ambientOptimisticStores = clearOptimisticStores(ambientOptimisticStores);
+  return ambientOptimisticStores.length > 0;
+}
+
+void releaseAffectsNodes(Signal<JsValue>[] nodes) {
+  for (int index = 0; index < nodes.length; index++) {
+    Signal<JsValue> node = nodes[index];
+    if (node._affectsCount > 0) {
+      node._affectsCount -= 1;
+      activeAffectsMarks -= 1;
+      if (node._affectsCount == 0) {
+        node._affectsOwner = 0;
+        updatePendingCompanions(node);
+        notifyAffectsDependents(node);
+      }
+    }
+  }
+}
+
+void resolveAmbientAffects() {
+  for (int index = 0; index < ambientAffectsNodes.length; index++) {
+    Signal<JsValue>? parent = ambientAffectsNodes[index]._parentSource;
+    if (parent == null) continue;
+    JsValue rawParent = JS.assume(parent);
+    if (
+      rawParent["_inFlight"].truthy() ||
+      (JS.number(rawParent["_statusFlags"]).toInt() & STATUS_PENDING) != 0
+    ) {
+      ambientAffectsBlocked = true;
+      return;
+    }
+  }
+  if (actionFrames.length > 0 || ambientAffectsNodes.length == 0) {
+    return;
+  }
+  ambientAffectsBlocked = false;
+  releaseAffectsNodes(ambientAffectsNodes);
+  ambientAffectsNodes = [];
+}
+
+export void flush() {
+  if (flushing && trackedQueueCallback) {
+    throw JS.construct(
+      Error,
+      "Cannot call flush() from inside onSettled or createTrackedEffect. flush() is not reentrant there."
+    );
+  }
+  if (flushing || halted) {
+    return;
+  }
+  flushing = true;
+  try {
+    int guard = 0;
+    bool ran = false;
+    while (
+      scheduled ||
+      dirtyQueue._count > 0 ||
+      zombieQueue._count > 0 ||
+      pendingNodes.length > 0 ||
+      globalQueue.pending() > 0 ||
+      (actionFrames.length == 0 && ambientOptimisticNodes.length > 0 && !ambientOptimisticBlocked) ||
+      (actionFrames.length == 0 && ambientAffectsNodes.length > 0 && !ambientAffectsBlocked)
+    ) {
+      guard += 1;
+      ran = true;
+      if (guard > 100000) {
+        throw "Potential Infinite Loop Detected.";
+      }
+      scheduled = false;
+      globalQueue.flushQueue();
+      completeReadyActionFrames();
+      bool storeBlocked = false;
+      for (int index = 0; index < ambientOptimisticStores.length; index++) {
+        if (optimisticStoreBlocked(ambientOptimisticStores[index])) storeBlocked = true;
+      }
+      bool ambientBlocked = storeBlocked || heldPendingNodes.length > 0;
+      resolveAmbientOptimistic(ambientBlocked);
+      if (!ambientBlocked) {
+        resolveAmbientOptimisticStores();
+        releaseDeferredTransitionEffects();
+      }
+      resolveAmbientAffects();
+      finalizeDeferredOwnerStates();
+      clock += 1;
+    }
+    if (ran) callDevUpdateHook();
+  } finally {
+    currentOptimisticLane = null;
+    currentActionId = 0;
+    flushing = false;
+  }
+}
+
+export T flushWith<T>(func()->T callback) {
+  try {
+    return callback();
+  } finally {
+    flush();
+  }
+}
+
+export void haltReactivity(JsValue? cause = null) {
+  if (halted) return;
+  halted = true;
+  JsValue actual = if (cause == null) { JS.undefined() } else { JS.assume(cause) };
+  emitDiagnostic(JS.object(
+    "code", "REACTIVITY_HALTED",
+    "kind", "error",
+    "severity", "error",
+    "message", "[REACTIVITY_HALTED] An uncaught error halted the reactive system."
+  ));
+  JS.invoke(
+    console,
+    "error",
+    "[REACTIVITY_HALTED] An uncaught error halted the reactive system.",
+    actual
+  );
+}
+
+export void resetErrorHalt() {
+  halted = false;
+  haltNotified = false;
+}
+
+export void enforceLoadingBoundary(bool enabled) {
+  enforceLoadingBoundaryActive = enabled;
+  if (!enabled) hitUnhandledAsync = false;
+}
+export void setProjectionWriteActive(bool value) { projectionWriteActive = value; }
+export void setTrackedQueueCallback(bool value) { trackedQueueCallback = value; }
+export void armReaskClear() { reaskArmed = true; }
+export void shiftAffectsMarks(int delta) { activeAffectsMarks += delta; }
+
+export void trackOptimisticStore(JsValue store) {
+  ActionFrame? frame = actionFrame(currentActionId);
+  if (frame != null) {
+    rememberOptimisticStore(frame.stores, store);
+  } else {
+    rememberOptimisticStore(ambientOptimisticStores, store);
+  }
+  schedule();
+}
+
+void rememberOptimisticStore(JsValue[] stores, JsValue store) {
+  for (int index = 0; index < stores.length; index++) {
+    if (JS.strictEqual(stores[index], store)) return;
+  }
+  stores.push(store);
+}
+
+bool affectsCovered(Signal<JsValue> node, Set<Signal<JsValue> > seen) {
+  if (node._affectsCount > 0) {
+    return true;
+  }
+  if (node._computed) {
+    Computed<JsValue> errored = JS.assume(node);
+    if ((errored._statusFlags & STATUS_ERROR) != 0) return false;
+  }
+  if (seen.has(node)) {
+    return false;
+  }
+  seen.add(node);
+  Computed<JsValue> computedNode = JS.assume(node);
+  Link? dependency = computedNode._deps;
+  while (dependency != null) {
+    if (!dependency._pendingObserver && affectsCovered(dependency._dep, seen)) {
+      return true;
+    }
+    dependency = dependency._nextDep;
+  }
+  return false;
+}
+
+void notifyAffectsDependents(Signal<JsValue> node) {
+  Signal<JsValue>[] work = [node];
+  Set<Signal<JsValue> > visited = new Set<Signal<JsValue> >();
+  for (int cursor = 0; cursor < work.length; cursor++) {
+    Signal<JsValue> source = work[cursor];
+    if (visited.has(source)) continue;
+    visited.add(source);
+    Link? subscriber = source._subs;
+    while (subscriber != null) {
+      Computed<JsValue> dependent = subscriber._sub;
+      enqueueSub(dependent);
+      Signal<JsValue> next = JS.assume(dependent);
+      work.push(next);
+      subscriber = subscriber._nextSub;
+    }
+  }
+}
+
+export void markAffects<T>(Signal<T> value) {
+  Signal<JsValue> node = JS.assume(value);
+  node._affectsCount += 1;
+  if (currentActionId != 0) node._affectsOwner = currentActionId;
+  trackDevNode(devAffectsMarkedNodes, node);
+  activeAffectsMarks += 1;
+  ambientAffectsBlocked = false;
+  ActionFrame? frame = actionFrame(currentActionId);
+  if (frame != null) {
+    frame.affects.push(node);
+  } else {
+    ambientAffectsNodes.push(node);
+  }
+  updatePendingCompanions(node);
+  notifyAffectsDependents(node);
+  schedule();
+}
+
+// effect.ts
+export Computed<T> effect<T>(
+  func()->T compute,
+  func(T,T)->void apply,
+  bool user = false,
+  bool defer = false,
+  bool scheduleInitial = false,
+  (func(JsValue)->void)? handleError = null
+) {
+  NodeOptions<T> options = new NodeOptions<T>();
+  options.lazy = true;
+  options.equalsFalse = true;
+  Computed<T> node = computed(compute, options);
+  node._config = clearBits(node._config, CONFIG_AUTO_DISPOSE);
+  node._isEffect = true;
+  node._type = EFFECT_RENDER;
+  if (user) {
+    node._type = EFFECT_USER;
+  }
+  node._notifyStatus = (int status, JsValue failure) => {
+    if ((status & STATUS_ERROR) != 0) {
+      if (node._type == EFFECT_USER) {
+        node._modified = true;
+        (func()->void)? runner = node._runEffect;
+        if (runner != null) {
+          int enqueueAction = currentActionId;
+          if (node._pendingOwner != 0) currentActionId = node._pendingOwner;
+          node._queue.enqueue(EFFECT_USER, (int _type) => runner());
+          currentActionId = enqueueAction;
+        }
+      } else if (!node._queue.notify(JS.assume(node), STATUS_ERROR, status, failure)) {
+        JsValue actual = unwrapStatusError(failure);
+        haltReactivity(actual);
+        throw actual;
+      }
+    } else if (node._type == EFFECT_RENDER) {
+      node._queue.notify(
+        JS.assume(node),
+        STATUS_PENDING | STATUS_ERROR,
+        status,
+        failure
+      );
+      if (DEV_ENABLED && hitUnhandledAsync) {
+        hitUnhandledAsync = false;
+        string message =
+          "[ASYNC_OUTSIDE_LOADING_BOUNDARY] An async value was read outside a Loading boundary. The root mount will be deferred until all pending async settles.";
+        emitDiagnostic(JS.object(
+          "code", "ASYNC_OUTSIDE_LOADING_BOUNDARY",
+          "kind", "async",
+          "severity", "warn",
+          "message", message
+        ));
+        JS.invoke(console, "warn", message);
+      }
+    }
+  };
+  node._runEffectError = handleError;
+  if (DEV_ENABLED && node._parent == null) {
+    string message = "[NO_OWNER_EFFECT] Effects created outside a reactive context will never be disposed";
+    emitDiagnostic(JS.object(
+      "code", "NO_OWNER_EFFECT",
+      "kind", "lifecycle",
+      "severity", "warn",
+      "message", message,
+      "data", JS.object("effectType", "effect")
+    ));
+    JS.invoke(console, "warn", message);
+  }
+  bool hasPrevious = false;
+  T previous = undefinedValue();
+  node._runEffect = () => {
+    if (!node._modified || node._disposed) {
+      return;
+    }
+    T value = node._value;
+    if (node._hasPending) {
+      value = node._pendingValue;
+    }
+    node._modified = false;
+    if ((node._statusFlags & STATUS_ERROR) != 0 && node._type == EFFECT_USER) {
+      JsValue actual = unwrapStatusError(node._error);
+      (func(JsValue)->void)? errorCallback = node._runEffectError;
+      try {
+        if (errorCallback != null) errorCallback(actual);
+        else JS.invoke(console, "error", actual);
+      } catch (JsValue failure) {
+        JsValue wrapped = JS.assume(new StatusError(JS.assume(node), failure));
+        node._error = wrapped;
+        if (!node._queue.notify(JS.assume(node), STATUS_ERROR, STATUS_ERROR, wrapped)) {
+          haltReactivity(failure);
+          throw failure;
+        }
+      }
+      return;
+    }
+    string? previousStrictRead = strictRead;
+    if (DEV_ENABLED) strictRead = "an effect callback";
+    try {
+      apply(value, previous);
+    } catch (JsValue failure) {
+      JsValue wrapped = JS.assume(new StatusError(JS.assume(node), failure));
+      node._statusFlags |= STATUS_ERROR;
+      node._error = wrapped;
+      if (!node._queue.notify(JS.assume(node), STATUS_ERROR, STATUS_ERROR, wrapped)) {
+        haltReactivity(failure);
+        throw failure;
+      }
+      return;
+    } finally {
+      if (DEV_ENABLED) strictRead = previousStrictRead;
+    }
+    previous = value;
+    hasPrevious = true;
+  };
+  recompute(node, true);
+  if (!defer) {
+    (func()->void)? runner = node._runEffect;
+    if (runner != null) {
+      if (user || scheduleInitial) {
+        node._queue.enqueue(node._type, (int type) => runner());
+      } else {
+        runner();
+      }
+    }
+  }
+  return node;
+}
+
+export Computed<int> trackedEffect(func()->void callback) {
+  NodeOptions<int> options = new NodeOptions<int>();
+  options.lazy = true;
+  Computed<int> node = computed(() => {
+    callback();
+    return 0;
+  }, options);
+  node._config = clearBits(node._config, CONFIG_AUTO_DISPOSE) | CONFIG_CHILDREN_FORBIDDEN;
+  node._type = EFFECT_TRACKED;
+  node._modified = true;
+  node._notifyStatus = (int status, JsValue failure) => {
+    if ((status & STATUS_ERROR) != 0) {
+      JsValue actual = unwrapStatusError(failure);
+      if (!node._queue.notify(JS.assume(node), STATUS_ERROR, status, actual)) {
+        haltReactivity(actual);
+        throw actual;
+      }
+    }
+  };
+  node._runEffect = () => {
+    if (!node._modified || node._disposed) return;
+    node._modified = false;
+    setTrackedQueueCallback(true);
+    try {
+      recompute(node, false);
+    } finally {
+      setTrackedQueueCallback(false);
+    }
+  };
+  (func()->void)? runner = node._runEffect;
+  if (runner != null) node._queue.enqueue(EFFECT_USER, (int _type) => runner());
+  return node;
+}
+
+// async.ts
+export bool isThenable(JsValue value) {
+  return isThenableValue(value);
+}
+
+export T handleAsync<T>(Computed<T> node, Task<T> task) {
+  node._asyncFn = () => task;
+  runAsyncComputed(JS.assume(node));
+  if (node._initialized) {
+    return node._value;
+  }
+  throw new NotReadyError(JS.assume(node));
+}
+
+export void clearStatus<T>(Computed<T> node, bool clearUninitialized = false) {
+  bool hadStatus = (node._statusFlags & (STATUS_PENDING | STATUS_ERROR)) != 0;
+  clearPendingSources(JS.assume(node));
+  node._statusFlags = node._statusFlags & STATUS_UNINITIALIZED;
+  if (clearUninitialized) {
+    node._statusFlags = STATUS_NONE;
+  }
+  node._error = JS.undefined();
+  node._blocked = false;
+  node._reask = false;
+  updatePendingCompanions(JS.assume(node));
+  updateUpstreamCompanions(JS.assume(node));
+  if (hadStatus) {
+    (func(int,JsValue)->void)? notify = node._notifyStatus;
+    if (notify != null) notify(node._statusFlags, node._error);
+  }
+}
+
+void notifyStatusRaw(Computed<JsValue> node, int status, JsValue failure, bool blockStatus = false) {
+  JsValue actualFailure = failure;
+  if (status == STATUS_ERROR && !isStatusError(failure) && !isNotReadyError(failure)) {
+    actualFailure = JS.assume(new StatusError(JS.assume(node), failure));
+  }
+  Computed<JsValue>? pendingSource = null;
+  if (status == STATUS_PENDING) pendingSource = pendingErrorSource(actualFailure);
+  if (pendingSource != null) {
+    if (pendingSource != node) {
+      JsValue rawPendingNode = JS.assume(node);
+      if (rawPendingNode["_optimistic"].truthy()) node._hadAsyncDependency = true;
+      if (rawPendingNode["_optimistic"].truthy()) node._optimisticAsyncBacked = true;
+    }
+  }
+
+  bool changed = true;
+  if (!blockStatus) {
+    if (status == STATUS_PENDING && pendingSource != null) {
+      if (pendingSource != node) {
+        changed = pendingSourceIndex(node, pendingSource) < 0;
+        if (changed) node._pendingSources.push(pendingSource);
+      }
+      node._statusFlags = STATUS_PENDING | (node._statusFlags & STATUS_UNINITIALIZED);
+      node._error = actualFailure;
+    } else {
+      changed = node._statusFlags != status || !JS.strictEqual(node._error, actualFailure);
+      clearPendingSources(node);
+      int uninitialized = 0;
+      if (status != STATUS_ERROR) uninitialized = node._statusFlags & STATUS_UNINITIALIZED;
+      node._statusFlags = status | uninitialized;
+      node._error = actualFailure;
+    }
+    updatePendingCompanions(node);
+    updateUpstreamCompanions(node);
+  }
+
+  (func(int,JsValue)->void)? notify = node._notifyStatus;
+  if (notify != null) {
+    if (!blockStatus || status != STATUS_PENDING) notify(status, actualFailure);
+    return;
+  }
+  if (!changed && !blockStatus) return;
+  JsValue rawStatusNode = JS.assume(node);
+  if (
+    status == STATUS_PENDING &&
+    rawStatusNode["_optimistic"].truthy() &&
+    rawStatusNode["_overrideActive"].truthy() &&
+    !JS.strictEqual(actualFailure["source"], JS.assume(node))
+  ) {
+    if (rawStatusNode["_optimisticLaneSettled"].truthy()) {
+      Link? child = node._subs;
+      while (child != null) {
+        child._sub._flags |= REACTIVE_REASK;
+        child = child._nextSub;
+      }
+    }
+    return;
+  }
+  Link? subscriber = node._subs;
+  while (subscriber != null) {
+    Link? next = subscriber._nextSub;
+    Computed<JsValue> dependent = subscriber._sub;
+    dependent._time = clock;
+    if (subscriber._pendingObserver) {
+      enqueueSub(dependent);
+      schedule();
+    } else {
+      if (status == STATUS_PENDING && (dependent._statusFlags & STATUS_ERROR) != 0) {
+        dependent._blocked = true;
+      }
+      notifyStatusRaw(dependent, status, actualFailure, blockStatus);
+    }
+    subscriber = next;
+  }
+}
+
+export void notifyStatus<T>(Computed<T> node, int status, JsValue failure) {
+  notifyStatusRaw(JS.assume(node), status, failure);
+}
+
+export bool addPendingSource<T,U>(Computed<T> node, Computed<U> source) {
+  Computed<JsValue> rawNode = JS.assume(node);
+  Computed<JsValue> rawSource = JS.assume(source);
+  if (pendingSourceIndex(rawNode, rawSource) >= 0) return false;
+  rawNode._pendingSources.push(rawSource);
+  return true;
+}
+
+export void settlePendingSource<T>(Computed<T> source) {
+  Computed<JsValue> rawSource = JS.assume(source);
+  Computed<JsValue>[] work = [];
+  Link? subscriber = rawSource._subs;
+  while (subscriber != null) {
+    work.push(subscriber._sub);
+    subscriber = subscriber._nextSub;
+  }
+  Set<Computed<JsValue> > visited = new Set<Computed<JsValue> >();
+  bool queued = false;
+  for (int cursor = 0; cursor < work.length; cursor++) {
+    Computed<JsValue> node = work[cursor];
+    if (visited.has(node)) continue;
+    int sourceIndex = pendingSourceIndex(node, rawSource);
+    if (sourceIndex < 0) continue;
+    visited.add(node);
+    node._pendingSources.splice(sourceIndex, 1);
+    node._time = clock;
+    if (node._pendingSources.length == 0) {
+      node._statusFlags = clearBits(node._statusFlags, STATUS_PENDING);
+      if ((node._statusFlags & STATUS_ERROR) == 0) node._error = JS.undefined();
+      (func(int,JsValue)->void)? notify = node._notifyStatus;
+      if (notify != null) notify(node._statusFlags, node._error);
+      if (node._blocked) {
+        enqueueSub(node);
+        queued = true;
+      }
+      node._blocked = false;
+      updatePendingCompanions(node);
+    } else if ((node._statusFlags & STATUS_ERROR) == 0) {
+      node._error = JS.assume(new NotReadyError(JS.assume(node._pendingSources[0])));
+    }
+    Link? child = node._subs;
+    while (child != null) {
+      work.push(child._sub);
+      child = child._nextSub;
+    }
+  }
+  clearLanePending(rawSource);
+  releaseHeldPendingNodes();
+  if (queued) schedule();
+}
+
+export void parkLoadingWindow<T>(Computed<T> node, NotReadyError failure) {
+  node._blocked = true;
+  if (!JS.isNullish(failure.source)) {
+    Computed<JsValue> source = JS.assume(failure.source);
+    addPendingSource(node, source);
+  }
+  if ((node._statusFlags & STATUS_ERROR) == 0) node._error = JS.assume(failure);
+}
+
+export void settleErroredDependents<T>(Computed<T> node, JsValue failure) {
+  Computed<JsValue> rawNode = JS.assume(node);
+  Computed<JsValue>[] work = [];
+  Link? subscriber = rawNode._subs;
+  while (subscriber != null) {
+    work.push(subscriber._sub);
+    subscriber = subscriber._nextSub;
+  }
+  Set<Computed<JsValue> > visited = new Set<Computed<JsValue> >();
+  bool queued = false;
+  for (int cursor = 0; cursor < work.length; cursor++) {
+    Computed<JsValue> dependent = work[cursor];
+    if (visited.has(dependent)) continue;
+    visited.add(dependent);
+    if (JS.strictEqual(dependent._error, failure)) {
+      enqueueSub(dependent);
+      queued = true;
+    }
+    Link? child = dependent._subs;
+    while (child != null) {
+      work.push(child._sub);
+      child = child._nextSub;
+    }
+  }
+  if (queued) schedule();
+}
+
+export void releaseSettledDependents<T>(Computed<T> node) {
+  Computed<JsValue> rawNode = JS.assume(node);
+  Computed<JsValue>[] work = [];
+  Computed<JsValue>[] candidates = [];
+  Link? subscriber = rawNode._subs;
+  while (subscriber != null) {
+    work.push(subscriber._sub);
+    subscriber = subscriber._nextSub;
+  }
+  Set<Computed<JsValue> > visited = new Set<Computed<JsValue> >();
+  for (int cursor = 0; cursor < work.length; cursor++) {
+    Computed<JsValue> dependent = work[cursor];
+    if (visited.has(dependent)) continue;
+    visited.add(dependent);
+    if (
+      dependent._subs == null &&
+      (dependent._config & CONFIG_AUTO_DISPOSE) != 0 &&
+      (dependent._statusFlags & STATUS_PENDING) == 0
+    ) {
+      candidates.push(dependent);
+    }
+    Link? child = dependent._subs;
+    while (child != null) {
+      work.push(child._sub);
+      child = child._nextSub;
+    }
+  }
+  for (int index = 0; index < candidates.length; index++) {
+    Computed<JsValue> candidate = candidates[index];
+    if (
+      candidate._subs == null &&
+      (candidate._flags & REACTIVE_ZOMBIE) == 0 &&
+      (candidate._statusFlags & STATUS_PENDING) == 0
+    ) {
+      releaseIfSettledUnobserved(candidate);
+    }
+  }
+}
+
+// verdict.ts
+bool quietPending(Computed<JsValue> node) {
+  if (node._pendingSources.length > 0) {
+    for (int index = 0; index < node._pendingSources.length; index++) {
+      if (!node._pendingSources[index]._reask) return false;
+    }
+    return true;
+  }
+  return node._reask;
+}
+
+bool retryReaches(Computed<JsValue> node, Computed<JsValue> source) {
+  JsValue rawSource = JS.assume(source);
+  Link? dependency = node._deps;
+  while (dependency != null) {
+    Signal<JsValue> dep = dependency._dep;
+    JsValue rawDep = JS.assume(dep);
+    if (JS.strictEqual(rawDep, rawSource)) return true;
+    if (dep._computed) {
+      Computed<JsValue> computedDep = JS.assume(dep);
+      if (pendingSourceIndex(computedDep, source) >= 0) return true;
+    }
+    dependency = dependency._nextDep;
+  }
+  return false;
+}
+
+bool computePendingState(Signal<JsValue> node) {
+  if (affectsCovered(node, new Set<Signal<JsValue> >())) return true;
+  Signal<JsValue>? parent = node._parentSource;
+  if (parent != null) {
+    JsValue rawParent = JS.assume(parent);
+    if (!rawParent["_computed"].truthy()) {
+      return affectsCovered(parent, new Set<Signal<JsValue> >());
+    }
+    Computed<JsValue> parentComputed = JS.assume(parent);
+    return
+      (parentComputed._statusFlags & STATUS_PENDING) != 0 &&
+      (parentComputed._statusFlags & STATUS_UNINITIALIZED) == 0 &&
+      !quietPending(parentComputed);
+  }
+  if (node._hasPending) {
+    if (blocksPendingCommit(node, new Set<Signal<JsValue> >())) return true;
+    JsValue rawHeld = JS.assume(node);
+    if (!rawHeld["_computed"].truthy()) return false;
+    Computed<JsValue> heldComputed = JS.assume(node);
+    if (heldComputed._loading) return false;
+  }
+  JsValue rawNode = JS.assume(node);
+  if (!rawNode["_computed"].truthy()) return false;
+  Computed<JsValue> computedNode = JS.assume(node);
+  Link? dependency = computedNode._deps;
+  while (dependency != null) {
+    JsValue rawDependency = JS.assume(dependency._dep);
+    if (
+      rawDependency["_overrideActive"].truthy() &&
+      rawDependency["_hadAsyncDependency"].truthy() &&
+      rawDependency["_optimisticLaneSettled"].truthy()
+    ) return false;
+    dependency = dependency._nextDep;
+  }
+  if (
+    !computedNode._loading &&
+    computedNode._hadAsyncDependency &&
+    computedNode._initialized
+  ) return true;
+  if (
+    !computedNode._loading &&
+    computedNode._inFlight &&
+    computedNode._initialized &&
+    !computedNode._asyncHadValue &&
+    !quietPending(computedNode)
+  ) return true;
+  return
+    (computedNode._statusFlags & STATUS_PENDING) != 0 &&
+      (computedNode._statusFlags & STATUS_UNINITIALIZED) == 0 &&
+      !quietPending(computedNode);
+}
+
+Signal<bool> getPendingSignal(Signal<JsValue> node) {
+  JsValue rawNode = JS.assume(node);
+  JsValue rawPending = rawNode["_pendingSignal"];
+  if (JS.isNullish(rawPending)) {
+    NodeOptions<bool> options = new NodeOptions<bool>();
+    options.ownedWrite = true;
+    options.noSnapshot = true;
+    Signal<bool> created = signal(computePendingState(node), options);
+    created._parentSource = node;
+    created._pendingCompanion = true;
+    rawNode["_pendingSignal"] = JS.assume(created);
+    trackDevNode(devCompanionOwners, node);
+    return created;
+  }
+  return JS.assume(rawPending);
+}
+
+void writePendingCompanion(Signal<bool> node, bool value, Signal<JsValue> owner) {
+  if (node._value == value) return;
+  node._value = value;
+  node._pendingValue = value;
+  node._hasPending = false;
+  node._time = clock;
+  int previousAction = currentActionId;
+  int companionOwner = owner._overrideOwner;
+  if (companionOwner == 0) companionOwner = owner._pendingOwner;
+  if (companionOwner == 0) companionOwner = owner._affectsOwner;
+  Signal<JsValue>? parent = owner._parentSource;
+  if (companionOwner == 0 && parent != null) {
+    companionOwner = parent._overrideOwner;
+    if (companionOwner == 0) companionOwner = parent._pendingOwner;
+    if (companionOwner == 0) companionOwner = parent._affectsOwner;
+  }
+  if (companionOwner != 0 || owner._optimisticLane != null || owner._affectsCount > 0) {
+    if (companionOwner != 0) currentActionId = companionOwner;
+    OptimisticLane lane = getOrCreateLane(node);
+    node._optimisticLane = lane;
+    insertSubsRaw(JS.assume(node), true);
+  } else {
+    OptimisticLane? lane = resolveLane(node);
+    if (lane != null) insertSubsRaw(JS.assume(node), true);
+    else insertSubsRaw(JS.assume(node), false);
+  }
+  currentActionId = previousAction;
+  schedule();
+}
+
+void updatePendingCompanions(Signal<JsValue> node) {
+  if (companionUpdatesPaused) return;
+  JsValue rawNode = JS.assume(node);
+  JsValue rawPending = rawNode["_pendingSignal"];
+  if (!JS.isNullish(rawPending)) {
+    Signal<bool> pendingValue = JS.assume(rawPending);
+    writePendingCompanion(pendingValue, computePendingState(node), node);
+  }
+  JsValue rawShadowValue = rawNode["_latestValueComputed"];
+  if (!JS.isNullish(rawShadowValue) && !JS.isNullish(rawShadowValue["_pendingSignal"])) {
+    Computed<JsValue> shadow = JS.assume(rawShadowValue);
+    Signal<JsValue> rawShadow = JS.assume(shadow);
+    Signal<bool> shadowPending = JS.assume(rawShadowValue["_pendingSignal"]);
+    writePendingCompanion(shadowPending, computePendingState(rawShadow), rawShadow);
+  }
+}
+
+export void refreshPendingState(Signal<JsValue> node) {
+  updatePendingCompanions(node);
+}
+
+void updateUpstreamCompanions(Computed<JsValue> node) {
+  Signal<JsValue>[] work = [];
+  Set<Signal<JsValue> > visited = new Set<Signal<JsValue> >();
+  Link? dependency = node._deps;
+  while (dependency != null) {
+    work.push(dependency._dep);
+    dependency = dependency._nextDep;
+  }
+  for (int cursor = 0; cursor < work.length; cursor++) {
+    Signal<JsValue> source = work[cursor];
+    if (visited.has(source)) continue;
+    visited.add(source);
+    updatePendingCompanions(source);
+    JsValue rawSource = JS.assume(source);
+    if (rawSource["_computed"].truthy()) {
+      Computed<JsValue> computedSource = JS.assume(source);
+      Link? upstream = computedSource._deps;
+      while (upstream != null) {
+        work.push(upstream._dep);
+        upstream = upstream._nextDep;
+      }
+    }
+  }
+}
+
+export bool isPending<T>(func()->T callback) {
+  bool previousMode = pendingCheckActive;
+  bool previousFound = pendingProbeFound;
+  pendingProbeStack.push(pendingProbeNodes);
+  pendingCheckActive = true;
+  pendingProbeFound = false;
+  pendingProbeNodes = [];
+  try {
+    try {
+      callback();
+    } catch (JsValue failure) {
+      Computed<JsValue>? source = pendingErrorSource(failure);
+      if (
+        source != null &&
+        context != null &&
+        (source._statusFlags & STATUS_UNINITIALIZED) != 0
+      ) throw failure;
+    }
+    pendingCheckActive = false;
+    string? previousStrictRead = strictRead;
+    if (DEV_ENABLED) strictRead = null;
+    bool result = false;
+    try {
+      for (int index = 0; index < pendingProbeNodes.length; index++) {
+        Signal<JsValue> owner = pendingProbeNodes[index];
+        Signal<bool> pendingSignal = getPendingSignal(owner);
+        bool trackedPending = read(pendingSignal);
+        if (owner._affectsCount > 0) result = true;
+        else if (computePendingState(owner)) result = true;
+      }
+    } finally {
+      if (DEV_ENABLED) strictRead = previousStrictRead;
+    }
+    return result || pendingProbeFound;
+  } finally {
+    pendingCheckActive = previousMode;
+    pendingProbeFound = previousFound;
+    pendingProbeNodes = pendingProbeStack.pop();
+  }
+}
+
+export T latest<T>(func()->T callback) {
+  bool previous = latestReadActive;
+  latestReadActive = true;
+  try {
+    return callback();
+  } finally {
+    latestReadActive = previous;
+  }
+}
+
+// context.ts
+export Context<T> createContext<T>(T defaultValue, string description = "") {
+  bool hasDefault = !JS.isUndefined(JS.assume(defaultValue));
+  return new Context(defaultValue, hasDefault, description);
+}
+
+int contextIndex<T>(Context<T> key, Owner owner) {
+  for (int index = 0; index < owner._context.length; index++) {
+    if (owner._context[index].id == key.id) {
+      return index;
+    }
+  }
+  return -1;
+}
+
+export T getContext<T>(Context<T> key, Owner? requestedOwner = null) {
+  Owner? owner = requestedOwner;
+  if (owner == null) {
+    owner = context;
+  }
+  if (owner == null) {
+    throw new NoOwnerError();
+  }
+  int index = contextIndex(key, owner);
+  if (index >= 0) {
+    return JS.assume(owner._context[index].value);
+  }
+  // Hydration also passes Solid's structural `{ id, defaultValue }` context
+  // literal rather than an instance of this internal class.
+  if (key.hasDefault || !JS.isUndefined(JS.assume(key.defaultValue))) {
+    return key.defaultValue;
+  }
+  throw new ContextNotFoundError();
+}
+
+export void setContext<T>(Context<T> key, T value, Owner? requestedOwner = null) {
+  Owner? owner = requestedOwner;
+  if (owner == null) {
+    owner = context;
+  }
+  if (owner == null) {
+    throw new NoOwnerError();
+  }
+  ContextSlot[] copy = [];
+  for (int cursor = 0; cursor < owner._context.length; cursor++) {
+    ContextSlot old = owner._context[cursor];
+    copy.push(new ContextSlot(old.id, old.value));
+  }
+  int index = contextIndex(key, owner);
+  JsValue next = JS.assume(value);
+  if (JS.isUndefined(next)) next = JS.assume(key.defaultValue);
+  ContextSlot slot = new ContextSlot(key.id, next);
+  if (index >= 0) {
+    copy[index] = slot;
+  } else {
+    copy.push(slot);
+  }
+  owner._context = copy;
+}
+
+void addLanePending(OptimisticLane lane, Computed<JsValue> node) {
+  OptimisticLane root = findLane(lane);
+  JsValue rawLaneSource = JS.assume(root._source);
+  if (rawLaneSource["_computed"].truthy()) {
+    Computed<JsValue> source = JS.assume(root._source);
+    source._optimisticHadLaneWork = true;
+  }
+  if (root._pendingAsync.has(node)) return;
+  root._pendingAsync.add(node);
+  root._pendingAsyncValues.push(node);
+  updatePendingCompanions(root._source);
+}
+
+void clearLanePending(Computed<JsValue> node) {
+  OptimisticLane? lane = node._optimisticLane;
+  if (lane == null) return;
+  OptimisticLane root = findLane(lane);
+  if (!root._pendingAsync.delete(node)) return;
+  ambientOptimisticBlocked = false;
+  Link? dependency = node._deps;
+  while (dependency != null) {
+    JsValue rawDependency = JS.assume(dependency._dep);
+    if (rawDependency["_overrideActive"].truthy()) {
+      rawDependency["_optimisticLaneSettled"] = true;
+    }
+    dependency = dependency._nextDep;
+  }
+  for (int index = 0; index < root._pendingAsyncValues.length; index++) {
+    if (root._pendingAsyncValues[index] == node) {
+      root._pendingAsyncValues.splice(index, 1);
+      break;
+    }
+  }
+  JsValue rawSettledLaneSource = JS.assume(root._source);
+  if (root._pendingAsyncValues.length == 0 && rawSettledLaneSource["_computed"].truthy()) {
+    Computed<JsValue> source = JS.assume(root._source);
+    source._optimisticLaneSettled = true;
+  }
+  updatePendingCompanions(root._source);
+}
+
+void runLaneQueue(QueueEntry[] entries, int type) {
+  QueueEntry[] pending = entries.slice();
+  entries.splice(0, entries.length);
+  for (int index = 0; index < pending.length; index++) {
+    pending[index].callback(type);
+  }
+}
+
+void runReadyLaneEffects(int type) {
+  Set<OptimisticLane> visited = new Set<OptimisticLane>();
+  for (int index = 0; index < laneValues.length; index++) {
+    devCheckMergedLaneEmpty(laneValues[index]);
+    OptimisticLane root = findLane(laneValues[index]);
+    if (visited.has(root) || !activeLanes.has(root) || root._pendingAsyncValues.length > 0) continue;
+    visited.add(root);
+    if (type == EFFECT_RENDER && root._render.length > 0) {
+      runLaneQueue(root._render, type);
+    } else if (type == EFFECT_USER && root._user.length > 0) {
+      runLaneQueue(root._user, type);
+    }
+  }
+}
+
+void clearLaneAssignments(
+  Signal<JsValue> source,
+  OptimisticLane lane,
+  Set<Signal<JsValue> > seen
+) {
+  if (seen.has(source)) return;
+  seen.add(source);
+  Link? subscriber = source._subs;
+  while (subscriber != null) {
+    Computed<JsValue> dependent = subscriber._sub;
+    Signal<JsValue> dependentSignal = JS.assume(dependent);
+    OptimisticLane? assigned = dependent._optimisticLane;
+    if (assigned != null && findLane(assigned) == lane) dependent._optimisticLane = null;
+    clearLaneAssignments(dependentSignal, lane, seen);
+    subscriber = subscriber._nextSub;
+  }
+}
+
+// lanes.ts
+export OptimisticLane findLane(OptimisticLane lane) {
+  while (lane._mergedInto != null) {
+    lane = JS.assume(lane._mergedInto);
+  }
+  return lane;
+}
+
+export OptimisticLane getOrCreateLane<T>(Signal<T> value) {
+  Signal<JsValue> signalNode = JS.assume(value);
+  for (int index = 0; index < laneSignals.length; index++) {
+    if (laneSignals[index] == signalNode) {
+      OptimisticLane existing = findLane(laneValues[index]);
+      if (activeLanes.has(existing)) return existing;
+    }
+  }
+  OptimisticLane? parent = null;
+  Signal<JsValue>? parentSource = signalNode._parentSource;
+  if (parentSource != null && parentSource._optimisticLane != null) {
+    OptimisticLane parentLane = JS.assume(parentSource._optimisticLane);
+    parent = findLane(parentLane);
+  }
+  int transition = currentActionId;
+  if (transition == 0 && parent != null) transition = parent._transition;
+  OptimisticLane lane = new OptimisticLane(signalNode, parent, transition);
+  laneSignals.push(signalNode);
+  laneValues.push(lane);
+  activeLanes.add(lane);
+  adoptCompanionLane(JS.assume(signalNode._pendingSignal), lane);
+  adoptCompanionLane(JS.assume(signalNode._latestValueComputed), lane);
+  return lane;
+}
+
+void adoptCompanionLane(Signal<JsValue>? companion, OptimisticLane parent) {
+  if (companion == null) return;
+  Signal<JsValue> companionNode = JS.assume(companion);
+  for (int index = 0; index < laneSignals.length; index++) {
+    if (laneSignals[index] != companionNode) continue;
+    OptimisticLane root = findLane(laneValues[index]);
+    if (
+      root != parent &&
+      root._source == companionNode &&
+      root._parentLane == null
+    ) root._parentLane = parent;
+    return;
+  }
+}
+
+export OptimisticLane mergeLanes(OptimisticLane left, OptimisticLane right) {
+  left = findLane(left);
+  right = findLane(right);
+  if (left == right) {
+    return left;
+  }
+  right._mergedInto = left;
+  for (int index = 0; index < right._render.length; index++) {
+    left._render.push(right._render[index]);
+  }
+  for (int index = 0; index < right._user.length; index++) {
+    left._user.push(right._user[index]);
+  }
+  right._render = [];
+  right._user = [];
+  for (int index = 0; index < right._pendingAsyncValues.length; index++) {
+    addLanePending(left, right._pendingAsyncValues[index]);
+  }
+  right._pendingAsync.clear();
+  right._pendingAsyncValues = [];
+  return left;
+}
+
+export bool hasActiveOverride<T>(Signal<T> node) {
+  return node._overrideActive;
+}
+
+void assignOrMergeLaneRaw(Signal<JsValue> value, OptimisticLane sourceLane) {
+  OptimisticLane source = findLane(sourceLane);
+  OptimisticLane? existing = value._optimisticLane;
+  if (existing == null) {
+    value._optimisticLane = source;
+    return;
+  }
+  if (existing._mergedInto != null) {
+    value._optimisticLane = source;
+    return;
+  }
+  OptimisticLane root = findLane(existing);
+  if (!activeLanes.has(root)) {
+    value._optimisticLane = source;
+    return;
+  }
+  if (root != source && !value._overrideActive) {
+    if (source._parentLane != null && findLane(JS.assume(source._parentLane)) == root) {
+      value._optimisticLane = source;
+    } else if (root._parentLane == null || findLane(JS.assume(root._parentLane)) != source) {
+      value._optimisticLane = mergeLanes(source, root);
+    }
+  }
+}
+
+export void assignOrMergeLane<T>(Signal<T> value, OptimisticLane sourceLane) {
+  Signal<JsValue> node = JS.assume(value);
+  assignOrMergeLaneRaw(node, sourceLane);
+}
+
+export OptimisticLane? resolveLane<T>(Signal<T> node) {
+  OptimisticLane? lane = node._optimisticLane;
+  if (lane == null) {
+    return null;
+  }
+  OptimisticLane root = findLane(lane);
+  if (activeLanes.has(root)) {
+    return root;
+  }
+  node._optimisticLane = null;
+  return null;
+}
+
+void rememberOptimisticNode(Signal<JsValue> node) {
+  ActionFrame? frame = actionFrame(currentActionId);
+  if (frame != null) {
+    rememberOptimisticNodeIn(frame.nodes, node);
+  } else {
+    rememberOptimisticNodeIn(ambientOptimisticNodes, node);
+  }
+}
+
+void rememberOptimisticNodeIn(Signal<JsValue>[] nodes, Signal<JsValue> node) {
+  for (int index = 0; index < nodes.length; index++) {
+    if (nodes[index] == node) return;
+  }
+  nodes.push(node);
+}
+
+T optimisticWrite<T>(Signal<T> node, T value) {
+  installOptimisticEngine();
+  int writeOwner = currentActionId;
+  T previous = node._value;
+  if (node._overrideActive) {
+    previous = node._overrideValue;
+    if (writeOwner != 0) {
+      if (node._overrideOwner != 0 && node._overrideOwner != writeOwner) {
+        writeOwner = mergeActionOwners(node._overrideOwner, writeOwner);
+        if (currentActionId != 0) currentActionId = writeOwner;
+      }
+      rememberOptimisticNode(JS.assume(node));
+      node._overrideOwner = writeOwner;
+    }
+  }
+  if (node._equalsEnabled && node._equals(previous, value)) {
+    return value;
+  }
+  rememberOptimisticNode(JS.assume(node));
+  node._overrideActive = true;
+  node._overrideValue = value;
+  trackDevNode(devOptimisticNodes, JS.assume(node));
+  node._overrideOwner = writeOwner;
+  JsValue rawOptimisticNode = JS.assume(node);
+  rawOptimisticNode["_optimisticConfirmed"] = false;
+  rawOptimisticNode["_optimisticHadLaneWork"] = false;
+  rawOptimisticNode["_optimisticLaneSettled"] = false;
+  OptimisticLane lane = getOrCreateLane(node);
+  node._optimisticLane = lane;
+  insertSubsRaw(JS.assume(node), true);
+  schedule();
+  return value;
+}
+
+export JsValue writeOptimisticNode(Signal<JsValue> node, JsValue value) {
+  return optimisticWrite(node, value);
+}
+
+void resolveOptimisticNodes(Signal<JsValue>[] nodes, bool commit, int owner = 0) {
+  for (int index = 0; index < nodes.length; index++) {
+    Signal<JsValue> node = nodes[index];
+    if (!node._overrideActive || node._overrideOwner != owner) {
+      continue;
+    }
+    JsValue previousOverride = JS.assume(node._overrideValue);
+    if (commit) {
+      node._value = node._overrideValue;
+      node._pendingValue = node._overrideValue;
+      node._hasPending = false;
+    }
+    node._overrideActive = false;
+    JsValue rawOptimisticNode = JS.assume(node);
+    rawOptimisticNode["_optimisticConfirmed"] = false;
+    rawOptimisticNode["_optimisticHadLaneWork"] = false;
+    rawOptimisticNode["_optimisticLaneSettled"] = false;
+    node._overrideOwner = 0;
+    node._optimisticLane = null;
+    if (!JS.strictEqual(JS.assume(node._value), previousOverride)) insertSubsRaw(node, true);
+  }
+  for (int index = 0; index < nodes.length; index++) {
+    Signal<JsValue> node = nodes[index];
+    Signal<bool>? pendingSignal = node._pendingSignal;
+    if (pendingSignal != null && !pendingSignal._overrideActive) {
+      bool pending = computePendingState(node);
+      if (pendingSignal._value != pending || pendingSignal._hasPending) {
+        pendingSignal._value = pending;
+        pendingSignal._pendingValue = pending;
+        pendingSignal._hasPending = false;
+        insertSubsRaw(JS.assume(pendingSignal), false);
+      }
+    }
+    Computed<JsValue>? shadow = node._latestValueComputed;
+    if (shadow != null && (shadow._flags & REACTIVE_DISPOSED) == 0) {
+      bool shadowChanged = !JS.strictEqual(shadow._value, node._value) || shadow._hasPending;
+      shadow._value = node._value;
+      shadow._pendingValue = node._value;
+      shadow._hasPending = false;
+      shadow._flags = clearBits(shadow._flags, REACTIVE_DIRTY | REACTIVE_CHECK);
+      if (shadowChanged) insertSubsRaw(JS.assume(shadow), false);
+    }
+  }
+  cleanupCompletedLanes(owner);
+  releaseDeferredTransitionEffects();
+  schedule();
+}
+
+void cleanupCompletedLanes(int owner) {
+  for (int index = 0; index < laneValues.length; index++) {
+    OptimisticLane lane = laneValues[index];
+    if (lane._transition != owner) continue;
+    OptimisticLane root = findLane(lane);
+    if (root == lane) {
+      runLaneQueue(root._render, EFFECT_RENDER);
+      runLaneQueue(root._user, EFFECT_USER);
+      clearLaneAssignments(root._source, root, new Set<Signal<JsValue> >());
+      root._pendingAsync.clear();
+      root._pendingAsyncValues = [];
+    }
+    if (lane._source._optimisticLane == lane) lane._source._optimisticLane = null;
+    activeLanes.delete(lane);
+  }
+  Signal<JsValue>[] remainingSignals = [];
+  OptimisticLane[] remainingLanes = [];
+  for (int index = 0; index < laneValues.length; index++) {
+    OptimisticLane lane = laneValues[index];
+    if (lane._transition != owner && activeLanes.has(findLane(lane))) {
+      remainingSignals.push(laneSignals[index]);
+      remainingLanes.push(lane);
+    }
+  }
+  laneSignals = remainingSignals;
+  laneValues = remainingLanes;
+}
+
+// optimistic.ts / action.ts. The no-argument action form is fully typed; its
+// Promise settle points delimit the same optimistic override transaction.
+export void installOptimisticEngine() {
+  optimisticEngineInstalled = true;
+}
+
+ActionFrame? exactActionFrame(int id) {
+  for (int index = 0; index < actionFrames.length; index++) {
+    if (actionFrames[index].id == id) return actionFrames[index];
+  }
+  return null;
+}
+
+ActionFrame? actionFrame(int id) {
+  ActionFrame? frame = exactActionFrame(id);
+  while (frame != null && frame.mergedInto != 0) {
+    frame = exactActionFrame(frame.mergedInto);
+  }
+  return frame;
+}
+
+void rememberActionAsyncIn(Computed<JsValue>[] nodes, Computed<JsValue> node) {
+  for (int index = 0; index < nodes.length; index++) {
+    if (nodes[index] == node) return;
+  }
+  nodes.push(node);
+}
+
+void rememberActionAsync(Computed<JsValue> node) {
+  ActionFrame? frame = actionFrame(currentActionId);
+  if (frame != null) rememberActionAsyncIn(frame.asyncNodes, node);
+}
+
+int mergeActionOwners(int targetId, int outgoingId) {
+  ActionFrame? targetValue = actionFrame(targetId);
+  ActionFrame? outgoingValue = actionFrame(outgoingId);
+  if (targetValue == null || outgoingValue == null || targetValue == outgoingValue) return targetId;
+  ActionFrame target = JS.assume(targetValue);
+  ActionFrame outgoing = JS.assume(outgoingValue);
+  target.activeCalls += outgoing.activeCalls;
+  target.entangled = true;
+  outgoing.activeCalls = 0;
+  outgoing.mergedInto = target.id;
+  for (int index = 0; index < laneValues.length; index++) {
+    if (laneValues[index]._transition == outgoing.id) laneValues[index]._transition = target.id;
+  }
+  for (int index = 0; index < outgoing.nodes.length; index++) {
+    Signal<JsValue> node = outgoing.nodes[index];
+    node._overrideOwner = target.id;
+    target.nodes.push(node);
+  }
+  for (int index = 0; index < outgoing.affects.length; index++) target.affects.push(outgoing.affects[index]);
+  for (int index = 0; index < outgoing.pending.length; index++) {
+    Signal<JsValue> node = outgoing.pending[index];
+    node._pendingOwner = target.id;
+    target.pending.push(node);
+  }
+  for (int index = 0; index < outgoing.gated.length; index++) {
+    rememberGatedSubscriber(target.gated, outgoing.gated[index]);
+  }
+  for (int index = 0; index < outgoing.asyncNodes.length; index++) {
+    rememberActionAsyncIn(target.asyncNodes, outgoing.asyncNodes[index]);
+  }
+  for (int index = 0; index < outgoing.stores.length; index++) target.stores.push(outgoing.stores[index]);
+  outgoing.nodes = [];
+  outgoing.affects = [];
+  outgoing.pending = [];
+  outgoing.gated = [];
+  outgoing.asyncNodes = [];
+  outgoing.stores = [];
+  return target.id;
+}
+
+export int beginAction() {
+  if (currentActionId != 0) {
+    ActionFrame? active = actionFrame(currentActionId);
+    if (active != null) {
+      active.activeCalls += 1;
+      return active.id;
+    }
+  }
+  int id = nextActionId;
+  nextActionId += 1;
+  currentActionId = id;
+  ActionFrame frame = new ActionFrame(id);
+  actionFrames.push(frame);
+  for (int index = 0; index < pendingNodes.length; index++) {
+    pendingNodes[index]._pendingOwner = id;
+    frame.pending.push(pendingNodes[index]);
+  }
+  pendingNodes = [];
+  for (int index = 0; index < deferredCommitSubscribers.length; index++) {
+    rememberGatedSubscriber(frame.gated, deferredCommitSubscribers[index]);
+  }
+  deferredCommitSubscribers = [];
+  for (int index = 0; index < ambientOptimisticNodes.length; index++) {
+    Signal<JsValue> node = ambientOptimisticNodes[index];
+    node._overrideOwner = id;
+    frame.nodes.push(node);
+  }
+  ambientOptimisticNodes = [];
+  for (int index = 0; index < ambientOptimisticStores.length; index++) {
+    frame.stores.push(ambientOptimisticStores[index]);
+  }
+  ambientOptimisticStores = [];
+  for (int index = 0; index < ambientAffectsNodes.length; index++) {
+    frame.affects.push(ambientAffectsNodes[index]);
+  }
+  ambientAffectsNodes = [];
+  for (int index = 0; index < laneValues.length; index++) {
+    OptimisticLane lane = laneValues[index];
+    if (lane._transition == 0 && activeLanes.has(findLane(lane))) lane._transition = id;
+  }
+  return id;
+}
+
+export void resumeAction(int id) {
+  ActionFrame? frame = actionFrame(id);
+  if (frame != null) currentActionId = frame.id;
+}
+
+export void suspendAction(int id) {
+  currentActionId = 0;
+}
+
+void finalizeActionFrame(ActionFrame frame, bool commit) {
+  for (int index = actionFrames.length - 1; index >= 0; index--) {
+    ActionFrame candidate = actionFrames[index];
+    if (candidate == frame || candidate.mergedInto == frame.id) {
+      actionFrames.splice(index, 1);
+    }
+  }
+  if (currentActionId == frame.id) currentActionId = 0;
+  commitActionPending(frame);
+  resolveOptimisticNodes(frame.nodes, commit, frame.id);
+  JsValue[] blockedStores = clearOptimisticStores(frame.stores);
+  for (int index = 0; index < blockedStores.length; index++) {
+    ambientOptimisticStores.push(blockedStores[index]);
+  }
+  releaseAffectsNodes(frame.affects);
+}
+
+void completeReadyActionFrames() {
+  bool completed = true;
+  while (completed) {
+    completed = false;
+    for (int index = 0; index < actionFrames.length; index++) {
+      ActionFrame frame = actionFrames[index];
+      if (frame.mergedInto == 0 && frame.activeCalls == 0 && !actionFrameBlocked(frame)) {
+        finalizeActionFrame(frame, false);
+        completed = true;
+        break;
+      }
+    }
+  }
+}
+
+export void endActionFor(int id, bool commit = false) {
+  ActionFrame? found = actionFrame(id);
+  if (found == null) return;
+  ActionFrame frame = JS.assume(found);
+  frame.activeCalls -= 1;
+  if (frame.activeCalls > 0) {
+    if (currentActionId == frame.id || currentActionId == id) currentActionId = 0;
+    return;
+  }
+  schedule();
+  flush();
+  if (currentActionId == frame.id || currentActionId == id) currentActionId = 0;
+}
+
+export void endAction(bool commit = false) {
+  if (currentActionId != 0) endActionFor(currentActionId, commit);
+}
+
+export bool inAction() {
+  return actionFrames.length > 0;
+}
+
+export func()->Task<T> action<T>(func()->Task<T> body) {
+  return () => {
+    beginAction();
+    Task<T>? task = null;
+    try {
+      task = body();
+    } catch (JsValue failure) {
+      endAction(false);
+      throw failure;
+    }
+    Task<T> activeTask = JS.assume(task);
+    return activeTask
+      .then((T value) => {
+        endAction(false);
+        return value;
+      });
+  };
+}
+
+// external.ts
+export void enableExternalSource(ExternalSourceConfig config) {
+  ExternalSourceConfig? previous = externalSourceConfig;
+  if (previous == null) {
+    externalSourceConfig = config;
+    return;
+  }
+  ExternalSourceConfig old = JS.assume(previous);
+  JsValue oldUntrack = old.untrack;
+  JsValue newUntrack = config.untrack;
+  JsValue combinedUntrack = JS.undefined();
+  if (JS.typeOf(oldUntrack) == "function" || JS.typeOf(newUntrack) == "function") {
+    combinedUntrack = JS.method1((JsValue _self, JsValue callback) => {
+      JsValue inner = callback;
+      if (JS.typeOf(newUntrack) == "function") {
+        inner = JS.method0((JsValue _innerSelf) =>
+          JS.call(newUntrack, JS.undefined(), callback)
+        );
+      }
+      if (JS.typeOf(oldUntrack) == "function") {
+        return JS.call(oldUntrack, JS.undefined(), inner);
+      }
+      return JS.call(inner, JS.undefined());
+    });
+  }
+  externalSourceConfig = new ExternalSourceConfig(
+    (func(JsValue)->JsValue track, func()->void trigger) => {
+      ExternalSource oldSource = old.factory(track, trigger);
+      ExternalSource newSource = config.factory(
+        (JsValue value) => oldSource.track(value),
+        trigger
+      );
+      return new ExternalSource(
+        (JsValue value) => newSource.track(value),
+        () => {
+          newSource.dispose();
+          oldSource.dispose();
+        }
+      );
+    },
+    combinedUntrack
+  );
+}
+
+export void _resetExternalSourceConfig() {
+  externalSourceConfig = null;
+}
+
+// dev.ts / invariants.ts
+export JsValue emitDiagnostic(JsValue event) {
+  diagnosticSequence += 1;
+  JsValue entry = JS.object("sequence", diagnosticSequence);
+  for (string key in event) {
+    entry[key] = event[key];
+  }
+  publishDiagnostic(entry);
+  return entry;
+}
+
+export void assertInvariant(bool condition, string name, string message) {
+  if (!DEV_ENABLED || condition) return;
+  string full = `[INVARIANT_VIOLATION] ${name}: ${message}`;
+  emitDiagnostic(JS.object(
+    "code", "INVARIANT_VIOLATION",
+    "kind", "error",
+    "severity", "error",
+    "message", full,
+    "data", JS.object("invariant", name)
+  ));
+  throw JS.construct(Error, full);
+}
+
+export Owner[] getChildren(Owner owner) {
+  Owner[] children = [];
+  Owner? child = owner._firstChild;
+  while (child != null) {
+    children.push(child);
+    child = child._nextSibling;
+  }
+  return children;
+}
+
+export Owner? getParent(Owner owner) {
+  return owner._parent;
+}
+
+export Signal<JsValue>[] getSources<T>(Computed<T> node) {
+  Signal<JsValue>[] sources = [];
+  Link? dependency = node._deps;
+  while (dependency != null) {
+    sources.push(dependency._dep);
+    dependency = dependency._nextDep;
+  }
+  return sources;
+}
+
+export Computed<JsValue>[] getObservers<T>(Signal<T> node) {
+  Computed<JsValue>[] observers = [];
+  Link? subscriber = node._subs;
+  while (subscriber != null) {
+    observers.push(subscriber._sub);
+    subscriber = subscriber._nextSub;
+  }
+  return observers;
+}
+
+export void clearDevSignals(Owner owner) {
+  if (!DEV_ENABLED) return;
+  JsValue rawOwner = JS.assume(owner);
+  rawOwner["_signals"] = JS.undefined();
+}
+
+void addDiagnosticNodeFields(JsValue event, Owner? owner, Signal<JsValue>? node) {
+  if (owner != null) {
+    if (owner.id != null) event["ownerId"] = JS.assume(owner.id);
+    JsValue rawOwner = JS.assume(owner);
+    if (!JS.isUndefined(rawOwner["_name"])) event["ownerName"] = rawOwner["_name"];
+  }
+  if (node != null) {
+    JsValue rawNode = JS.assume(node);
+    if (!JS.isUndefined(rawNode["_name"])) event["nodeName"] = rawNode["_name"];
+  }
+}
+
+export void throwPendingUntrackedReadDiagnostic(
+  string label,
+  Owner? owner = null,
+  Signal<JsValue>? node = null
+) {
+  string message =
+    `[PENDING_ASYNC_UNTRACKED_READ] Reading a pending async value directly in ${label}. ` +
+    "Async values must be read within a tracking scope (JSX, a memo, or an effect's compute function).";
+  if (DEV_ENABLED) {
+    JsValue event = JS.object(
+      "code", "PENDING_ASYNC_UNTRACKED_READ",
+      "kind", "async",
+      "severity", "error",
+      "message", message,
+      "data", JS.object("strictRead", label)
+    );
+    addDiagnosticNodeFields(event, owner, node);
+    emitDiagnostic(event);
+  }
+  throw JS.construct(Error, message);
+}
+
+export void warnStrictReadUntrackedDiagnostic(
+  string label,
+  Owner? owner = null,
+  Signal<JsValue>? node = null
+) {
+  if (!DEV_ENABLED) return;
+  string message =
+    `[STRICT_READ_UNTRACKED] Reactive value read directly in ${label} will not update. ` +
+    "Move it into a tracking scope (JSX, a memo, or an effect's compute function).";
+  JsValue event = JS.object(
+    "code", "STRICT_READ_UNTRACKED",
+    "kind", "strict-read",
+    "severity", "warn",
+    "message", message,
+    "data", JS.object("strictRead", label)
+  );
+  addDiagnosticNodeFields(event, owner, node);
+  emitDiagnostic(event);
+  JS.invoke(console, "warn", message);
+}
+
+void trackDevNode(Signal<JsValue>[] nodes, Signal<JsValue> node) {
+  if (!DEV_ENABLED) return;
+  for (int index = 0; index < nodes.length; index++) {
+    if (nodes[index] == node) return;
+  }
+  nodes.push(node);
+}
+
+bool devNodeDisposed(Signal<JsValue> node) {
+  if (node._disposed) return true;
+  if (!node._computed) return false;
+  Computed<JsValue> computedNode = JS.assume(node);
+  return (computedNode._flags & REACTIVE_DISPOSED) != 0;
+}
+
+export void devTrackHeldPending<T>(Signal<T> node) {
+  trackDevNode(devHeldPendingNodes, JS.assume(node));
+}
+
+export void devTrackCompanionOwner<T>(Signal<T> node) {
+  trackDevNode(devCompanionOwners, JS.assume(node));
+}
+
+export void devTrackOptimistic<T>(Signal<T> node) {
+  trackDevNode(devOptimisticNodes, JS.assume(node));
+}
+
+export void devTrackAffects<T>(Signal<T> node) {
+  trackDevNode(devAffectsMarkedNodes, JS.assume(node));
+}
+
+export void beginAsyncReporterWrites() {
+  if (DEV_ENABLED) asyncReporterWritesAllowed = true;
+}
+
+export void endAsyncReporterWrites() {
+  if (DEV_ENABLED) asyncReporterWritesAllowed = false;
+}
+
+export JsValue createAsyncReporters() {
+  JsValue reporters = JS.construct(Map);
+  if (!DEV_ENABLED) return reporters;
+  JsValue set = reporters["set"];
+  reporters["set"] = JS.method2((JsValue _self, JsValue key, JsValue value) => {
+    devCheckAsyncReporterWrite();
+    return JS.call(set, reporters, key, value);
+  });
+  return reporters;
+}
+
+export void devCheckFlushStart() {
+  if (!DEV_ENABLED) return;
+  assertInvariant(
+    !pendingCheckActive,
+    "INV-1",
+    "pending probe is active at flush start — an isPending() probe leaked"
+  );
+}
+
+bool registeredForOptimisticRevert(Signal<JsValue> node) {
+  for (int index = 0; index < ambientOptimisticNodes.length; index++) {
+    if (ambientOptimisticNodes[index] == node) return true;
+  }
+  for (int frameIndex = 0; frameIndex < actionFrames.length; frameIndex++) {
+    Signal<JsValue>[] nodes = actionFrames[frameIndex].nodes;
+    for (int index = 0; index < nodes.length; index++) {
+      if (nodes[index] == node) return true;
+    }
+  }
+  return false;
+}
+
+export void devCheckQuiescent() {
+  if (!DEV_ENABLED) return;
+  for (int index = 0; index < devHeldPendingNodes.length; index++) {
+    Signal<JsValue> node = devHeldPendingNodes[index];
+    if (devNodeDisposed(node) || !node._hasPending) {
+      devHeldPendingNodes.splice(index, 1);
+      index -= 1;
+    } else {
+      assertInvariant(
+        node._queuedPending,
+        "INV-7",
+        "a node holds a pending value at quiescence with no queued commit — the value can never commit"
+      );
+    }
+  }
+
+  for (int index = 0; index < devOptimisticNodes.length; index++) {
+    Signal<JsValue> node = devOptimisticNodes[index];
+    if (devNodeDisposed(node)) {
+      devOptimisticNodes.splice(index, 1);
+      index -= 1;
+    } else {
+      assertInvariant(
+        !node._overrideActive,
+        "INV-6",
+        "an optimistic override survived to quiescence — its transaction completed without reverting it"
+      );
+    }
+  }
+
+  for (int index = 0; index < devAffectsMarkedNodes.length; index++) {
+    Signal<JsValue> node = devAffectsMarkedNodes[index];
+    if (devNodeDisposed(node) || node._affectsCount == 0) {
+      devAffectsMarkedNodes.splice(index, 1);
+      index -= 1;
+    } else {
+      assertInvariant(
+        false,
+        "INV-10",
+        "an affects() mark survived to quiescence — its transaction did not release the mark"
+      );
+    }
+  }
+
+  for (int index = 0; index < devCompanionOwners.length; index++) {
+    Signal<JsValue> node = devCompanionOwners[index];
+    Signal<bool>? pendingSignal = node._pendingSignal;
+    if (devNodeDisposed(node)) {
+      if (pendingSignal != null) {
+        assertInvariant(
+          !pendingSignal._value,
+          "INV-9",
+          "isPending companion reports true for a disposed owner at quiescence"
+        );
+      }
+      devCompanionOwners.splice(index, 1);
+      index -= 1;
+      continue;
+    }
+
+    bool settled = !node._hasPending && !node._overrideActive;
+    if (node._computed) {
+      Computed<JsValue> computedNode = JS.assume(node);
+      settled = settled && (computedNode._statusFlags & STATUS_PENDING) == 0;
+    }
+    if (!settled) continue;
+    if (pendingSignal != null) {
+      assertInvariant(
+        !pendingSignal._value && !pendingSignal._overrideActive,
+        "INV-4",
+        "isPending companion reports pending for a fully settled node at quiescence"
+      );
+    }
+    Computed<JsValue>? shadow = JS.assume(node._latestValueComputed);
+    if (
+      shadow != null &&
+      (shadow._flags & (REACTIVE_DIRTY | REACTIVE_CHECK | REACTIVE_DISPOSED)) == 0
+    ) {
+      if (!JS.strictEqual(shadow._value, node._value) && !shadow._hasPending) {
+        shadow._value = node._value;
+        shadow._pendingValue = node._value;
+        insertSubsRaw(JS.assume(shadow), false);
+        schedule();
+      }
+      assertInvariant(
+        JS.strictEqual(shadow._value, node._value) || shadow._hasPending,
+        "INV-4",
+        "latest() companion holds a stale value for a settled node at quiescence"
+      );
+    }
+  }
+}
+
+export void devCheckMergedLaneEmpty(OptimisticLane lane) {
+  if (!DEV_ENABLED || lane._mergedInto == null) return;
+  assertInvariant(
+    lane._pendingAsyncValues.length == 0 && lane._render.length == 0 && lane._user.length == 0,
+    "INV-5",
+    "a merged lane accumulated pending async work or effects"
+  );
+}
+
+export void devCensusCompanions() {
+  if (!DEV_ENABLED) return;
+  for (int index = 0; index < devCompanionOwners.length; index++) {
+    if (devNodeDisposed(devCompanionOwners[index])) {
+      devCompanionOwners.splice(index, 1);
+      index -= 1;
+    }
+  }
+}
+
+export void devCheckActiveOverrides() {
+  if (!DEV_ENABLED) return;
+  for (int index = 0; index < devOptimisticNodes.length; index++) {
+    Signal<JsValue> node = devOptimisticNodes[index];
+    if (devNodeDisposed(node)) {
+      devOptimisticNodes.splice(index, 1);
+      index -= 1;
+    } else if (node._overrideActive) {
+      assertInvariant(
+        registeredForOptimisticRevert(node),
+        "INV-2",
+        "a node has an active optimistic override but is not registered for reversion"
+      );
+    }
+  }
+}
+
+export void devCheckAsyncReporterWrite() {
+  if (!DEV_ENABLED) return;
+  assertInvariant(
+    asyncReporterWritesAllowed,
+    "INV-3",
+    "transition async reporters were written outside the queue notification path"
+  );
+}

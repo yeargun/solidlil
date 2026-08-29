@@ -1,0 +1,474 @@
+import {
+  $REFRESH,
+  CONFIG_AUTO_DISPOSE,
+  Computed,
+  NodeOptions,
+  Owner,
+  Queue,
+  Signal,
+  cleanup,
+  computedDynamic,
+  createRoot,
+  dispose,
+  effect,
+  getObserver,
+  getOwner,
+  globalQueue,
+  optimisticComputed,
+  optimisticSignal,
+  read,
+  readComputed,
+  runWithOwner,
+  setMemo,
+  setSignal,
+  signal,
+  trackedEffect,
+  updateSignal
+} from "./core/index";
+import { emitDiagnostic, registerGraph } from "./core/dev";
+import { installOptimisticEngine, untrack } from "./core/kernel";
+import { Error, Promise, console, queueMicrotask } from "../../_host";
+
+NodeOptions<JsValue> nodeOptions(JsValue source) {
+  NodeOptions<JsValue> options = new NodeOptions<JsValue>();
+  if (JS.isNullish(source)) return options;
+  if (!JS.isUndefined(source["id"])) options.id = JS.string(source["id"]);
+  if (!JS.isUndefined(source["name"])) options.name = JS.string(source["name"]);
+  options.transparent = source["transparent"].truthy();
+  options.ownedWrite = source["ownedWrite"].truthy();
+  options.noSnapshot = source["_noSnapshot"].truthy();
+  options.lazy = source["lazy"].truthy();
+  options.sync = source["sync"].truthy();
+  JsValue equals = source["equals"];
+  if (JS.strictEqual(equals, false)) {
+    options.equalsFalse = true;
+  } else if (JS.typeOf(equals) == "function") {
+    options.equals = (JsValue previous, JsValue next) =>
+      JS.call(equals, JS.undefined(), previous, next).truthy();
+  }
+  JsValue unobserved = source["unobserved"];
+  if (JS.typeOf(unobserved) == "function") {
+    options.unobserved = () => { JS.call(unobserved, JS.undefined()); };
+  }
+  return options;
+}
+
+export JsValue accessor<T>(Signal<T> node) {
+  JsValue getter = JS.method0((JsValue _self) => {
+    T value = read(node);
+    JsValue result = JS.assume(value);
+    return result;
+  });
+  JsValue refreshKey = JS.assume($REFRESH);
+  JsValue rawNode = JS.assume(node);
+  getter[refreshKey] = rawNode;
+  return getter;
+}
+
+export JsValue computedAccessor<T>(Computed<T> node) {
+  JsValue getter = JS.method0((JsValue _self) => {
+    T value = readComputed(node);
+    JsValue result = JS.assume(value);
+    return result;
+  });
+  JsValue refreshKey = JS.assume($REFRESH);
+  JsValue rawNode = JS.assume(node);
+  getter[refreshKey] = rawNode;
+  return getter;
+}
+
+JsValue setter(Signal<JsValue> node, bool memo) {
+  return JS.method1((JsValue _self, JsValue value) => {
+    JsValue next = JS.undefined();
+    if (JS.typeOf(value) == "function") {
+      next = updateSignal(node, (JsValue previous) =>
+        JS.call(value, JS.undefined(), previous)
+      );
+      if (memo) {
+        Computed<JsValue> memoNode = JS.assume(node);
+        setMemo(memoNode, next);
+      }
+      return next;
+    }
+    if (memo) {
+      Computed<JsValue> memoNode = JS.assume(node);
+      return setMemo(memoNode, value);
+    }
+    return setSignal(node, value);
+  });
+}
+
+export JsValue createSignal(JsValue first, JsValue rawOptions) {
+  NodeOptions<JsValue> options = nodeOptions(rawOptions);
+  if (JS.typeOf(first) == "function") {
+    bool hasInitial =
+      !JS.isNullish(rawOptions) &&
+      JS.typeOf(rawOptions) == "object" &&
+      JS.in("loadingValue", rawOptions);
+    JsValue initial = if (hasInitial) { rawOptions["loadingValue"] } else { JS.undefined() };
+    Computed<JsValue> node = computedDynamic(
+      (JsValue previous) => JS.call(first, JS.undefined(), previous),
+      options,
+      initial,
+      hasInitial
+    );
+    node._config = node._config ^ (node._config & CONFIG_AUTO_DISPOSE);
+    if (JS.isNullish(rawOptions) || !rawOptions["_skipGraph"].truthy()) {
+      node._userWritable = true;
+    }
+    Signal<JsValue> source = JS.assume(node);
+    return JS.array(computedAccessor(node), setter(source, true));
+  }
+  Signal<JsValue> node = signal(first, options);
+  if (JS.isNullish(rawOptions) || !rawOptions["_skipGraph"].truthy()) {
+    node._userWritable = true;
+    registerGraph(node, getOwner());
+  }
+  return JS.array(accessor(node), setter(node, false));
+}
+
+export JsValue createMemo(JsValue compute, JsValue rawOptions) {
+  NodeOptions<JsValue> options = nodeOptions(rawOptions);
+  bool hasInitial =
+    !JS.isNullish(rawOptions) &&
+    JS.typeOf(rawOptions) == "object" &&
+    JS.in("loadingValue", rawOptions);
+  JsValue initial = if (hasInitial) { rawOptions["loadingValue"] } else { JS.undefined() };
+  Computed<JsValue> node = computedDynamic(
+    (JsValue previous) => JS.call(compute, JS.undefined(), previous),
+    options,
+    initial,
+    hasInitial
+  );
+  return computedAccessor(node);
+}
+
+class EffectDriver {
+  JsValue compute;
+  JsValue apply;
+  JsValue previous;
+  JsValue currentCleanup;
+
+  init(JsValue compute, JsValue apply) {
+    this.compute = compute;
+    this.apply = apply;
+    this.previous = JS.undefined();
+    this.currentCleanup = JS.undefined();
+  }
+
+  JsValue calculate() {
+    JsValue value = JS.call(this.compute, JS.undefined(), this.previous);
+    this.previous = value;
+    return value;
+  }
+
+  void commit(JsValue value, JsValue previous) {
+    if (JS.typeOf(this.currentCleanup) == "function") {
+      JsValue previousCleanup = this.currentCleanup;
+      this.currentCleanup = JS.undefined();
+      JS.call(previousCleanup, JS.undefined());
+    }
+    JsValue nextCleanup = JS.call(this.apply, JS.undefined(), value, previous);
+    if (!JS.isUndefined(nextCleanup) && JS.typeOf(nextCleanup) != "function") {
+      throw JS.construct(
+        Error,
+        "effect callback returned an invalid cleanup value. Return a cleanup function or undefined."
+      );
+    }
+    this.currentCleanup = nextCleanup;
+  }
+
+  void dispose() {
+    if (JS.typeOf(this.currentCleanup) == "function") {
+      JsValue previousCleanup = this.currentCleanup;
+      this.currentCleanup = JS.undefined();
+      JS.call(previousCleanup, JS.undefined());
+    }
+  }
+}
+
+Computed<JsValue> createEffectInternal(
+  JsValue compute,
+  JsValue effectCallback,
+  JsValue rawOptions,
+  bool user
+) {
+  if (JS.isUndefined(effectCallback)) {
+    string message =
+      "[MISSING_EFFECT_FN] createEffect requires both a compute function and an effect function.";
+    emitDiagnostic(JS.object(
+      "code", "MISSING_EFFECT_FN",
+      "kind", "lifecycle",
+      "severity", "error",
+      "message", message
+    ));
+    throw JS.construct(Error, message);
+  }
+  JsValue apply = effectCallback;
+  if (JS.typeOf(effectCallback) != "function") apply = effectCallback["effect"];
+  EffectDriver driver = new EffectDriver(compute, apply);
+  bool defer = !JS.isNullish(rawOptions) && rawOptions["defer"].truthy();
+  bool scheduleInitial =
+    !JS.isNullish(rawOptions) &&
+    JS.typeOf(rawOptions) == "object" &&
+    rawOptions["schedule"].truthy();
+  (func(JsValue)->void)? handleError = null;
+  if (
+    JS.typeOf(effectCallback) != "function" &&
+    JS.typeOf(effectCallback["error"]) == "function"
+  ) {
+    JsValue errorCallback = effectCallback["error"];
+    handleError = (JsValue failure) => {
+      JsValue cleanupCallback = JS.method0((JsValue _self) => {
+        driver.dispose();
+        return JS.undefined();
+      });
+      JS.call(errorCallback, JS.undefined(), failure, cleanupCallback);
+    };
+  }
+  Computed<JsValue> node = effect(
+    () => driver.calculate(),
+    (JsValue value, JsValue previous) => driver.commit(value, previous),
+    user,
+    defer,
+    scheduleInitial,
+    handleError
+  );
+  node._effectCleanup = () => driver.dispose();
+  return node;
+}
+
+export void createEffect(JsValue compute, JsValue apply, JsValue options) {
+  createEffectInternal(compute, apply, options, true);
+}
+
+export void createRenderEffect(JsValue compute, JsValue apply, JsValue options) {
+  createEffectInternal(compute, apply, options, false);
+}
+
+export void createTrackedEffect(JsValue compute, JsValue _options) {
+  EffectDriver driver = new EffectDriver(compute, JS.undefined());
+  Computed<int> node = trackedEffect(() => {
+    driver.dispose();
+    JsValue nextCleanup = JS.call(compute, JS.undefined());
+    if (!JS.isUndefined(nextCleanup) && JS.typeOf(nextCleanup) != "function") {
+      throw JS.construct(
+        Error,
+        "trackedEffect callback returned an invalid cleanup value. Return a cleanup function or undefined."
+      );
+    }
+    driver.currentCleanup = nextCleanup;
+  });
+  node._effectCleanup = () => driver.dispose();
+}
+
+class ReactionDriver {
+  JsValue callback;
+  JsValue options;
+  JsValue currentCleanup;
+  Owner? owner;
+  Computed<JsValue>? arm;
+
+  init(JsValue callback, JsValue options, Owner? owner) {
+    this.callback = callback;
+    this.options = options;
+    this.currentCleanup = JS.undefined();
+    this.owner = owner;
+    this.arm = null;
+  }
+
+  void disarm() {
+    if (this.arm != null) {
+      Computed<JsValue> active = JS.assume(this.arm);
+      this.arm = null;
+      dispose(active);
+    }
+  }
+
+  void fire() {
+    Computed<JsValue>? active = this.arm;
+    this.arm = null;
+    if (JS.typeOf(this.currentCleanup) == "function") {
+      JS.call(this.currentCleanup, JS.undefined());
+      this.currentCleanup = JS.undefined();
+    }
+    JsValue result = if (JS.typeOf(this.callback) == "function") {
+      JS.call(this.callback, JS.undefined())
+    } else {
+      JS.call(this.callback["effect"], JS.undefined())
+    };
+    if (!JS.isUndefined(result) && JS.typeOf(result) != "function") {
+      throw JS.construct(
+        Error,
+        "Reaction callback returned an invalid cleanup value. Return a cleanup function or undefined."
+      );
+    }
+    this.currentCleanup = result;
+    if (active != null) dispose(active);
+  }
+
+  void track(JsValue tracking) {
+    this.disarm();
+    runWithOwner(this.owner, () => {
+      bool defer = true;
+      Computed<JsValue> node = effect(
+        () => {
+          JS.call(tracking, JS.undefined());
+          return JS.undefined();
+        },
+        (JsValue _value, JsValue _previous) => this.fire(),
+        true,
+        defer
+      );
+      this.arm = node;
+      return 0;
+    });
+  }
+
+  void disposeAll() {
+    this.disarm();
+    if (JS.typeOf(this.currentCleanup) == "function") {
+      JS.call(this.currentCleanup, JS.undefined());
+      this.currentCleanup = JS.undefined();
+    }
+  }
+}
+
+export JsValue createReaction(JsValue callback, JsValue options) {
+  ReactionDriver driver = new ReactionDriver(callback, options, getOwner());
+  cleanup(() => driver.disposeAll());
+  return JS.method1((JsValue _self, JsValue tracking) => {
+    driver.track(tracking);
+    return JS.undefined();
+  });
+}
+
+export JsValue createOptimistic(JsValue first, JsValue rawOptions) {
+  installOptimisticEngine();
+  NodeOptions<JsValue> options = nodeOptions(rawOptions);
+  if (JS.typeOf(first) == "function") {
+    Computed<JsValue> node = computedDynamic(
+      (JsValue previous) => JS.call(first, JS.undefined(), previous),
+      options
+    );
+    node._optimistic = true;
+    if (node._pendingSources.length > 0) node._optimisticAsyncBacked = true;
+    node._config = node._config ^ (node._config & CONFIG_AUTO_DISPOSE);
+    if (JS.isNullish(rawOptions) || !rawOptions["_skipGraph"].truthy()) {
+      node._userWritable = true;
+    }
+    Signal<JsValue> source = JS.assume(node);
+    return JS.array(computedAccessor(node), setter(source, false));
+  }
+  Signal<JsValue> node = optimisticSignal(first, options);
+  if (JS.isNullish(rawOptions) || !rawOptions["_skipGraph"].truthy()) {
+    node._userWritable = true;
+    registerGraph(node, getOwner());
+  }
+  return JS.array(accessor(node), setter(node, false));
+}
+
+export JsValue onCleanup(JsValue callback) {
+  Owner? owner = getOwner();
+  if (owner == null) {
+    string message =
+      "[NO_OWNER_CLEANUP] onCleanup called outside a reactive context will never be run";
+    emitDiagnostic(JS.object(
+      "code", "NO_OWNER_CLEANUP",
+      "kind", "lifecycle",
+      "severity", "warn",
+      "message", message
+    ));
+    JS.invoke(console, "warn", message);
+  }
+  if (owner != null && (owner._config & (1 << 4)) != 0) {
+    string message =
+      "[CLEANUP_IN_FORBIDDEN_SCOPE] Cannot use onCleanup inside createTrackedEffect or onSettled; return a cleanup function instead";
+    emitDiagnostic(JS.object(
+      "code", "CLEANUP_IN_FORBIDDEN_SCOPE",
+      "kind", "lifecycle",
+      "severity", "error",
+      "message", message
+    ));
+    throw JS.construct(
+      Error,
+      message
+    );
+  }
+  cleanup(() => { JS.call(callback, JS.undefined()); });
+  return callback;
+}
+
+export void onSettled(JsValue callback) {
+  Owner? owner = getOwner();
+  if (owner == null || (owner._config & (1 << 4)) != 0) {
+    globalQueue.enqueue(2, (int _type) => {
+      JsValue result = JS.call(callback, JS.undefined());
+      if (!JS.isUndefined(result)) {
+        string message =
+          "[SETTLED_CLEANUP_UNOWNED] onSettled returned a cleanup in an unowned scope; a cleanup can only be honored under an owner.";
+        emitDiagnostic(JS.object(
+          "code", "SETTLED_CLEANUP_UNOWNED",
+          "kind", "lifecycle",
+          "severity", "error",
+          "message", message
+        ));
+        throw JS.construct(
+          Error,
+          message
+        );
+      }
+    });
+  } else {
+    trackedEffect(() => {
+      JsValue result = untrack(() => JS.call(callback, JS.undefined()));
+      if (JS.typeOf(result) == "function") {
+        cleanup(() => { JS.call(result, JS.undefined()); });
+      } else if (!JS.isUndefined(result)) {
+        throw JS.construct(
+          Error,
+          "onSettled callback returned an invalid cleanup value. Return a cleanup function or undefined."
+        );
+      }
+    });
+  }
+}
+
+export JsValue resolve(JsValue callback) {
+  if (getObserver() != null) {
+    throw JS.construct(
+      Error,
+      "Cannot call resolve inside a reactive scope; it only resolves the current value and does not track updates."
+    );
+  }
+  return JS.construct(
+    Promise,
+    JS.method2((JsValue _self, JsValue resolvePromise, JsValue rejectPromise) => {
+      createRoot((func()->void disposeRoot) => {
+        Owner? owner = getOwner();
+        if (owner != null) {
+          Queue resolveQueue = new Queue();
+          resolveQueue._parent = owner._queue;
+          resolveQueue._enqueueHook = JS.assume((int type, func(int)->void queued) => {
+            queueMicrotask(() => queued(type));
+          });
+          owner._queue = resolveQueue;
+        }
+        JsValue effectBundle = JS.object();
+        effectBundle["effect"] = JS.method1((JsValue _effectSelf, JsValue value) => {
+          JS.call(resolvePromise, JS.undefined(), value);
+          disposeRoot();
+          return JS.undefined();
+        });
+        effectBundle["error"] = JS.method2((JsValue _errorSelf, JsValue failure, JsValue _cleanup) => {
+          JS.call(rejectPromise, JS.undefined(), failure);
+          disposeRoot();
+          return JS.undefined();
+        });
+        createEffectInternal(callback, effectBundle, JS.undefined(), true);
+        return 0;
+      });
+      return JS.undefined();
+    })
+  );
+}

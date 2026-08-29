@@ -1,0 +1,5 @@
+import { createOptimisticStoreKernel } from "./_kernel";
+
+export JsValue createOptimisticStore(JsValue first, JsValue second, JsValue options) {
+  return createOptimisticStoreKernel(first, second, options);
+}

@@ -1,0 +1,88 @@
+import { Error, console } from "../../dom-expressions/runtime/_host";
+
+void throwInBrowser(string name) {
+  JsValue error = JS.construct(Error, name + " is not supported in the browser, returning undefined");
+  JS.invoke(console, "error", error);
+}
+
+export JsValue renderToString(JsValue fn, JsValue options = JS.undefined()) {
+  throwInBrowser("renderToString");
+  return JS.undefined();
+}
+
+export JsValue renderToStream(JsValue fn, JsValue options = JS.undefined()) {
+  throwInBrowser("renderToStream");
+  return JS.undefined();
+}
+
+export JsValue createResponseStub() {
+  throwInBrowser("createResponseStub");
+  return JS.undefined();
+}
+
+export JsValue createRequestEvent(JsValue request, JsValue options = JS.undefined()) {
+  throwInBrowser("createRequestEvent");
+  return JS.undefined();
+}
+
+export JsValue getExpectedRedirectStatus(JsValue response) {
+  throwInBrowser("getExpectedRedirectStatus");
+  return JS.undefined();
+}
+
+export JsValue createSSRResponse() {
+  throwInBrowser("createSSRResponse");
+  return JS.undefined();
+}
+
+export JsValue commitEventResponse(JsValue response, JsValue event = JS.undefined()) {
+  throwInBrowser("commitEventResponse");
+  return JS.undefined();
+}
+
+export JsValue composeMiddleware(JsValue middlewares) {
+  throwInBrowser("composeMiddleware");
+  return JS.undefined();
+}
+
+export JsValue ssr = JS.method1((JsValue _self, JsValue _template) => JS.undefined());
+
+export JsValue ssrElement(JsValue name, JsValue props, JsValue children, bool needsId) {
+  return JS.undefined();
+}
+
+export JsValue ssrClassName(JsValue value) {
+  return JS.undefined();
+}
+
+export JsValue ssrStyle(JsValue value) {
+  return JS.undefined();
+}
+
+export JsValue ssrStyleProperty(string name, JsValue value) {
+  return JS.undefined();
+}
+
+export JsValue ssrAttribute(string key, JsValue value) {
+  return JS.undefined();
+}
+
+export JsValue ssrGroup(JsValue fn, int count) {
+  return JS.undefined();
+}
+
+export JsValue ssrHydrationKey() {
+  return JS.undefined();
+}
+
+export JsValue resolveSSRNode(
+  JsValue node,
+  JsValue result = JS.undefined(),
+  JsValue top = JS.undefined()
+) {
+  return JS.undefined();
+}
+
+export JsValue escape(JsValue value, JsValue attribute = JS.undefined()) {
+  return JS.undefined();
+}

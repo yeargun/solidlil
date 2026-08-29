@@ -1,0 +1,146 @@
+import {
+  beginAction,
+  endActionFor,
+  flush,
+  getOwner,
+  isThenable,
+  Owner,
+  resumeAction,
+  suspendAction
+} from "./kernel";
+import { CONFIG_CHILDREN_FORBIDDEN } from "./constants";
+import { Error, Promise } from "../../../_host";
+
+void finishAction(JsValue state, JsValue value, bool failed) {
+  if (state[4].truthy()) return;
+  state[4] = true;
+  endActionFor(JS.number(state[3]).toInt(), false);
+  if (failed) JS.call(state[2], JS.undefined(), value);
+  else JS.call(state[1], JS.undefined(), value);
+}
+
+void stepAction(JsValue state, JsValue input = JS.undefined(), bool failed = false) {
+  if (state[4].truthy()) return;
+  int actionId = JS.number(state[3]).toInt();
+  resumeAction(actionId);
+  JsValue rawStep = JS.undefined();
+  try {
+    rawStep = if (failed) {
+      JS.invoke(state[0], "throw", input)
+    } else {
+      JS.invoke(state[0], "next", input)
+    };
+  } catch (JsValue failure) {
+    finishAction(state, failure, true);
+    return;
+  }
+
+  bool asynchronous = false;
+  try {
+    asynchronous = isThenable(rawStep);
+  } catch (JsValue failure) {
+    finishAction(state, failure, true);
+    return;
+  }
+  if (!asynchronous) {
+    runActionStep(state, rawStep);
+    return;
+  }
+  suspendAction(actionId);
+  JS.invoke(
+    rawStep,
+    "then",
+    JS.method1((JsValue _self, JsValue step) => {
+      runActionStep(state, step);
+      return JS.undefined();
+    }),
+    JS.method1((JsValue _self, JsValue failure) => {
+      finishAction(state, failure, true);
+      return JS.undefined();
+    })
+  );
+}
+
+void runActionStep(JsValue state, JsValue step) {
+  if (state[4].truthy()) return;
+  if (step["done"].truthy()) {
+    finishAction(state, step["value"], false);
+    return;
+  }
+
+  JsValue yielded = step["value"];
+  bool asynchronous = false;
+  try {
+    asynchronous = isThenable(yielded);
+  } catch (JsValue failure) {
+    stepAction(state, failure, true);
+    return;
+  }
+  if (!asynchronous) {
+    stepAction(state, yielded, false);
+    return;
+  }
+
+  bool callbackSettled = false;
+  int actionId = JS.number(state[3]).toInt();
+  suspendAction(actionId);
+  try {
+    JS.invoke(
+      yielded,
+      "then",
+      JS.method1((JsValue _self, JsValue value) => {
+        if (callbackSettled) return JS.undefined();
+        callbackSettled = true;
+        stepAction(state, value, false);
+        flush();
+        return JS.undefined();
+      }),
+      JS.method1((JsValue _self, JsValue failure) => {
+        if (callbackSettled) return JS.undefined();
+        callbackSettled = true;
+        stepAction(state, failure, true);
+        flush();
+        return JS.undefined();
+      })
+    );
+  } catch (JsValue failure) {
+    if (!callbackSettled) {
+      callbackSettled = true;
+      stepAction(state, failure, true);
+      flush();
+    }
+  }
+}
+
+void startActionRunner(JsValue iterator, JsValue resolve, JsValue reject, int actionId) {
+  JsValue state = JS.array(iterator, resolve, reject, actionId, false);
+  stepAction(state);
+}
+
+export JsValue action = JS.method1((JsValue _self, JsValue generatorFn) => {
+  return JS.methodRest((JsValue callSelf, JsValue args) => {
+    Owner? owner = getOwner();
+    if (owner != null && (owner._config & CONFIG_CHILDREN_FORBIDDEN) == 0) {
+      throw JS.construct(
+        Error,
+        "[ACTION_CALLED_IN_OWNED_SCOPE] Calling an action inside an owned scope (component, computation) is not allowed. Call it from an event handler or another imperative scope."
+      );
+    }
+    return JS.construct(
+      Promise,
+      JS.method2((JsValue _executorSelf, JsValue resolve, JsValue reject) => {
+        int actionId = beginAction();
+        JsValue iterator = JS.undefined();
+        try {
+          iterator = JS.invoke(generatorFn, "apply", callSelf, args);
+        } catch (JsValue failure) {
+          endActionFor(actionId, false);
+          JS.call(reject, JS.undefined(), failure);
+          return JS.undefined();
+        }
+        startActionRunner(iterator, resolve, reject, actionId);
+        return JS.undefined();
+      })
+    );
+  });
+});

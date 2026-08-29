@@ -1,0 +1,21 @@
+import {
+  OptimisticLane,
+  activeLanes,
+  assignOrMergeLane,
+  findLane,
+  getOrCreateLane,
+  hasActiveOverride,
+  mergeLanes,
+  resolveLane
+} from "./kernel";
+
+export {
+  OptimisticLane,
+  activeLanes,
+  assignOrMergeLane,
+  findLane,
+  getOrCreateLane,
+  hasActiveOverride,
+  mergeLanes,
+  resolveLane
+};

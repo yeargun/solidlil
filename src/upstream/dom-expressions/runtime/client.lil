@@ -1,0 +1,1896 @@
+import {
+  ChildProperties,
+  DOMElements,
+  DOMWithState,
+  DelegatedEvents,
+  MathMLElements,
+  Namespaces,
+  RawTextElements,
+  SVGElements,
+  VoidElements,
+  $$HOST,
+  $$SLOT
+} from "./constants";
+import { reconcileArrays } from "./reconcile";
+import {
+  HEAD_ATTR_NAME,
+  HEAD_ELIGIBLE_TAGS,
+  STYLESHEET_FETCH_META,
+  classifyHeadTag,
+  evalHeadProps,
+  evalHeadValue,
+  replaceableIdentity,
+  resolveHead,
+  resourceIdentity
+} from "./head";
+import {
+  clearFlashCookie,
+  hasFlashCookie,
+  parseCookieHeader,
+  serializeCookie
+} from "./cookies";
+import {
+  getServerFunctionMetadata,
+  getServerFunctionRPC,
+  isServerFunction
+} from "./server-functions/registry";
+import {
+  createComponent,
+  effect,
+  flatten,
+  getOwner,
+  memo,
+  mergeProps,
+  root,
+  runWithOwner,
+  sharedConfig,
+  untrack,
+  waitAsset
+} from "../../solid-web/src/core";
+import {
+  Array,
+  Error,
+  Function,
+  JSON,
+  Map,
+  Object,
+  Promise,
+  Reflect,
+  Symbol,
+  arguments,
+  clearTimeout,
+  console,
+  document,
+  globalThis,
+  performance,
+  queueMicrotask,
+  setTimeout
+} from "./_host";
+
+export {
+  ChildProperties,
+  DOMElements,
+  DOMWithState,
+  DelegatedEvents,
+  MathMLElements,
+  Namespaces,
+  RawTextElements,
+  SVGElements,
+  VoidElements,
+  clearFlashCookie,
+  createComponent,
+  effect,
+  getOwner,
+  getServerFunctionMetadata,
+  getServerFunctionRPC,
+  hasFlashCookie,
+  isServerFunction,
+  memo,
+  mergeProps,
+  parseCookieHeader,
+  serializeCookie,
+  untrack
+};
+
+string EVENT_OWNER = "_$DX_EVENT_OWNER";
+JsValue INNER_OWNED = JS.object();
+Set<string> delegatedEvents = new Set<string>();
+string[] delegatedEventList = [];
+Map<JsValue, JsValue> delegatedContainers = new Map<JsValue, JsValue>();
+JsValue[] delegatedContainerList = [];
+bool DEV = false;
+
+int lengthOf(JsValue value) {
+  return JS.number(value["length"]).toInt();
+}
+
+bool same(JsValue left, JsValue right) {
+  return JS.strictEqual(left, right);
+}
+
+bool isFunction(JsValue value) {
+  return JS.typeOf(value) == "function";
+}
+
+bool isNode(JsValue value) {
+  return !JS.isNullish(value) && value["nodeType"].truthy();
+}
+
+JsValue call0(JsValue fn) {
+  return JS.call(fn, JS.undefined());
+}
+
+JsValue call1(JsValue fn, JsValue first) {
+  return JS.call(fn, JS.undefined(), first);
+}
+
+JsValue voidFn() {
+  return JS.undefined();
+}
+
+JsValue rethrow(JsValue error) {
+  throw error;
+}
+
+export { voidFn as generateHydrationScript };
+export { voidFn as HydrationScript };
+export { voidFn as getRequestEvent };
+
+export JsValue render(JsValue code, JsValue element, JsValue initial) {
+  JsValue options = arguments[3];
+  if (JS.isUndefined(options)) options = JS.object();
+  if (DEV && !element.truthy()) {
+    throw JS.construct(
+      Error,
+      "The `element` passed to `render(..., element)` doesn't exist. Make sure `element` exists in the document."
+    );
+  }
+  JsValue box = JS.object("disposer", JS.undefined());
+  registerDelegatedRoot(element);
+  try {
+    JS.call(
+      root,
+      JS.undefined(),
+      JS.method1((JsValue _self, JsValue dispose) => {
+        box["disposer"] = dispose;
+        if (same(element, document)) {
+          JsValue tree = call0(code);
+          effect(
+            JS.method0((JsValue _compute) => JS.call(flatten, JS.undefined(), tree)),
+            JS.method1((JsValue _apply, JsValue _value) => JS.undefined())
+          );
+        } else {
+          JsValue tree = call0(code);
+          JsValue first = element["firstChild"];
+          JsValue marker = JS.undefined();
+          if (first.truthy()) marker = null;
+          JS.call(
+            JS.assume(insert),
+            JS.undefined(),
+            element,
+            JS.method0((JsValue _tree) => tree),
+            marker,
+            initial,
+            options["insertOptions"]
+          );
+        }
+        return JS.undefined();
+      }),
+      JS.object("id", options["renderId"])
+    );
+  } catch (JsValue error) {
+    JsValue disposer = box["disposer"];
+    if (disposer.truthy()) call0(disposer);
+    unregisterDelegatedRoot(element);
+    throw error;
+  }
+  return JS.method0((JsValue _self) => {
+    call0(box["disposer"]);
+    unregisterDelegatedRoot(element);
+    element["textContent"] = "";
+    return JS.undefined();
+  });
+}
+
+JsValue createTemplateNode(string html, bool bypassGuard, int flag) {
+  if (DEV && isHydrating(JS.undefined()) && !bypassGuard) {
+    throw JS.construct(
+      Error,
+      "Failed attempt to create new DOM elements during hydration. Check that the libraries you are using support hydration."
+    );
+  }
+  JsValue templateNode = JS.invoke(document, "createElement", "template");
+  templateNode["innerHTML"] = html;
+  if (flag == 2) return templateNode["content"]["firstChild"]["firstChild"];
+  return templateNode["content"]["firstChild"];
+}
+
+export JsValue template(string html, JsValue flag) {
+  JsValue state = JS.object("node", JS.undefined());
+  int flagNumber = 0;
+  if (!JS.isUndefined(flag)) flagNumber = JS.number(flag).toInt();
+  JsValue factory = JS.method1((JsValue _self, JsValue bypassValue) => {
+    JsValue node = state["node"];
+    if (JS.isUndefined(node)) {
+      node = createTemplateNode(html, bypassValue.truthy(), flagNumber);
+      state["node"] = node;
+    }
+    if (flagNumber == 1) return JS.invoke(document, "importNode", node, true);
+    return JS.invoke(node, "cloneNode", true);
+  });
+  if (DEV) {
+    string source = html;
+    if (flagNumber == 2) source = JS.string(JS.invoke(html, "replace", new Regex("^<[^>]+>"), ""));
+    factory["_html"] = source;
+  }
+  return factory;
+}
+
+export void delegateEvents(string[] eventNames) {
+  for (int index = 0; index < eventNames.length; index++) {
+    string name = eventNames[index];
+    if (delegatedEvents.has(name)) continue;
+    delegatedEvents.add(name);
+    delegatedEventList.push(name);
+    for (int containerIndex = 0; containerIndex < delegatedContainerList.length; containerIndex++) {
+      JsValue container = delegatedContainerList[containerIndex];
+      JsValue? state = delegatedContainers.get(container);
+      if (state != null) attachDelegatedEvent(name, container, state);
+    }
+  }
+}
+
+export void registerDelegatedRoot(JsValue delegatedRoot) {
+  JsValue state = registerDelegatedContainer(delegatedRoot);
+  if (!JS.isUndefined(state)) {
+    JsValue roots = state["roots"];
+    if (roots.truthy()) state["roots"] = JS.number(roots) + 1;
+    else state["roots"] = 1;
+  }
+}
+
+export void unregisterDelegatedRoot(JsValue delegatedRoot) {
+  JsValue? stateValue = delegatedContainers.get(delegatedRoot);
+  if (stateValue != null) {
+    JsValue roots = stateValue["roots"];
+    if (JS.number(roots) > 1) stateValue["roots"] = JS.number(roots) - 1;
+    else JS.invoke(Reflect, "deleteProperty", stateValue, "roots");
+  }
+  unregisterDelegatedContainer(delegatedRoot);
+}
+
+export JsValue registerDelegatedContainer(JsValue container) {
+  JsValue owner = arguments[1];
+  if (JS.isUndefined(owner)) owner = container;
+  if (!container.truthy() || !owner.truthy()) return JS.undefined();
+  JsValue? existing = delegatedContainers.get(container);
+  JsValue state = JS.undefined();
+  if (existing == null) {
+    state = JS.object(
+      "owners", JS.construct(Map),
+      "handlers", JS.construct(Map)
+    );
+    delegatedContainers.set(container, state);
+    delegatedContainerList.push(container);
+  } else {
+    state = existing;
+  }
+  JsValue count = JS.invoke(state["owners"], "get", owner);
+  JsValue nextCount = 1;
+  if (count.truthy()) nextCount = JS.number(count) + 1;
+  JS.invoke(state["owners"], "set", owner, nextCount);
+  for (int index = 0; index < delegatedEventList.length; index++) {
+    attachDelegatedEvent(delegatedEventList[index], container, state);
+  }
+  return state;
+}
+
+export void unregisterDelegatedContainer(JsValue container) {
+  JsValue owner = arguments[1];
+  if (JS.isUndefined(owner)) owner = container;
+  JsValue? found = delegatedContainers.get(container);
+  if (found == null) return;
+  JsValue state = found;
+  JsValue count = JS.invoke(state["owners"], "get", owner);
+  if (JS.number(count) > 1) JS.invoke(state["owners"], "set", owner, JS.number(count) - 1);
+  else JS.invoke(state["owners"], "delete", owner);
+  if (JS.number(state["owners"]["size"]) != 0) return;
+  JS.invoke(state["handlers"], "forEach", JS.method2((JsValue _self, JsValue handler, JsValue name) => {
+    JS.invoke(container, "removeEventListener", name, handler);
+    return JS.undefined();
+  }));
+  delegatedContainers.delete(container);
+}
+
+void attachDelegatedEvent(string name, JsValue container, JsValue state) {
+  if (JS.invoke(state["handlers"], "has", name).truthy()) return;
+  JsValue handler = JS.method1((JsValue _self, JsValue event) => {
+    eventHandler(event, container, state);
+    return JS.undefined();
+  });
+  JS.invoke(state["handlers"], "set", name, handler);
+  JS.invoke(container, "addEventListener", name, handler);
+}
+
+export JsValue getDelegatedRoot(JsValue node) {
+  while (node.truthy()) {
+    JsValue? found = delegatedContainers.get(node);
+    if (found != null && found["roots"].truthy()) return node;
+    JsValue next = node["_$host"];
+    if (!next.truthy()) next = node["parentNode"];
+    if (!next.truthy()) next = node["host"];
+    node = next;
+  }
+  return JS.undefined();
+}
+
+JsValue findOwner(JsValue target, JsValue state) {
+  JsValue node = target;
+  int distance = 0;
+  while (node.truthy()) {
+    if (JS.invoke(state["owners"], "has", node).truthy()) {
+      return JS.object("owner", node, "distance", distance);
+    }
+    distance += 1;
+    JsValue next = node["_$host"];
+    if (!next.truthy()) next = node["parentNode"];
+    if (!next.truthy()) next = node["host"];
+    node = next;
+  }
+  return JS.undefined();
+}
+
+export void setProperty(JsValue node, string name, JsValue value) {
+  if (isHydrating(node)) return;
+  node[name] = value;
+}
+
+JsValue claimHandlers = null;
+JsValue CLAIM_SEAM = JS.invoke(Symbol, "for", "dom-expressions.element-claims");
+string CLAIMED_ELEMENTS = "a[href], form[action]";
+
+export JsValue registerElementClaim(JsValue handler) {
+  if (JS.isNullish(claimHandlers)) {
+    claimHandlers = JS.array();
+    globalThis[CLAIM_SEAM] = claimHandlers;
+  }
+  JS.invoke(claimHandlers, "push", handler);
+  return JS.method0((JsValue _self) => {
+    int index = JS.number(JS.invoke(claimHandlers, "indexOf", handler)).toInt();
+    if (index > -1) JS.invoke(claimHandlers, "splice", index, 1);
+    return JS.undefined();
+  });
+}
+
+export JsValue claimElementTree(JsValue treeRoot) {
+  JsValue handlers = globalThis[CLAIM_SEAM];
+  if (JS.isUndefined(handlers) || lengthOf(handlers) == 0) return treeRoot;
+  int nodeType = JS.number(treeRoot["nodeType"]).toInt();
+  bool isElement = nodeType == 1;
+  if (!isElement && nodeType != 11) return treeRoot;
+  if (isElement && JS.invoke(treeRoot, "matches", CLAIMED_ELEMENTS).truthy()) {
+    for (int index = 0; index < lengthOf(handlers); index++) call1(handlers[index], treeRoot);
+  }
+  JsValue found = JS.invoke(treeRoot, "querySelectorAll", CLAIMED_ELEMENTS);
+  for (int index = 0; index < lengthOf(found); index++) {
+    for (int handlerIndex = 0; handlerIndex < lengthOf(handlers); handlerIndex++) {
+      call1(handlers[handlerIndex], found[index]);
+    }
+  }
+  return treeRoot;
+}
+
+export JsValue claimElement(JsValue node) {
+  if (!JS.isNullish(claimHandlers)) {
+    for (int index = 0; index < lengthOf(claimHandlers); index++) call1(claimHandlers[index], node);
+  }
+  return node;
+}
+
+export void setAttribute(JsValue node, string name, JsValue value) {
+  if (isHydrating(node)) return;
+  if (JS.isNullish(value) || same(value, false)) JS.invoke(node, "removeAttribute", name);
+  else {
+    JsValue normalized = value;
+    if (same(value, true)) normalized = "";
+    JS.invoke(node, "setAttribute", name, normalized);
+  }
+  if (!JS.isNullish(claimHandlers) && (name == "href" || name == "action")) claimElement(node);
+}
+
+export void setAttributeNS(JsValue node, string namespace, string name, JsValue value) {
+  if (isHydrating(node)) return;
+  if (JS.isNullish(value) || same(value, false)) {
+    string localName = name;
+    if (name.indexOf(":") > -1) {
+      string[] parts = name.split(":");
+      localName = parts[parts.length - 1];
+    }
+    JS.invoke(node, "removeAttributeNS", namespace, localName);
+  } else {
+    JsValue normalized = value;
+    if (same(value, true)) normalized = "";
+    JS.invoke(node, "setAttributeNS", namespace, name, normalized);
+  }
+}
+
+JsValue classListToObject(JsValue classList) {
+  if (classList.isArray()) {
+    JsValue result = JS.object();
+    flattenClassList(classList, result);
+    classList = result;
+  }
+  if (!JS.isNullish(classList) && JS.typeOf(classList) == "object") {
+    JsValue result = JS.object();
+    JsValue keys = JS.invoke(Object, "keys", classList);
+    for (int index = 0; index < lengthOf(keys); index++) {
+      string key = JS.assume(keys[index]);
+      if (!classList[key].truthy()) continue;
+      JsValue classNames = JS.invoke(key.trim(), "split", JS.assume(new Regex("\\s+")));
+      for (int nameIndex = 0; nameIndex < lengthOf(classNames); nameIndex++) {
+        string name = JS.assume(classNames[nameIndex]);
+        if (name != "") result[name] = true;
+      }
+    }
+    return result;
+  }
+  return classList;
+}
+
+void flattenClassList(JsValue list, JsValue result) {
+  for (int index = 0; index < lengthOf(list); index++) {
+    JsValue item = list[index];
+    if (item.isArray()) flattenClassList(item, result);
+    else if (!JS.isNullish(item) && JS.typeOf(item) == "object") JS.invoke(Object, "assign", result, item);
+    else if (item.truthy() || same(item, 0)) result[item] = true;
+  }
+}
+
+export void className(JsValue node, JsValue value, JsValue previous) {
+  if (isHydrating(node)) return;
+  if (JS.isNullish(value) || same(value, false)) {
+    if (previous.truthy()) JS.invoke(node, "removeAttribute", "class");
+    return;
+  }
+  if (value is string) {
+    if (!same(value, previous)) JS.invoke(node, "setAttribute", "class", value);
+    return;
+  }
+  if (previous is string) {
+    previous = JS.object();
+    JS.invoke(node, "removeAttribute", "class");
+  } else {
+    if (previous.truthy()) previous = classListToObject(previous);
+    else previous = classListToObject(JS.object());
+  }
+  value = classListToObject(value);
+  JsValue classKeys = JS.invoke(Object, "keys", value);
+  JsValue previousKeys = JS.invoke(Object, "keys", previous);
+  for (int index = 0; index < lengthOf(previousKeys); index++) {
+    string key = JS.assume(previousKeys[index]);
+    if (key == "" || key == "undefined" || value[key].truthy()) continue;
+    JS.invoke(node["classList"], "remove", key);
+  }
+  for (int index = 0; index < lengthOf(classKeys); index++) {
+    string key = JS.assume(classKeys[index]);
+    bool enabled = value[key].truthy();
+    if (key == "" || key == "undefined" || same(previous[key], enabled) || !enabled) continue;
+    JS.invoke(node["classList"], "add", key);
+  }
+}
+
+export void addEvent(JsValue node, string name, JsValue handler, bool delegate) {
+  if (delegate) {
+    if (handler.isArray()) {
+      node["$$" + name] = handler[0];
+      node["$$" + name + "Data"] = handler[1];
+    } else {
+      node["$$" + name] = handler;
+    }
+  } else if (handler.isArray()) {
+    JsValue handlerFn = handler[0];
+    JsValue wrapped = JS.method1((JsValue _self, JsValue event) =>
+      JS.call(handlerFn, node, handler[1], event)
+    );
+    handler[0] = wrapped;
+    JS.invoke(node, "addEventListener", name, wrapped);
+  } else {
+    JsValue options = handler;
+    if (isFunction(handler)) options = false;
+    JS.invoke(node, "addEventListener", name, handler, options);
+  }
+}
+
+export void style(JsValue node, JsValue value, JsValue previous) {
+  if (!value.truthy()) {
+    if (previous.truthy() || node["_$styles"].truthy()) {
+      setAttribute(node, "style", JS.undefined());
+      node["_$styles"] = JS.undefined();
+    }
+    return;
+  }
+  JsValue nodeStyle = node["style"];
+  if (value is string) {
+    node["_$styles"] = JS.undefined();
+    nodeStyle["cssText"] = value;
+    return;
+  }
+  if (previous is string) {
+    nodeStyle["cssText"] = "";
+    previous = JS.undefined();
+  }
+  JsValue applied = node["_$styles"];
+  if (!applied.truthy()) {
+    applied = JS.object();
+    if (previous.truthy()) {
+      for (string name in previous) applied[name] = previous[name];
+    }
+    node["_$styles"] = applied;
+  }
+  for (string name in applied) {
+    if (JS.isNullish(value[name])) {
+      JS.invoke(nodeStyle, "removeProperty", name);
+      JS.invoke(Reflect, "deleteProperty", applied, name);
+    }
+  }
+  for (string name in value) {
+    JsValue next = value[name];
+    if (!JS.isNullish(next) && !same(next, applied[name])) {
+      JS.invoke(nodeStyle, "setProperty", name, next);
+      applied[name] = next;
+    }
+  }
+}
+
+export void setStyleProperty(JsValue node, string name, JsValue value) {
+  if (!JS.isNullish(value)) JS.invoke(node["style"], "setProperty", name, value);
+  else JS.invoke(node["style"], "removeProperty", name);
+}
+
+export JsValue spread(JsValue node) {
+  JsValue props = arguments[1];
+  JsValue skipChildren = arguments[2];
+  if (JS.isUndefined(props)) props = JS.object();
+  JsValue previousProps = JS.object();
+  if (!skipChildren.truthy()) {
+    insert(node, JS.method0((JsValue _self) => props["children"]), JS.undefined(), JS.undefined(), JS.undefined());
+  }
+  effect(
+    JS.method0((JsValue _self) => {
+      JsValue reference = props["ref"];
+      if (isFunction(reference) || reference.isArray()) {
+        ref(JS.method0((JsValue _ref) => reference), node);
+      }
+      return JS.undefined();
+    }),
+    JS.method1((JsValue _self, JsValue _value) => JS.undefined())
+  );
+  effect(
+    JS.method0((JsValue _self) => {
+      JsValue nextProps = JS.object();
+      for (string prop in props) {
+        if (prop != "children" && prop != "ref") nextProps[prop] = props[prop];
+      }
+      return nextProps;
+    }),
+    JS.method1((JsValue _self, JsValue nextProps) => {
+      JS.call(JS.assume(assign), JS.undefined(), node, nextProps, true, previousProps, true);
+      return JS.undefined();
+    })
+  );
+  return previousProps;
+}
+
+export JsValue dynamicProperty(JsValue props, string key) {
+  JsValue source = props[key];
+  JS.invoke(
+    Object,
+    "defineProperty",
+    props,
+    key,
+    JS.object(
+      "get", JS.method0((JsValue _self) => call0(source)),
+      "enumerable", true
+    )
+  );
+  return props;
+}
+
+export void applyRef(JsValue reference, JsValue element) {
+  if (reference.isArray()) {
+    JsValue flat = JS.invoke(reference, "flat", JS.assume(1.0 / 0.0));
+    for (int index = 0; index < lengthOf(flat); index++) {
+      if (flat[index].truthy()) call1(flat[index], element);
+    }
+  } else {
+    call1(reference, element);
+  }
+}
+
+export void ref(JsValue fn, JsValue element) {
+  JsValue resolved = JS.call(untrack, JS.undefined(), fn);
+  JS.call(
+    runWithOwner,
+    JS.undefined(),
+    null,
+    JS.method0((JsValue _self) => {
+      applyRef(resolved, element);
+      return JS.undefined();
+    })
+  );
+}
+
+export JsValue scope(JsValue fn) {
+  fn["$s"] = true;
+  return fn;
+}
+
+JsValue SCOPE_OPTIONS = JS.object("scope", true);
+JsValue hydrationRt = null;
+
+export void installHydrationRuntime() {
+  hydrationRt = JS.object(
+    "claimInitial", JS.method3((JsValue _self, JsValue parent, JsValue multi, JsValue initial) => {
+      if (isHydrating(parent)) {
+        if (!multi.truthy() && JS.isUndefined(initial) && parent.truthy()) {
+          initial = JS.invoke(Array, "from", parent["childNodes"]);
+        }
+        if (initial.isArray()) stripTextSeparators(initial);
+      }
+      return initial;
+    }),
+    "reclaimRegion", JS.method3((JsValue _self, JsValue current, JsValue parent, JsValue marker) => {
+      if (!sharedConfig["hydrating"].truthy() || !current.truthy() || !parent["isConnected"].truthy()) return current;
+      JsValue first = current;
+      if (current.isArray()) first = current[0];
+      if (!first.truthy() || !first["nodeType"].truthy() || first["isConnected"].truthy()) return current;
+      JsValue nodes = JS.array();
+      if (marker.truthy()) {
+        JsValue node = marker["previousSibling"];
+        int depth = 0;
+        while (node.truthy()) {
+          if (same(node["nodeType"], 8)) {
+            JsValue value = node["nodeValue"];
+            if (same(value, "/")) depth += 1;
+            else if (same(value, "$")) {
+              if (depth == 0) break;
+              depth -= 1;
+            }
+          }
+          JS.invoke(nodes, "unshift", node);
+          node = node["previousSibling"];
+        }
+      } else {
+        nodes = JS.invoke(Array, "from", parent["childNodes"]);
+      }
+      return stripTextSeparators(nodes);
+    }),
+    "dedupEvent", JS.method1((JsValue _self, JsValue event) => {
+      JsValue registry = sharedConfig["registry"];
+      JsValue events = sharedConfig["events"];
+      if (!registry.truthy() || !events.truthy()) return false;
+      for (int index = 0; index < lengthOf(events); index++) {
+        if (same(events[index][1], event)) return true;
+      }
+      return false;
+    })
+  );
+}
+
+JsValue stripTextSeparators(JsValue nodes) {
+  int output = 0;
+  int inputLength = lengthOf(nodes);
+  for (int index = 0; index < inputLength; index++) {
+    JsValue node = nodes[index];
+    int kind = JS.number(node["nodeType"]).toInt();
+    if (kind == 8) {
+      string value = JS.string(node["nodeValue"]);
+      if (value == "!$") {
+        JS.invoke(node, "remove");
+        continue;
+      }
+      if (value.startsWith("pl-")) continue;
+    } else if (
+      kind == 1 && same(node["localName"], "template") &&
+      JS.string(node["id"]).startsWith("pl-")
+    ) {
+      continue;
+    }
+    nodes[output] = node;
+    output += 1;
+  }
+  nodes["length"] = output;
+  return nodes;
+}
+
+export void insert(JsValue parent, JsValue accessor, JsValue marker, JsValue initial, JsValue options) {
+  bool multi = !JS.isUndefined(marker);
+  JsValue host = JS.undefined();
+  if (!JS.isNullish(options)) host = options["host"];
+  if (multi && !initial.truthy()) initial = JS.array();
+  if (!JS.isNullish(hydrationRt)) {
+    initial = JS.invoke(hydrationRt, "claimInitial", parent, multi, initial);
+  }
+  if (!isFunction(accessor)) {
+    accessor = normalize(accessor, initial, multi, true);
+    if (!isFunction(accessor)) {
+      insertExpression(parent, accessor, initial, marker);
+      if (host.truthy()) tagHost(accessor, host);
+      return;
+    }
+  }
+  if (multi && lengthOf(initial) == 0) {
+    JsValue placeholder = JS.invoke(document, "createTextNode", "");
+    JS.invoke(parent, "insertBefore", placeholder, marker);
+    initial = JS.array(placeholder);
+  }
+  JsValue state = JS.object("current", initial);
+  JsValue outerOptions = options;
+  if (accessor["$s"].truthy()) {
+    if (options.truthy()) outerOptions = copyWithScope(options);
+    else outerOptions = SCOPE_OPTIONS;
+  }
+  effect(
+    JS.method1((JsValue _self, JsValue previous) => {
+      if (!JS.isNullish(hydrationRt)) {
+        state["current"] = JS.invoke(hydrationRt, "reclaimRegion", state["current"], parent, marker);
+      }
+      JsValue value = normalize(call0(accessor), state["current"], multi, true);
+      if (!isFunction(value)) return value;
+      JsValue innerOptions = options;
+      if (!JS.isUndefined(previous) && !(options.truthy() && options["schedule"].truthy())) {
+        innerOptions = JS.object();
+        if (options.truthy()) for (string key in options) innerOptions[key] = options[key];
+        innerOptions["schedule"] = true;
+      }
+      effect(
+        JS.method0((JsValue _inner) => {
+          if (!JS.isNullish(hydrationRt)) {
+            state["current"] = JS.invoke(hydrationRt, "reclaimRegion", state["current"], parent, marker);
+          }
+          return normalize(call0(value), state["current"], multi, false);
+        }),
+        JS.method1((JsValue _apply, JsValue inner) => {
+          state["current"] = insertExpression(parent, inner, state["current"], marker);
+          if (host.truthy()) tagHost(state["current"], host);
+          return JS.undefined();
+        }),
+        innerOptions
+      );
+      return INNER_OWNED;
+    }),
+    JS.method1((JsValue _self, JsValue value) => {
+      if (!same(value, INNER_OWNED)) {
+        state["current"] = insertExpression(parent, value, state["current"], marker);
+        if (host.truthy()) tagHost(state["current"], host);
+      }
+      return JS.undefined();
+    }),
+    outerOptions
+  );
+}
+
+JsValue copyWithScope(JsValue options) {
+  JsValue result = JS.object();
+  for (string key in options) result[key] = options[key];
+  result["scope"] = true;
+  return result;
+}
+
+export void assign(JsValue node, JsValue props, JsValue skipChildren) {
+  JsValue previousProps = arguments[3];
+  JsValue skipRef = arguments[4];
+  if (JS.isUndefined(previousProps)) previousProps = JS.object();
+  if (JS.isUndefined(skipRef)) skipRef = false;
+  string nodeName = JS.string(node["nodeName"]);
+  if (JS.isNullish(props)) props = JS.object();
+  for (string prop in previousProps) {
+    if (!JS.has(props, prop)) {
+      if (prop == "children") continue;
+      previousProps[prop] = assignProp(node, prop, null, previousProps[prop], skipRef.truthy(), nodeName);
+    }
+  }
+  for (string prop in props) {
+    if (prop == "children") {
+      if (!skipChildren.truthy()) {
+        insertExpression(node, normalize(props["children"], JS.undefined(), false, false), JS.undefined(), JS.undefined());
+      }
+      continue;
+    }
+    previousProps[prop] = assignProp(node, prop, props[prop], previousProps[prop], skipRef.truthy(), nodeName);
+  }
+}
+
+JsValue assetRegistry = JS.construct(Map);
+int ASSET_REMOVAL_GRACE = 100;
+
+string assetEntryKey(JsValue descriptor) {
+  if (same(descriptor["policy"], "exclusive")) return "x|" + descriptor["key"];
+  if (same(descriptor["type"], "inline-style")) return "i|" + descriptor["id"];
+  return "" + descriptor["type"] + "|" + descriptor["href"];
+}
+
+JsValue findAssetElement(string selector, string attribute, JsValue value) {
+  JsValue nodes = JS.invoke(document, "querySelectorAll", selector);
+  for (int index = 0; index < lengthOf(nodes); index++) {
+    if (same(JS.invoke(nodes[index], "getAttribute", attribute), value)) return nodes[index];
+  }
+  return null;
+}
+
+void setAssetAttrs(JsValue element, JsValue attrs) {
+  for (string name in attrs) JS.invoke(element, "setAttribute", name, attrs[name]);
+}
+
+JsValue mountAssetElement(JsValue descriptor) {
+  JsValue element = null;
+  if (same(descriptor["type"], "inline-style")) {
+    element = findAssetElement("style[data-asset]", "data-asset", descriptor["id"]);
+    if (!element.truthy()) {
+      element = JS.invoke(document, "createElement", "style");
+      JS.invoke(element, "setAttribute", "data-asset", descriptor["id"]);
+      JsValue content = descriptor["content"];
+      if (content.truthy()) element["textContent"] = content;
+      else element["textContent"] = "";
+    }
+  } else {
+    string rel = "stylesheet";
+    if (same(descriptor["type"], "module")) rel = "modulepreload";
+    element = findAssetElement("link[rel=\"" + rel + "\"]", "href", descriptor["href"]);
+    if (!element.truthy()) {
+      element = JS.invoke(document, "createElement", "link");
+      element["rel"] = rel;
+      element["href"] = descriptor["href"];
+    }
+  }
+  if (descriptor["attrs"].truthy()) setAssetAttrs(element, descriptor["attrs"]);
+  if (!element["isConnected"].truthy()) JS.invoke(document["head"], "appendChild", element);
+  return element;
+}
+
+JsValue assetLoadSettled = JS.invoke(Promise, "resolve");
+
+void trackAssetLoad(JsValue entry, bool adopted) {
+  if (entry["loadPromise"].truthy()) return;
+  JsValue element = entry["element"];
+  bool settled = !JS.isNullish(element["sheet"]);
+  if (!settled && adopted && !JS.isUndefined(performance) && isFunction(performance["getEntriesByName"])) {
+    settled = lengthOf(JS.invoke(performance, "getEntriesByName", element["href"])) > 0;
+  }
+  if (settled) {
+    entry["loadState"] = "loaded";
+    entry["loadPromise"] = assetLoadSettled;
+    return;
+  }
+  entry["loadState"] = "pending";
+  entry["loadPromise"] = JS.construct(
+    Promise,
+    JS.method2((JsValue _self, JsValue resolve, JsValue _reject) => {
+      JsValue settle = JS.method1((JsValue _settleSelf, JsValue state) => {
+        entry["loadState"] = state;
+        call0(resolve);
+        return JS.undefined();
+      });
+      JS.invoke(element, "addEventListener", "load", JS.method1((JsValue _load, JsValue _event) => call1(settle, "loaded")), JS.object("once", true));
+      JS.invoke(element, "addEventListener", "error", JS.method1((JsValue _error, JsValue _event) => call1(settle, "errored")), JS.object("once", true));
+      return JS.undefined();
+    })
+  );
+}
+
+export JsValue warmAsset(JsValue descriptor) {
+  if (same(descriptor["policy"], "exclusive") || same(descriptor["type"], "inline-style")) return JS.undefined();
+  string key = assetEntryKey(descriptor);
+  JsValue entry = JS.invoke(assetRegistry, "get", key);
+  if (!entry.truthy()) {
+    entry = JS.object("count", 0, "element", null, "timer", null);
+    JS.invoke(assetRegistry, "set", key, entry);
+  }
+  bool adopted = true;
+  if (!entry["element"].truthy() || !entry["element"]["isConnected"].truthy()) {
+    string rel = "stylesheet";
+    if (same(descriptor["type"], "module")) rel = "modulepreload";
+    JsValue element = findAssetElement("link[rel=\"" + rel + "\"]", "href", descriptor["href"]);
+    if (!element.truthy() && same(descriptor["type"], "style")) {
+      element = findAssetElement("link[rel=\"preload\"][as=\"style\"]", "href", descriptor["href"]);
+    }
+    if (!element.truthy()) {
+      adopted = false;
+      element = JS.invoke(document, "createElement", "link");
+      if (same(descriptor["type"], "style")) {
+        JS.invoke(element, "setAttribute", "rel", "preload");
+        JS.invoke(element, "setAttribute", "as", "style");
+      } else {
+        JS.invoke(element, "setAttribute", "rel", "modulepreload");
+      }
+      JS.invoke(element, "setAttribute", "href", descriptor["href"]);
+      if (!document["body"].truthy()) JS.invoke(element, "setAttribute", "blocking", "render");
+    }
+    if (descriptor["attrs"].truthy()) setAssetAttrs(element, descriptor["attrs"]);
+    if (!element["isConnected"].truthy()) JS.invoke(document["head"], "appendChild", element);
+    entry["element"] = element;
+    entry["loadState"] = JS.undefined();
+    entry["loadPromise"] = JS.undefined();
+  }
+  if (same(descriptor["type"], "style")) trackAssetLoad(entry, adopted);
+  return entry;
+}
+
+export JsValue acquireAsset(JsValue descriptor) {
+  string key = assetEntryKey(descriptor);
+  JsValue entry = JS.invoke(assetRegistry, "get", key);
+  if (same(descriptor["policy"], "exclusive")) {
+    if (!entry.truthy()) {
+      entry = JS.object(
+        "original", JS.call(descriptor["get"], descriptor),
+        "set", descriptor["set"],
+        "writers", JS.array()
+      );
+      JS.invoke(assetRegistry, "set", key, entry);
+    }
+    JsValue writer = JS.object("value", descriptor["value"]);
+    JS.invoke(entry["writers"], "push", writer);
+    JS.call(entry["set"], entry, writer["value"]);
+    JsValue released = JS.object("value", false);
+    return JS.method0((JsValue _self) => {
+      if (released["value"].truthy()) return JS.undefined();
+      released["value"] = true;
+      int index = JS.number(JS.invoke(entry["writers"], "indexOf", writer)).toInt();
+      bool wasTop = index == lengthOf(entry["writers"]) - 1;
+      JS.invoke(entry["writers"], "splice", index, 1);
+      if (!wasTop) return JS.undefined();
+      int remaining = lengthOf(entry["writers"]);
+      if (remaining > 0) JS.call(entry["set"], entry, entry["writers"][remaining - 1]["value"]);
+      else {
+        JS.call(entry["set"], entry, entry["original"]);
+        JS.invoke(assetRegistry, "delete", key);
+      }
+      return JS.undefined();
+    });
+  }
+  if (!entry.truthy()) {
+    entry = JS.object("count", 0, "element", null, "timer", null);
+    JS.invoke(assetRegistry, "set", key, entry);
+  }
+  if (entry["timer"].truthy()) {
+    clearTimeout(entry["timer"]);
+    entry["timer"] = null;
+  }
+  entry["count"] = JS.number(entry["count"]) + 1;
+  if (!entry["element"].truthy() || !entry["element"]["isConnected"].truthy()) {
+    entry["element"] = mountAssetElement(descriptor);
+  } else if (
+    same(descriptor["type"], "style") &&
+    same(JS.invoke(entry["element"], "getAttribute", "rel"), "preload")
+  ) {
+    JS.invoke(entry["element"], "removeAttribute", "as");
+    JS.invoke(entry["element"], "setAttribute", "rel", "stylesheet");
+  }
+  JsValue released = JS.object("value", false);
+  return JS.method0((JsValue _self) => {
+    if (released["value"].truthy()) return JS.undefined();
+    released["value"] = true;
+    entry["count"] = JS.number(entry["count"]) - 1;
+    if (JS.number(entry["count"]) > 0) return JS.undefined();
+    entry["timer"] = setTimeout(JS.method0((JsValue _timer) => {
+      JS.invoke(assetRegistry, "delete", key);
+      if (entry["element"].truthy()) JS.invoke(entry["element"], "remove");
+      return JS.undefined();
+    }), ASSET_REMOVAL_GRACE);
+    return JS.undefined();
+  });
+}
+
+JsValue headRegistrations = null;
+int headSequence = 0;
+int headUid = 0;
+Map<string, JsValue>? headOwned = null;
+Map<string, string>? headApplied = null;
+string? headFallbackTitle = null;
+bool headScheduled = false;
+Set<string> headMountedResources = new Set<string>();
+string[] headOwnedIdentities = [];
+
+void initHeadRegistry() {
+  if (!JS.isNullish(headRegistrations)) return;
+  headRegistrations = JS.array();
+  headOwned = new Map<string, JsValue>();
+  headApplied = new Map<string, string>();
+  JsValue title = JS.invoke(document, "querySelector", "title");
+  if (title.truthy() && !JS.invoke(title, "hasAttribute", "data-dh").truthy()) {
+    headFallbackTitle = JS.string(title["textContent"]);
+  }
+  JsValue hydration = globalThis["_$HY"];
+  if (hydration.truthy()) hydration["h"] = JS.assume(applyServerHeadOps);
+}
+
+void applyServerHeadOps(JsValue operations) {
+  Map<string, JsValue> owned = headOwned ?? new Map<string, JsValue>();
+  for (int index = 0; index < lengthOf(operations); index++) {
+    JsValue operation = operations[index];
+    string identity = JS.string(operation[1]);
+    if (same(operation[0], "t")) identity = "title";
+    if (owned.has(identity)) continue;
+    if (same(operation[0], "t")) setHeadTitle(JS.string(operation[1]));
+    else if (same(operation[0], "r")) {
+      JsValue elements = headMarkedElements(identity);
+      for (int elementIndex = 0; elementIndex < lengthOf(elements); elementIndex++) JS.invoke(elements[elementIndex], "remove");
+    } else {
+      JsValue element = JS.invoke(document, "createElement", operation[2]);
+      JsValue attrs = operation[3];
+      for (string name in attrs) JS.invoke(element, "setAttribute", name, attrs[name]);
+      if (!JS.isNullish(operation[4])) element["textContent"] = operation[4];
+      JS.invoke(element, "setAttribute", "data-dh", identity);
+      JS.invoke(document["head"], "appendChild", element);
+    }
+  }
+}
+
+JsValue headMarkedElements(string identity) {
+  JsValue nodes = JS.invoke(document["head"], "querySelectorAll", "[data-dh]");
+  JsValue out = JS.array();
+  for (int index = 0; index < lengthOf(nodes); index++) {
+    if (same(JS.invoke(nodes[index], "getAttribute", "data-dh"), identity)) JS.invoke(out, "push", nodes[index]);
+  }
+  return out;
+}
+
+JsValue setHeadTitle(string text) {
+  JsValue element = JS.invoke(document, "querySelector", "title");
+  if (!element.truthy()) {
+    element = JS.invoke(document, "createElement", "title");
+    JS.invoke(document["head"], "appendChild", element);
+  }
+  element["textContent"] = text;
+  JS.invoke(element, "setAttribute", "data-dh", "title");
+  return element;
+}
+
+void scheduleHeadApply() {
+  if (headScheduled) return;
+  headScheduled = true;
+  queueMicrotask(() => { flushHeadRegistry(); });
+}
+
+void flushHeadRegistry() {
+  if (sharedConfig["hydrating"].truthy()) {
+    setTimeout(JS.assume(flushHeadRegistry), 0);
+    return;
+  }
+  headScheduled = false;
+  Map<string, JsValue> winners = resolveHead(JS.assume(headRegistrations));
+  Map<string, JsValue> owned = headOwned ?? new Map<string, JsValue>();
+  Map<string, string> applied = headApplied ?? new Map<string, string>();
+  for (int index = headOwnedIdentities.length - 1; index >= 0; index--) {
+    string identity = headOwnedIdentities[index];
+    if (winners.has(identity)) continue;
+    JsValue? elementsValue = owned.get(identity);
+    owned.delete(identity);
+    applied.delete(identity);
+    headOwnedIdentities.splice(index, 1);
+    if (identity == "title") {
+      if (headFallbackTitle != null) JS.invoke(setHeadTitle(headFallbackTitle), "removeAttribute", "data-dh");
+    } else if (elementsValue != null) {
+      JsValue elements = elementsValue;
+      for (int elementIndex = 0; elementIndex < lengthOf(elements); elementIndex++) JS.invoke(elements[elementIndex], "remove");
+    }
+  }
+  JS.invoke(JS.assume(winners), "forEach", JS.method2((JsValue _self, JsValue winner, JsValue identityValue) => {
+    string identity = JS.string(identityValue);
+    JsValue tags = winner["tags"];
+    string signature = "";
+    for (int index = 0; index < lengthOf(tags); index++) {
+      signature += JS.string(tags[index]["tag"]) +
+        JS.string(JS.invoke(JSON, "stringify", tags[index]["props"])) + "|";
+    }
+    string? previous = applied.get(identity);
+    if (previous != null && previous == signature) return JS.undefined();
+    applied.set(identity, signature);
+    if (identity == "base" || identity == "charset") return JS.undefined();
+    if (identity == "title") {
+      JsValue children = tags[0]["props"]["children"];
+      string titleText = "";
+      if (!JS.isNullish(children)) titleText = JS.string(children);
+      setHeadTitle(titleText);
+      owned.set(identity, JS.array());
+      if (!headOwnedIdentities.includes(identity)) headOwnedIdentities.push(identity);
+      return JS.undefined();
+    }
+    JsValue existing = headMarkedElements(identity);
+    JsValue elements = JS.array();
+    for (int index = 0; index < lengthOf(tags); index++) {
+      JS.invoke(elements, "push", renderHeadElement(tags[index], identity, existing));
+    }
+    for (int index = 0; index < lengthOf(existing); index++) {
+      if (JS.number(JS.invoke(elements, "indexOf", existing[index])).toInt() == -1) JS.invoke(existing[index], "remove");
+    }
+    owned.set(identity, elements);
+    if (!headOwnedIdentities.includes(identity)) headOwnedIdentities.push(identity);
+    return JS.undefined();
+  }));
+}
+
+JsValue createHeadElement(string tag, JsValue props) {
+  JsValue element = JS.invoke(document, "createElement", tag);
+  for (string name in props) {
+    if (name == "children" || name == "ref" || name.slice(0, 2) == "on") continue;
+    if (!HEAD_ATTR_NAME.test(name)) continue;
+    JsValue value = props[name];
+    if (JS.isNullish(value) || same(value, false)) continue;
+    string attributeValue = JS.string(value);
+    if (same(value, true)) attributeValue = "";
+    JS.invoke(element, "setAttribute", name, attributeValue);
+  }
+  if (!JS.isNullish(props["children"])) element["textContent"] = JS.string(props["children"]);
+  return element;
+}
+
+JsValue renderHeadElement(JsValue tagDescription, string identity, JsValue existing) {
+  for (int index = 0; index < lengthOf(existing); index++) {
+    if (headElementMatches(existing[index], tagDescription)) {
+      return JS.invoke(existing, "splice", index, 1)[0];
+    }
+  }
+  JsValue element = createHeadElement(JS.assume(tagDescription["tag"]), tagDescription["props"]);
+  JS.invoke(element, "setAttribute", "data-dh", identity);
+  JS.invoke(document["head"], "appendChild", element);
+  return element;
+}
+
+bool headElementMatches(JsValue element, JsValue tagDescription) {
+  string tag = JS.assume(tagDescription["tag"]);
+  if (JS.string(element["tagName"]).toLowerCase() != tag) return false;
+  JsValue props = tagDescription["props"];
+  for (string name in props) {
+    if (name == "children" || name == "ref" || name.slice(0, 2) == "on") continue;
+    if (!HEAD_ATTR_NAME.test(name)) continue;
+    JsValue value = props[name];
+    if (JS.isNullish(value) || same(value, false)) {
+      if (JS.invoke(element, "hasAttribute", name).truthy()) return false;
+    } else {
+      string expected = JS.string(value);
+      if (same(value, true)) expected = "";
+      if (!same(JS.invoke(element, "getAttribute", name), expected)) return false;
+    }
+  }
+  JsValue children = props["children"];
+  string text = "";
+  if (!JS.isNullish(children)) text = JS.string(children);
+  return same(text, element["textContent"]);
+}
+
+void mountHeadResource(string tag, JsValue props) {
+  string identity = resourceIdentity(tag, props);
+  if (headMountedResources.has(identity)) return;
+  headMountedResources.add(identity);
+  JsValue url = props["src"];
+  if (props["href"].truthy()) url = props["href"];
+  JsValue element = null;
+  if (!JS.isNullish(url)) {
+    if (tag == "link") element = findAssetElement("link[rel=\"" + props["rel"] + "\"]", "href", url);
+    else if (tag == "script") element = findAssetElement("script[src]", "src", url);
+    else element = findAssetElement("style[href]", "href", url);
+  }
+  if (!element.truthy()) JS.invoke(document["head"], "appendChild", createHeadElement(tag, props));
+}
+
+void gateHeadResource(JsValue props) {
+  string descriptorType = "module";
+  if (same(props["rel"], "stylesheet")) descriptorType = "style";
+  JsValue descriptor = JS.object("type", descriptorType, "href", props["href"]);
+  bool gateable = same(props["rel"], "stylesheet") && !JS.isNullish(props["href"]);
+  JsValue attrs = null;
+  for (string name in props) {
+    if (name == "rel" || name == "href") continue;
+    if (!STYLESHEET_FETCH_META.has(name)) gateable = false;
+    if (!HEAD_ATTR_NAME.test(name)) continue;
+    JsValue value = props[name];
+    if (JS.isNullish(value) || same(value, false)) continue;
+    if (JS.isNullish(attrs)) attrs = JS.object();
+    if (same(value, true)) attrs[name] = "";
+    else attrs[name] = JS.string(value);
+  }
+  if (attrs.truthy()) descriptor["attrs"] = attrs;
+  effect(
+    JS.method0((JsValue _self) => {
+      JsValue entry = warmAsset(descriptor);
+      if (gateable && same(entry["loadState"], "pending") && isFunction(waitAsset)) {
+        waitAsset(entry["loadPromise"]);
+      }
+      return JS.undefined();
+    }),
+    JS.method1((JsValue _self, JsValue _value) => acquireAsset(descriptor))
+  );
+}
+
+export void useHead(JsValue tags) {
+  initHeadRegistry();
+  JsValue registration = JS.object("seq", -1, "tags", null);
+  headUid += 1;
+  int uid = headUid;
+  effect(
+    JS.method0((JsValue _self) => {
+      JsValue list = tags;
+      if (isFunction(tags)) list = call0(tags);
+      if (!list.isArray()) list = JS.array(list);
+      JsValue replaceable = JS.array();
+      JsValue resources = JS.array();
+      for (int index = 0; index < lengthOf(list); index++) {
+        JsValue description = list[index];
+        if (!description.truthy() || !HEAD_ELIGIBLE_TAGS.has(JS.string(description["tag"]))) continue;
+        JsValue classification = classifyHeadTag(description);
+        JsValue presets = JS.undefined();
+        if (!JS.isUndefined(classification["rel"])) presets = JS.object("rel", classification["rel"]);
+        JsValue rawProps = description["props"];
+        if (!rawProps.truthy()) rawProps = JS.object();
+        JsValue props = evalHeadProps(rawProps, presets);
+        if (classification["resource"].truthy()) {
+          if (same(description["tag"], "link") && (same(props["rel"], "stylesheet") || same(props["rel"], "modulepreload"))) {
+            gateHeadResource(props);
+          } else if (same(description["tag"], "link")) {
+            mountHeadResource(JS.string(description["tag"]), props);
+          } else {
+            JS.invoke(resources, "push", JS.object("tag", description["tag"], "props", props));
+          }
+        } else {
+          JsValue key = evalHeadValue(description["key"]);
+          JS.invoke(replaceable, "push", JS.object(
+            "tag", description["tag"],
+            "props", props,
+            "identity", replaceableIdentity(
+              JS.string(description["tag"]),
+              props,
+              key,
+              "u:c" + uid + ":" + index
+            )
+          ));
+        }
+      }
+      return JS.object("replaceable", replaceable, "resources", resources);
+    }),
+    JS.method1((JsValue _self, JsValue evaluated) => {
+      JsValue resources = evaluated["resources"];
+      for (int index = 0; index < lengthOf(resources); index++) {
+        mountHeadResource(JS.string(resources[index]["tag"]), resources[index]["props"]);
+      }
+      registration["tags"] = evaluated["replaceable"];
+      if (JS.number(registration["seq"]) < 0) {
+        headSequence += 1;
+        registration["seq"] = headSequence;
+      }
+      if (JS.number(JS.invoke(headRegistrations, "indexOf", registration)).toInt() == -1) {
+        JS.invoke(headRegistrations, "push", registration);
+      }
+      scheduleHeadApply();
+      return JS.method0((JsValue _cleanup) => {
+        int index = JS.number(JS.invoke(headRegistrations, "indexOf", registration)).toInt();
+        if (index > -1) JS.invoke(headRegistrations, "splice", index, 1);
+        scheduleHeadApply();
+        return JS.undefined();
+      });
+    })
+  );
+}
+
+JsValue loadModuleAssets(JsValue mapping) {
+  JsValue hydration = globalThis["_$HY"];
+  if (!hydration.truthy()) return JS.undefined();
+  JsValue pending = JS.array();
+  for (string key in mapping) {
+    if (hydration["modules"][key].truthy()) continue;
+    JsValue entryUrl = mapping[key];
+    if (!hydration["loading"][key].truthy()) {
+      // LilScript only accepts static import() specifiers today. Construct the
+      // native dynamic-import closure lazily so ordinary hydration remains CSP-safe.
+      JsValue dynamicImport = JS.construct(Function, "url", "return import(url)");
+      hydration["loading"][key] = JS.invoke(
+        JS.call(dynamicImport, JS.undefined(), entryUrl),
+        "then",
+        JS.method1((JsValue _self, JsValue moduleValue) => {
+          hydration["modules"][key] = moduleValue;
+          return JS.undefined();
+        }),
+        JS.method1((JsValue _self, JsValue error) => {
+          JS.invoke(Reflect, "deleteProperty", hydration["loading"], key);
+          return rethrow(error);
+        })
+      );
+    }
+    JS.invoke(pending, "push", hydration["loading"][key]);
+  }
+  if (lengthOf(pending) == 0) return JS.undefined();
+  return JS.invoke(
+    JS.invoke(Promise, "all", pending),
+    "then",
+    JS.method0((JsValue _self) => JS.undefined())
+  );
+}
+
+export JsValue hydrate(JsValue code, JsValue element) {
+  JsValue options = arguments[2];
+  if (JS.isUndefined(options)) options = JS.object();
+  installHydrationRuntime();
+  JsValue hydration = globalThis["_$HY"];
+  if (hydration["done"].truthy()) {
+    return JS.call(
+      JS.assume(render),
+      JS.undefined(),
+      code,
+      element,
+      JS.invoke(Array, "from", element["childNodes"]),
+      options
+    );
+  }
+  if (!options["renderId"].truthy()) options["renderId"] = "";
+  if (!hydration["modules"].truthy()) hydration["modules"] = JS.object();
+  if (!hydration["loading"].truthy()) hydration["loading"] = JS.object();
+  sharedConfig["completed"] = hydration["completed"];
+  sharedConfig["events"] = hydration["events"];
+  sharedConfig["load"] = JS.method1((JsValue _self, JsValue id) => hydration["r"][id]);
+  sharedConfig["has"] = JS.method1((JsValue _self, JsValue id) => JS.has(hydration["r"], JS.string(id)));
+  sharedConfig["gather"] = JS.method1((JsValue _self, JsValue rootId) => {
+    gatherHydratable(element, JS.string(rootId));
+    return JS.undefined();
+  });
+  sharedConfig["loadModuleAssets"] = JS.assume(loadModuleAssets);
+  sharedConfig["cleanupFragment"] = JS.method1((JsValue _self, JsValue id) => {
+    JsValue templateNode = JS.invoke(document, "getElementById", "pl-" + id);
+    if (templateNode.truthy()) {
+      JsValue node = templateNode["nextSibling"];
+      while (node.truthy()) {
+        JsValue next = node["nextSibling"];
+        if (same(node["nodeType"], 8) && same(node["nodeValue"], "pl-" + id)) {
+          JS.invoke(node, "remove");
+          break;
+        }
+        JS.invoke(node, "remove");
+        node = next;
+      }
+      JS.invoke(templateNode, "remove");
+    }
+    return JS.undefined();
+  });
+  sharedConfig["registry"] = JS.construct(Map);
+  if (!sharedConfig["boundaryScopes"].truthy()) sharedConfig["boundaryScopes"] = JS.construct(Map);
+  sharedConfig["captureBoundaryScope"] = JS.method1((JsValue _self, JsValue id) => {
+    if (sharedConfig["registry"].truthy()) {
+      JS.invoke(sharedConfig["boundaryScopes"], "set", id, JS.object(
+        "registry", sharedConfig["registry"],
+        "gather", sharedConfig["gather"]
+      ));
+    }
+    return JS.undefined();
+  });
+  sharedConfig["hydrating"] = true;
+  JsValue hydrationRecords = hydration["r"];
+  JsValue rootMapping = JS.undefined();
+  if (hydrationRecords.truthy()) {
+    rootMapping = hydrationRecords[JS.string(options["renderId"]) + "_assets"];
+    if (!rootMapping.truthy()) rootMapping = hydrationRecords["_assets"];
+  }
+  if (rootMapping.truthy() && JS.typeOf(rootMapping) == "object") {
+    JsValue pending = loadModuleAssets(rootMapping);
+    if (pending.truthy()) {
+      gatherHydratable(element, JS.string(options["renderId"]));
+      JsValue registry = sharedConfig["registry"];
+      JsValue gather = sharedConfig["gather"];
+      JsValue result = JS.object("disposer", JS.undefined());
+      JS.invoke(
+        pending,
+        "then",
+        JS.method0((JsValue _self) => {
+          sharedConfig["registry"] = registry;
+          sharedConfig["gather"] = gather;
+          sharedConfig["hydrating"] = true;
+          try {
+            result["disposer"] = JS.call(
+              JS.assume(render),
+              JS.undefined(),
+              code,
+              element,
+              JS.invoke(Array, "from", element["childNodes"]),
+              options
+            );
+          } finally {
+            sharedConfig["hydrating"] = false;
+          }
+          return JS.undefined();
+        }),
+        JS.method1((JsValue _self, JsValue error) => {
+          JS.invoke(console, "error", "Hydration module preload failed, falling back to client render:", error);
+          sharedConfig["hydrating"] = false;
+          sharedConfig["registry"] = JS.undefined();
+          result["disposer"] = JS.call(
+            JS.assume(render),
+            JS.undefined(),
+            code,
+            element,
+            JS.invoke(Array, "from", element["childNodes"]),
+            options
+          );
+          return JS.undefined();
+        })
+      );
+      return JS.method0((JsValue _self) => {
+        if (result["disposer"].truthy()) call0(result["disposer"]);
+        return JS.undefined();
+      });
+    }
+  }
+  try {
+    gatherHydratable(element, JS.string(options["renderId"]));
+    return JS.call(
+      JS.assume(render),
+      JS.undefined(),
+      code,
+      element,
+      JS.invoke(Array, "from", element["childNodes"]),
+      options
+    );
+  } finally {
+    sharedConfig["hydrating"] = false;
+  }
+}
+
+export JsValue getNextElement(JsValue templateFactory) {
+  bool hydrating = isHydrating(JS.undefined());
+  JsValue node = JS.undefined();
+  string key = "";
+  if (hydrating) {
+    key = getHydrationKey();
+    node = JS.invoke(sharedConfig["registry"], "get", key);
+  }
+  if (!hydrating || !node.truthy()) {
+    if (!templateFactory.truthy()) {
+      throw JS.construct(Error, "Hydration Mismatch. Unable to find DOM nodes for hydration key: " + key);
+    }
+    return call1(templateFactory, true);
+  }
+  if (sharedConfig["completed"].truthy()) JS.invoke(sharedConfig["completed"], "add", node);
+  JS.invoke(sharedConfig["registry"], "delete", key);
+  return node;
+}
+
+export JsValue getNextMatch(JsValue element, string nodeName) {
+  while (element.truthy() && !same(element["localName"], nodeName)) element = element["nextSibling"];
+  return element;
+}
+
+export JsValue getNextMarker(JsValue start) {
+  JsValue end = start;
+  int count = 0;
+  JsValue current = JS.array();
+  if (isHydrating(start)) {
+    while (end.truthy()) {
+      if (same(end["nodeType"], 8)) {
+        JsValue value = end["nodeValue"];
+        if (same(value, "$")) count += 1;
+        else if (same(value, "/")) {
+          if (count == 0) return JS.array(end, current);
+          count -= 1;
+        }
+      }
+      JS.invoke(current, "push", end);
+      end = end["nextSibling"];
+    }
+  }
+  return JS.array(end, current);
+}
+
+export JsValue getFirstChild(JsValue node, JsValue _expectedTag) {
+  return node["firstChild"];
+}
+
+export JsValue getNextSibling(JsValue node, JsValue _expectedTag) {
+  return node["nextSibling"];
+}
+
+export void runHydrationEvents() {
+  JsValue events = sharedConfig["events"];
+  if (!events.truthy() || events["queued"].truthy()) return;
+  queueMicrotask(() => {
+    JsValue completed = sharedConfig["completed"];
+    JsValue queued = sharedConfig["events"];
+    if (!queued.truthy()) return;
+    queued["queued"] = false;
+    while (lengthOf(queued) > 0) {
+      JsValue pair = queued[0];
+      JsValue element = pair[0];
+      JsValue event = pair[1];
+      if (!JS.invoke(completed, "has", element).truthy()) return;
+      JS.invoke(queued, "shift");
+      JsValue matches = JS.array();
+      for (int index = 0; index < delegatedContainerList.length; index++) {
+        JsValue container = delegatedContainerList[index];
+        JsValue? stateValue = delegatedContainers.get(container);
+        if (stateValue == null || !JS.invoke(stateValue["handlers"], "has", event["type"]).truthy()) continue;
+        JsValue entry = findOwner(event["target"], stateValue);
+        if (entry.truthy()) JS.invoke(matches, "push", JS.object(
+          "container", container,
+          "state", stateValue,
+          "distance", entry["distance"]
+        ));
+      }
+      JS.invoke(matches, "sort", JS.method2((JsValue _sort, JsValue left, JsValue right) =>
+        JS.number(left["distance"]) - JS.number(right["distance"])
+      ));
+      for (int index = 0; index < lengthOf(matches); index++) {
+        eventHandler(event, matches[index]["container"], matches[index]["state"]);
+      }
+    }
+    if (sharedConfig["done"].truthy()) {
+      sharedConfig["events"] = null;
+      hydrationEventsNull();
+    }
+  });
+  events["queued"] = true;
+}
+
+void hydrationEventsNull() {
+  JsValue hydration = globalThis["_$HY"];
+  sharedConfig["completed"] = null;
+  hydration["events"] = null;
+  hydration["completed"] = null;
+}
+
+bool isHydrating(JsValue node) {
+  if (!sharedConfig["hydrating"].truthy()) return false;
+  if (!node.truthy() || node["isConnected"].truthy()) return true;
+  JsValue roots = sharedConfig["claimRoots"];
+  if (roots.truthy()) {
+    for (int index = 0; index < lengthOf(roots); index++) {
+      if (JS.invoke(roots[index], "contains", node).truthy()) return true;
+    }
+  }
+  return false;
+}
+
+JsValue assignProp(
+  JsValue node,
+  string prop,
+  JsValue value,
+  JsValue previous,
+  bool skipRef,
+  string nodeName
+) {
+  if (prop == "style") {
+    style(node, value, previous);
+    return value;
+  }
+  if (prop == "class") {
+    className(node, value, previous);
+    return value;
+  }
+  JsValue stateProperties = DOMWithState[nodeName];
+  if (same(value, previous) && (JS.isUndefined(stateProperties) || !same(stateProperties[prop], 1))) return previous;
+  if (prop == "ref") {
+    if (!skipRef && value.truthy()) ref(JS.method0((JsValue _self) => value), node);
+    return value;
+  }
+  bool hasNamespace = prop.indexOf(":") > -1;
+  if (!hasNamespace && prop.slice(0, 2) == "on") {
+    string name = prop.slice(2).toLowerCase();
+    bool delegate = DelegatedEvents.has(name);
+    if (!delegate && previous.truthy()) {
+      JsValue handler = previous;
+      if (previous.isArray()) handler = previous[0];
+      JS.invoke(node, "removeEventListener", name, handler);
+    }
+    if (delegate || value.truthy()) {
+      addEvent(node, name, value, delegate);
+      if (delegate) delegateEvents([name]);
+    }
+  } else if (
+    (hasNamespace && prop.slice(0, 5) == "prop:") ||
+    ChildProperties.has(prop) ||
+    (!JS.isUndefined(stateProperties) && stateProperties[prop].truthy())
+  ) {
+    if (hasNamespace) prop = prop.slice(5);
+    else if (isHydrating(node)) return value;
+    if (prop == "value" && nodeName == "SELECT") {
+      queueMicrotask(() => {
+        node["value"] = value;
+      });
+      node["value"] = value;
+    } else if (
+      (prop == "value" || prop == "defaultValue") &&
+      (nodeName == "INPUT" || nodeName == "TEXTAREA")
+    ) {
+      if (JS.isNullish(value)) node[prop] = "";
+      else node[prop] = value;
+    } else {
+      node[prop] = value;
+    }
+  } else {
+    string prefix = "";
+    if (hasNamespace) prefix = prop.split(":")[0];
+    JsValue namespace = JS.undefined();
+    if (prefix != "") namespace = Namespaces[prefix];
+    if (namespace.truthy()) setAttributeNS(node, JS.string(namespace), prop, value);
+    else setAttribute(node, prop, value);
+  }
+  return value;
+}
+
+void eventHandler(JsValue event, JsValue container, JsValue state) {
+  if (!JS.isNullish(hydrationRt) && JS.invoke(hydrationRt, "dedupEvent", event).truthy()) return;
+  JsValue previous = event[EVENT_OWNER];
+  JsValue resumeNode = JS.undefined();
+  if (previous.truthy()) {
+    if (same(previous, true) || same(previous, container) || !JS.invoke(container, "contains", previous).truthy()) return;
+    resumeNode = previous;
+  }
+  JsValue owner = JS.undefined();
+  if (state.truthy()) {
+    if (same(state["owners"]["size"], 1) && JS.invoke(state["owners"], "has", container).truthy()) owner = container;
+    else {
+      JsValue entry = findOwner(event["target"], state);
+      if (entry.truthy()) owner = entry["owner"];
+    }
+    if (!owner.truthy()) return;
+  }
+  if (owner.truthy()) event[EVENT_OWNER] = owner;
+  else event[EVENT_OWNER] = true;
+  JsValue startNode = event["target"];
+  if (resumeNode.truthy()) startNode = resumeNode;
+  JsValue box = JS.object("node", startNode);
+  string key = "$$" + event["type"];
+  JsValue originalTarget = event["target"];
+  JsValue boundary = owner;
+  if (!boundary.truthy()) boundary = container;
+  if (!boundary.truthy()) boundary = event["currentTarget"];
+  JsValue retarget = JS.method1((JsValue _self, JsValue value) => {
+    JS.invoke(Object, "defineProperty", event, "target", JS.object("configurable", true, "value", value));
+    return JS.undefined();
+  });
+  JsValue handleNode = JS.method0((JsValue _self) => {
+    JsValue node = box["node"];
+    JsValue handler = node[key];
+    if (handler.truthy() && !node["disabled"].truthy()) {
+      JsValue data = node[key + "Data"];
+      if (!JS.isUndefined(data)) JS.call(handler, node, data, event);
+      else JS.call(handler, node, event);
+      if (event["cancelBubble"].truthy()) return false;
+    }
+    JsValue host = node["host"];
+    if (
+      host.truthy() && JS.typeOf(host) != "string" && !host["_$host"].truthy() &&
+      JS.invoke(node, "contains", event["target"]).truthy()
+    ) call1(retarget, host);
+    return true;
+  });
+  JsValue walk = JS.method0((JsValue _self) => {
+    while (call0(handleNode).truthy()) {
+      JsValue node = box["node"];
+      if (same(node, boundary) || same(node["parentNode"], boundary)) break;
+      JsValue next = node["_$host"];
+      if (!next.truthy()) next = node["parentNode"];
+      if (!next.truthy()) next = node["host"];
+      box["node"] = next;
+    }
+    return JS.undefined();
+  });
+  JS.invoke(Object, "defineProperty", event, "currentTarget", JS.object(
+    "configurable", true,
+    "get", JS.method0((JsValue _self) => {
+      JsValue node = box["node"];
+      if (node.truthy()) return node;
+      if (boundary.truthy()) return boundary;
+      return document;
+    })
+  ));
+  if (resumeNode.truthy()) {
+    if (same(resumeNode, event["target"])) {
+      JsValue next = resumeNode["_$host"];
+      if (!next.truthy()) next = resumeNode["parentNode"];
+      if (!next.truthy()) next = resumeNode["host"];
+      box["node"] = next;
+    }
+    if (box["node"].truthy() && !same(box["node"], boundary)) call0(walk);
+  } else if (isFunction(event["composedPath"])) {
+    JsValue path = JS.invoke(event, "composedPath");
+    if (lengthOf(path) > 0) {
+      call1(retarget, path[0]);
+      for (int index = 0; index < lengthOf(path); index++) {
+        box["node"] = path[index];
+        if (!call0(handleNode).truthy()) break;
+        JsValue node = box["node"];
+        if (node["_$host"].truthy()) {
+          box["node"] = node["_$host"];
+          call0(walk);
+          break;
+        }
+        if (same(node, boundary) || same(node["parentNode"], boundary)) break;
+      }
+    } else {
+      call0(walk);
+    }
+  } else {
+    call0(walk);
+  }
+  call1(retarget, originalTarget);
+}
+
+JsValue insertExpression(JsValue parent, JsValue value, JsValue current, JsValue marker) {
+  if (!JS.isNullish(hydrationRt) && isHydrating(parent)) {
+    if (value.truthy() && !same(value, current)) {
+      JsValue values = value;
+      if (!value.isArray()) values = JS.array(value);
+      for (int index = 0; index < lengthOf(values); index++) {
+        JsValue node = values[index];
+        if (isNode(node) && !isHydrating(node)) return current;
+      }
+    }
+    return value;
+  }
+  if (same(value, current)) return value;
+  string kind = JS.typeOf(value);
+  bool multi = !JS.isUndefined(marker);
+  if (kind == "string" || kind == "number") {
+    string currentKind = JS.typeOf(current);
+    if (currentKind == "string" || currentKind == "number") {
+      parent["firstChild"]["data"] = value;
+    } else if (ownsAllChildren(parent, current)) {
+      parent["textContent"] = value;
+    } else {
+      removeOwnedChildren(parent, current);
+      JS.invoke(parent, "insertBefore", JS.invoke(document, "createTextNode", value), parent["firstChild"]);
+    }
+  } else if (JS.isUndefined(value)) {
+    cleanChildren(parent, current, marker, JS.undefined());
+  } else if (isNode(value)) {
+    if (current.isArray()) {
+      JsValue boundary = null;
+      if (multi) boundary = marker;
+      cleanChildren(parent, current, boundary, value);
+    } else if (isNode(current)) {
+      if (same(current["parentNode"], parent)) JS.invoke(parent, "replaceChild", value, current);
+      else JS.invoke(parent, "appendChild", value);
+    } else if (current.truthy() && parent["firstChild"].truthy()) {
+      JS.invoke(parent, "replaceChild", value, parent["firstChild"]);
+    } else {
+      JS.invoke(parent, "appendChild", value);
+    }
+    if (marker.truthy()) value[$$SLOT] = marker;
+  } else if (value.isArray()) {
+    bool currentArray = current.truthy() && current.isArray();
+    if (lengthOf(value) == 0) cleanChildren(parent, current, marker, JS.undefined());
+    else if (currentArray) {
+      if (lengthOf(current) == 0) appendNodes(parent, value, marker);
+      else reconcileArrays(parent, current, value, marker);
+    } else {
+      if (current.truthy()) cleanChildren(parent, current, JS.undefined(), JS.undefined());
+      appendNodes(parent, value, JS.undefined());
+    }
+  }
+  return value;
+}
+
+JsValue normalize(JsValue value, JsValue current, bool multi, bool doNotUnwrap) {
+  value = JS.call(
+    flatten,
+    JS.undefined(),
+    value,
+    JS.object("skipNonRendered", true, "doNotUnwrap", doNotUnwrap)
+  );
+  if (doNotUnwrap && isFunction(value)) return value;
+  if (multi && !value.isArray()) {
+    if (JS.isNullish(value)) value = JS.array("");
+    else value = JS.array(value);
+  }
+  if (value.isArray()) {
+    for (int index = 0; index < lengthOf(value); index++) {
+      JsValue item = value[index];
+      JsValue previous = JS.undefined();
+      if (current.truthy()) previous = current[index];
+      string kind = JS.typeOf(item);
+      if (kind == "string" || kind == "number") {
+        if (
+          previous.truthy() && same(previous["nodeType"], 3) &&
+          (sharedConfig["hydrating"].truthy() || same(previous["data"], "" + item))
+        ) value[index] = previous;
+        else value[index] = JS.invoke(document, "createTextNode", item);
+      }
+    }
+  }
+  return value;
+}
+
+void tagHost(JsValue value, JsValue host) {
+  if (value.isArray()) {
+    for (int index = 0; index < lengthOf(value); index++) tagHost(value[index], host);
+  } else if (isNode(value) && !same(value[$$HOST], host)) {
+    value[$$HOST] = host;
+    JS.invoke(Object, "defineProperty", value, "_$host", JS.object("get", host, "configurable", true));
+  }
+}
+
+void appendNodes(JsValue parent, JsValue array, JsValue marker) {
+  if (JS.isUndefined(marker)) marker = null;
+  for (int index = 0; index < lengthOf(array); index++) {
+    JsValue node = array[index];
+    JS.invoke(parent, "insertBefore", node, marker);
+    if (marker.truthy()) node[$$SLOT] = marker;
+  }
+}
+
+bool ownsAllChildren(JsValue parent, JsValue current) {
+  if (JS.isNullish(current)) return true;
+  if (current.isArray()) {
+    if (lengthOf(current) > 0) {
+      return same(parent["firstChild"], current[0]) &&
+        same(parent["lastChild"], current[lengthOf(current) - 1]);
+    }
+    return JS.isNullish(parent["firstChild"]);
+  }
+  if (same(current, "")) return JS.isNullish(parent["firstChild"]);
+  if (isNode(current)) return same(parent["firstChild"], current) && same(parent["lastChild"], current);
+  JsValue first = parent["firstChild"];
+  return !JS.isNullish(first) && same(first["nodeType"], 3) && same(parent["lastChild"], first);
+}
+
+void removeOwnedChildren(JsValue parent, JsValue current) {
+  if (current.isArray()) {
+    for (int index = 0; index < lengthOf(current); index++) {
+      JsValue element = current[index];
+      if (same(element["parentNode"], parent)) JS.invoke(element, "remove");
+    }
+  } else if (isNode(current)) {
+    if (same(current["parentNode"], parent)) JS.invoke(current, "remove");
+  } else {
+    JsValue first = parent["firstChild"];
+    if (first.truthy() && same(first["nodeType"], 3)) JS.invoke(first, "remove");
+  }
+}
+
+void cleanChildren(JsValue parent, JsValue current, JsValue marker, JsValue replacement) {
+  if (JS.isUndefined(marker)) {
+    if (ownsAllChildren(parent, current)) parent["textContent"] = "";
+    else removeOwnedChildren(parent, current);
+    return;
+  }
+  if (lengthOf(current) > 0) {
+    bool inserted = false;
+    for (int index = lengthOf(current) - 1; index >= 0; index--) {
+      JsValue element = current[index];
+      if (!same(replacement, element)) {
+        JsValue tag = element[$$SLOT];
+        bool owns = same(element["parentNode"], parent) && (!tag.truthy() || same(tag, marker));
+        if (replacement.truthy() && !inserted && index == 0) {
+          if (owns) JS.invoke(parent, "replaceChild", replacement, element);
+          else JS.invoke(parent, "insertBefore", replacement, marker);
+        } else if (owns) {
+          JS.invoke(element, "remove");
+        }
+      } else {
+        inserted = true;
+      }
+    }
+  } else if (replacement.truthy()) {
+    JS.invoke(parent, "insertBefore", replacement, marker);
+  }
+  if (replacement.truthy() && marker.truthy()) replacement[$$SLOT] = marker;
+}
+
+void gatherHydratable(JsValue element, string rootId) {
+  JsValue templates = JS.invoke(element, "querySelectorAll", "*[_hk]");
+  for (int index = 0; index < lengthOf(templates); index++) {
+    JsValue node = templates[index];
+    string key = JS.string(JS.invoke(node, "getAttribute", "_hk"));
+    if (rootId != "") {
+      if (!key.startsWith(rootId)) continue;
+    } else {
+      JsValue frame = JS.invoke(node, "closest", "[data-fid]");
+      if (frame.truthy() && !same(frame, element) && JS.invoke(element, "contains", frame).truthy()) continue;
+    }
+    if (!JS.invoke(sharedConfig["registry"], "has", key).truthy()) {
+      JS.invoke(sharedConfig["registry"], "set", key, node);
+    }
+  }
+}
+
+export string getHydrationKey() {
+  return JS.string(JS.call(sharedConfig["getNextContextId"], sharedConfig));
+}
+
+export JsValue RequestContext = JS.assume(new Symbol());

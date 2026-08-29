@@ -1,0 +1,16 @@
+[optimization]
+preset = "none"
+
+[javascript]
+priority = "size-first"
+cost_model = "brotli"
+function_spelling = "arrow"
+
+[mangle]
+identifiers = false
+properties = false
+exports = false
+pool_strings = true
+
+[bundle]
+mode = "single"

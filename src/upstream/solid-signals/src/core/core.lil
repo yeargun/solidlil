@@ -1,0 +1,131 @@
+import {
+  $REFRESH,
+  CONFIG_CHILDREN_FORBIDDEN,
+  CONFIG_OWNED_WRITE,
+  Computed,
+  NodeOptions,
+  Owner,
+  Signal,
+  clearSnapshots,
+  computed,
+  computedDynamic,
+  computedWithPrev,
+  context,
+  currentOptimisticLane,
+  emitDiagnostic,
+  isEqual,
+  latestReadActive,
+  markSnapshotScope,
+  optimisticComputed,
+  optimisticSignal,
+  pendingCheckActive,
+  prepareComputed,
+  read,
+  readComputed,
+  recompute,
+  refresh as refreshComputed,
+  releaseSnapshotScope,
+  runWithOwner,
+  setContextInternal,
+  setLatestReadActive,
+  setMemo,
+  setPendingCheckActive,
+  setSignal,
+  setSnapshotCapture,
+  signal,
+  snapshotCaptureActive,
+  stale,
+  staleValues,
+  suppressComputedRecompute,
+  tracking,
+  untrack as kernelUntrack,
+  updateSignal
+} from "./kernel";
+import { Error } from "../../../_host";
+
+export {
+  Computed,
+  NodeOptions,
+  Owner,
+  Signal,
+  clearSnapshots,
+  computed,
+  computedDynamic,
+  computedWithPrev,
+  context,
+  currentOptimisticLane,
+  isEqual,
+  latestReadActive,
+  markSnapshotScope,
+  optimisticComputed,
+  optimisticSignal,
+  pendingCheckActive,
+  prepareComputed,
+  read,
+  readComputed,
+  recompute,
+  releaseSnapshotScope,
+  runWithOwner,
+  setContextInternal,
+  setLatestReadActive,
+  setMemo,
+  setPendingCheckActive,
+  setSignal,
+  setSnapshotCapture,
+  signal,
+  snapshotCaptureActive,
+  stale,
+  staleValues,
+  suppressComputedRecompute,
+  tracking,
+  updateSignal
+};
+
+export Symbol READ_SLOW = new Symbol("read-slow");
+
+export T readNodeFast<T>(Signal<T> node) {
+  return read(node);
+}
+
+export JsValue untrack(JsValue callback, JsValue strictReadLabel) {
+  string? label = null;
+  if (JS.typeOf(strictReadLabel) == "string") label = JS.string(strictReadLabel);
+  return kernelUntrack(() => JS.call(callback, JS.undefined()), label);
+}
+
+export void refresh(JsValue target) {
+  if (JS.isNullish(target)) {
+    throw JS.construct(
+      Error,
+      "[INVALID_REFRESH_TARGET] refresh() expects a Solid source accessor or refreshable store. Pass the original source target, not a wrapper function or derived property read."
+    );
+  }
+  JsValue refreshKey = JS.assume($REFRESH);
+  JsValue node = target[refreshKey];
+  if (JS.isNullish(node)) {
+    throw JS.construct(
+      Error,
+      "[INVALID_REFRESH_TARGET] refresh() expects a Solid source accessor or refreshable store. Pass the original source target, not a wrapper function or derived property read."
+    );
+  }
+  Computed<JsValue> computedNode = JS.assume(node);
+  if (!computedNode._computed) return;
+  if (
+    context != null &&
+    (computedNode._config & CONFIG_OWNED_WRITE) == 0 &&
+    (context._config & CONFIG_CHILDREN_FORBIDDEN) == 0
+  ) {
+    string message = "Calling refresh() inside an owned scope is not allowed.";
+    JsValue rawNode = JS.assume(computedNode);
+    emitDiagnostic(JS.object(
+      "code", "REACTIVE_WRITE_IN_OWNED_SCOPE",
+      "kind", "write",
+      "severity", "error",
+      "message", message,
+      "nodeName", rawNode["_name"],
+      "data", JS.object("operation", "refresh")
+    ));
+    throw JS.construct(Error, message);
+  }
+  refreshComputed(computedNode);
+}

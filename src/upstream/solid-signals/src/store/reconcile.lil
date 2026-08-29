@@ -1,0 +1,7 @@
+import { makeReconcileFunctionKernel, reconcileInto } from "./_kernel";
+
+export JsValue reconcile = makeReconcileFunctionKernel();
+
+export void reconcileState(JsValue value, JsValue state, JsValue key, bool replace) {
+  reconcileInto(value, state, key, replace);
+}

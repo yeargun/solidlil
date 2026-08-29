@@ -1,0 +1,28 @@
+import {
+  $PROXY,
+  $TARGET,
+  $TRACK,
+  createStore,
+  isWrappable
+} from "./store";
+import { createProjection } from "./projection";
+import { createOptimisticStore } from "./optimistic";
+import { reconcile } from "./reconcile";
+import { storePath } from "./storePath";
+import { deep, merge, omit, snapshot } from "./utils";
+
+export {
+  $PROXY,
+  $TARGET,
+  $TRACK,
+  createOptimisticStore,
+  createProjection,
+  createStore,
+  deep,
+  isWrappable,
+  merge,
+  omit,
+  reconcile,
+  snapshot,
+  storePath
+};

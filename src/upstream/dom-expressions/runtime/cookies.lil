@@ -1,0 +1,85 @@
+import { Object, decodeURIComponent, encodeURIComponent, Math } from "./_host";
+
+string decodeSafe(string text) {
+  try {
+    return decodeURIComponent(text);
+  } catch {
+    return text;
+  }
+}
+
+export JsValue parseCookieHeader(string? header) {
+  JsValue cookies = JS.object();
+  if (header == null || header == "") return cookies;
+  string[] parts = header.split(";");
+  for (int index = 0; index < parts.length; index++) {
+    string part = parts[index];
+    int equal = part.indexOf("=");
+    if (equal < 0) continue;
+    string name = decodeSafe(part.slice(0, equal).trim());
+    string value = part.slice(equal + 1).trim();
+    if (value.length > 1 && value[0] == "\"" && value[value.length - 1] == "\"") {
+      value = value.slice(1, value.length - 1);
+    }
+    cookies[name] = decodeSafe(value);
+  }
+  return cookies;
+}
+
+string serializeCookieImpl(
+  string name,
+  string value,
+  JsValue options
+) {
+  if (JS.isUndefined(options)) options = JS.object();
+  string cookie = encodeURIComponent(name) + "=" + encodeURIComponent(value);
+  JsValue path = options["path"];
+  string pathText = "/";
+  if (!JS.isUndefined(path)) pathText = JS.string(path);
+  cookie += "; Path=" + pathText;
+  JsValue domain = options["domain"];
+  if (domain.truthy()) cookie += "; Domain=" + domain;
+  JsValue maxAge = options["maxAge"];
+  if (!JS.isUndefined(maxAge)) cookie += "; Max-Age=" + JS.invoke(Math, "trunc", maxAge);
+  JsValue expires = options["expires"];
+  if (expires.truthy()) cookie += "; Expires=" + JS.invoke(expires, "toUTCString");
+  if (options["httpOnly"].truthy()) cookie += "; HttpOnly";
+  if (options["secure"].truthy()) cookie += "; Secure";
+  JsValue sameSiteValue = options["sameSite"];
+  if (sameSiteValue.truthy()) {
+    string sameSite = JS.string(sameSiteValue).toLowerCase();
+    string normalized = "Lax";
+    if (sameSite == "none") normalized = "None";
+    else if (sameSite == "strict") normalized = "Strict";
+    cookie += "; SameSite=" + normalized;
+  }
+  return cookie;
+}
+
+export JsValue serializeCookie = JS.staticRest((JsValue callArguments) =>
+  serializeCookieImpl(
+    JS.assume(callArguments[0]),
+    JS.assume(callArguments[1]),
+    callArguments[2]
+  )
+);
+JS.invoke(Object, "defineProperty", serializeCookie, "name", JS.object("value", "serializeCookie", "configurable", true));
+JS.invoke(Object, "defineProperty", serializeCookie, "length", JS.object("value", 2, "configurable", true));
+
+export string FLASH_COOKIE = "flash";
+Regex FLASH_MATCHER = new Regex("(?:^|;\\s*)flash=([^;]+)");
+
+export bool hasFlashCookie(string? cookieHeader) {
+  return cookieHeader != null && FLASH_MATCHER.test(cookieHeader);
+}
+
+export JsValue matchFlashCookie(string? cookieHeader) {
+  if (cookieHeader == null) return JS.undefined();
+  JsValue matched = JS.invoke(cookieHeader, "match", JS.assume(FLASH_MATCHER));
+  if (JS.isNullish(matched)) return JS.undefined();
+  return matched[1];
+}
+
+export string clearFlashCookie() {
+  return "flash=; Max-Age=0; Path=/";
+}

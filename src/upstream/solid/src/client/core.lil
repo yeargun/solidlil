@@ -1,0 +1,179 @@
+import {
+  createMemo,
+  createRoot,
+  flatten,
+  getContext,
+  getObserver,
+  getOwner,
+  runWithOwner,
+  setContext,
+  untrack
+} from "../../../solid-signals/src/index";
+import { Error, Symbol } from "../../../_host";
+
+// The upstream build substitutes this token. These pinned build profiles use
+// function expressions in development and arrows in production.
+bool developmentBuild() {
+  func(int)->int marker = (int value) => value;
+  JsValue source = JS.invoke(JS.assume(marker), "toString");
+  return JS.invoke(source, "startsWith", "function").truthy();
+}
+
+export bool IS_DEV = developmentBuild();
+export JsValue $DEVCOMP = JS.call(
+  Symbol,
+  JS.undefined(),
+  if (IS_DEV) { JS.assume("COMPONENT_DEV") } else { JS.assume(0) }
+);
+
+JsValue undefinedValue() {
+  return JS.undefined();
+}
+
+JsValue call0(JsValue fn) {
+  return JS.call(fn, undefinedValue());
+}
+
+JsValue call1(JsValue fn, JsValue value) {
+  return JS.call(fn, undefinedValue(), value);
+}
+
+JsValue call2(JsValue fn, JsValue first, JsValue second) {
+  return JS.call(fn, undefinedValue(), first, second);
+}
+
+void inheritContext(JsValue owner) {
+  JsValue current = call0(getOwner);
+  if (!JS.isNullish(owner) && !JS.isNullish(current)) {
+    current["_context"] = JS.invoke(owner["_context"], "slice");
+  }
+}
+
+JsValue evaluateChildren(JsValue owner, JsValue fn) {
+  JsValue evaluate = JS.method0((JsValue _self) => call1(flatten, call0(fn)));
+  if (JS.isNullish(owner)) return call0(evaluate);
+  return call2(runWithOwner, owner, evaluate);
+}
+
+JsValue resolveChildren(JsValue fn) {
+  JsValue owner = call0(getOwner);
+  JsValue inner = call2(
+    createMemo,
+    JS.method1((JsValue _self, JsValue _previous) => {
+      inheritContext(owner);
+      return call0(fn);
+    }),
+    JS.object("lazy", true)
+  );
+  JsValue options = if (IS_DEV) {
+    JS.object("name", "children", "lazy", true, "sync", true)
+  } else {
+    JS.object("lazy", true, "sync", true)
+  };
+  JsValue cached = call2(
+    createMemo,
+    JS.method1((JsValue _self, JsValue _previous) => {
+      inheritContext(owner);
+      return call1(flatten, call0(inner));
+    }),
+    options
+  );
+  JsValue memo = JS.method0((JsValue _self) => {
+    if (JS.isNullish(call0(getObserver))) return evaluateChildren(owner, fn);
+    return call0(cached);
+  });
+  memo["toArray"] = JS.method0((JsValue _self) => {
+    JsValue value = call0(memo);
+    if (JS.isArray(value)) return value;
+    if (JS.isNullish(value)) return JS.array();
+    return JS.array(value);
+  });
+  return memo;
+}
+
+/** Resolves children once per reactive change and adds Solid's `toArray`. */
+export JsValue children = JS.method1(
+  (JsValue _self, JsValue fn) => resolveChildren(fn)
+);
+
+JsValue createContextFromArguments(JsValue args) {
+  JsValue defaultValue = args[0];
+  JsValue options = args[1];
+  string name = "";
+  if (!JS.isNullish(options) && !JS.isNullish(options["name"])) {
+    name = JS.string(options["name"]);
+  }
+  JsValue id = JS.call(Symbol, JS.undefined(), name);
+  JsValue provider = undefinedValue();
+  provider = JS.method1((JsValue _providerSelf, JsValue props) =>
+    call2(
+      createRoot,
+      JS.method0((JsValue _rootSelf) => {
+        JS.call(setContext, undefinedValue(), provider, props["value"]);
+        return resolveChildren(
+          JS.method0((JsValue _childrenSelf) => props["children"])
+        );
+      }),
+      undefinedValue()
+    )
+  );
+  provider["id"] = id;
+  provider["defaultValue"] = defaultValue;
+  return provider;
+}
+
+/**
+ * Creates Solid's callable context object. `staticRest` keeps the JavaScript
+ * function length at zero and preserves omission as actual `undefined`.
+ */
+export JsValue createContext = JS.staticRest(
+  (JsValue args) => createContextFromArguments(args)
+);
+
+/** Reads the nearest value for a callable context object. */
+export JsValue useContext = JS.method1(
+  (JsValue _self, JsValue context) => {
+    try {
+      return call1(getContext, context);
+    } catch (JsValue failure) {
+      if (
+        !JS.isNullish(failure) &&
+        JS.string(failure["message"]) == "Context must either have a default or be provided before access."
+      ) {
+        JsValue error = JS.construct(
+          Error,
+          if (IS_DEV) {
+            "Context must either be created with a default value or a value must be provided before accessing it."
+          } else {
+            ""
+          }
+        );
+        error["name"] = "ContextNotFoundError";
+        throw error;
+      }
+      throw failure;
+    }
+  }
+);
+
+/** Development component owner instrumentation used by `createComponent`. */
+export JsValue devComponent = JS.method2(
+  (JsValue _self, JsValue component, JsValue props) =>
+    call2(
+      createRoot,
+      JS.method0((JsValue _rootSelf) => {
+        JsValue owner = call0(getOwner);
+        owner["_component"] = JS.object(
+          "fn", component,
+          "props", props,
+          "name", component["name"]
+        );
+        component[$DEVCOMP] = true;
+        return call1(
+          untrack,
+          JS.method0((JsValue _untrackSelf) => call1(component, props))
+        );
+      }),
+      JS.object("transparent", true)
+    )
+);

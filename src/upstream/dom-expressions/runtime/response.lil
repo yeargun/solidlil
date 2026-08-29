@@ -1,0 +1,152 @@
+import {
+  Headers,
+  JSON,
+  Object,
+  Reflect,
+  Response,
+  Symbol,
+  TypeError
+} from "./_host";
+
+JsValue ENVELOPE = JS.invoke(Symbol, "for", "solid.ResponseEnvelope");
+
+export JsValue ResponseEnvelope = JS.method2((JsValue self, JsValue response, JsValue value) => {
+  self["response"] = response;
+  self["value"] = value;
+  return self;
+});
+ResponseEnvelope["prototype"][ENVELOPE] = true;
+JS.invoke(
+  Object,
+  "defineProperty",
+  ResponseEnvelope,
+  "name",
+  JS.object("value", "ResponseEnvelope", "configurable", true)
+);
+
+export bool isResponseEnvelope(JsValue value) {
+  if (JS.isNullish(value) || JS.typeOf(value) != "object") return false;
+  if (!value[ENVELOPE].truthy()) return false;
+  return true;
+}
+
+export JsValue HREF = JS.invoke(Symbol, "for", "solid.Href");
+
+export bool isHref(JsValue value) {
+  string kind = JS.typeOf(value);
+  if (JS.isNullish(value) || (kind != "object" && kind != "function")) return false;
+  if (!value[HREF].truthy()) return false;
+  return true;
+}
+
+export JsValue SAFE_ERROR = JS.invoke(Symbol, "for", "solid.SafeError");
+
+export JsValue markSafeError(JsValue error) {
+  string kind = JS.typeOf(error);
+  if (!JS.isNullish(error) && (kind == "object" || kind == "function")) {
+    JS.invoke(
+      Object,
+      "defineProperty",
+      error,
+      SAFE_ERROR,
+      JS.object("value", true, "enumerable", false, "configurable", true)
+    );
+  }
+  return error;
+}
+
+export bool isSafeError(JsValue value) {
+  string kind = JS.typeOf(value);
+  if (JS.isNullish(value) || (kind != "object" && kind != "function")) return false;
+  if (!value[SAFE_ERROR].truthy()) return false;
+  return true;
+}
+
+export string REVALIDATE_HEADER = "X-Revalidate";
+
+JsValue initWithRevalidate(JsValue optionsInput) {
+  JsValue responseInit = JS.object();
+  JsValue revalidate = optionsInput["revalidate"];
+  JsValue keys = JS.invoke(Reflect, "ownKeys", optionsInput);
+  int keyCount = JS.number(keys["length"]).toInt();
+  for (int index = 0; index < keyCount; index++) {
+    JsValue key = keys[index];
+    if (
+      !JS.strictEqual(key, "revalidate") &&
+      JS.call(Object["prototype"]["propertyIsEnumerable"], optionsInput, key).truthy()
+    ) responseInit[key] = optionsInput[key];
+  }
+  JsValue sourceHeaders = responseInit["headers"];
+  JsValue headers = JS.undefined();
+  if (!JS.isNullish(sourceHeaders) && JS.typeOf(sourceHeaders["getSetCookie"]) == "function") {
+    headers = JS.construct(Headers);
+    JS.invoke(sourceHeaders, "forEach", JS.method2((JsValue _self, JsValue value, JsValue key) => {
+      if (!JS.strictEqual(key, "set-cookie")) JS.invoke(headers, "append", key, value);
+      return JS.undefined();
+    }));
+    JsValue cookies = JS.invoke(sourceHeaders, "getSetCookie");
+    int length = JS.number(cookies["length"]).toInt();
+    for (int index = 0; index < length; index++) JS.invoke(headers, "append", "Set-Cookie", cookies[index]);
+  } else {
+    headers = JS.construct(Headers, sourceHeaders);
+  }
+  if (!JS.isUndefined(revalidate)) {
+    JS.invoke(headers, "set", REVALIDATE_HEADER, JS.invoke(revalidate, "toString"));
+  }
+  return JS.object("responseInit", responseInit, "headers", headers);
+}
+
+JsValue responseOptions(JsValue initialized) {
+  JsValue responseInit = initialized["responseInit"];
+  responseInit["headers"] = initialized["headers"];
+  return responseInit;
+}
+
+JsValue redirectImpl(JsValue url, JsValue optionsInput) {
+  if (!(url is string) && !isHref(url)) {
+    throw JS.construct(
+      TypeError,
+      "redirect() expects a string URL or an Href-branded value (Symbol.for('solid.Href'))."
+    );
+  }
+  JsValue normalized = optionsInput;
+  if (JS.typeOf(optionsInput) == "number") normalized = JS.object("status", optionsInput);
+  JsValue initialized = initWithRevalidate(normalized);
+  JsValue responseInit = initialized["responseInit"];
+  if (JS.isUndefined(responseInit["status"])) responseInit["status"] = 302;
+  JS.invoke(initialized["headers"], "set", "Location", JS.string(url));
+  return JS.construct(Response, null, responseOptions(initialized));
+}
+
+JsValue reloadImpl(JsValue optionsInput) {
+  if (JS.isUndefined(optionsInput)) optionsInput = JS.object();
+  JsValue initialized = initWithRevalidate(optionsInput);
+  return JS.construct(Response, null, responseOptions(initialized));
+}
+
+export JsValue reload = JS.staticRest((JsValue callArguments) => reloadImpl(callArguments[0]));
+
+JsValue respondImpl(JsValue value, JsValue optionsInput) {
+  if (JS.isUndefined(optionsInput)) optionsInput = JS.object();
+  JsValue initialized = initWithRevalidate(optionsInput);
+  JS.invoke(initialized["headers"], "set", "Content-Type", "application/json");
+  JsValue response = JS.construct(
+    Response,
+    JS.invoke(JSON, "stringify", value),
+    responseOptions(initialized)
+  );
+  return JS.construct(ResponseEnvelope, response, value);
+}
+
+export JsValue redirect = JS.staticRest((JsValue callArguments) =>
+  redirectImpl(callArguments[0], callArguments[1])
+);
+export JsValue respond = JS.staticRest((JsValue callArguments) =>
+  respondImpl(callArguments[0], callArguments[1])
+);
+JS.invoke(Object, "defineProperty", redirect, "name", JS.object("value", "redirect", "configurable", true));
+JS.invoke(Object, "defineProperty", redirect, "length", JS.object("value", 1, "configurable", true));
+JS.invoke(Object, "defineProperty", reload, "name", JS.object("value", "reload", "configurable", true));
+JS.invoke(Object, "defineProperty", reload, "length", JS.object("value", 0, "configurable", true));
+JS.invoke(Object, "defineProperty", respond, "name", JS.object("value", "respond", "configurable", true));
+JS.invoke(Object, "defineProperty", respond, "length", JS.object("value", 1, "configurable", true));

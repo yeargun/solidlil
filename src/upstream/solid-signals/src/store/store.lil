@@ -1,0 +1,50 @@
+import {
+  $DELETED_VALUE,
+  $PROXY_VALUE,
+  $TARGET_VALUE,
+  $TRACK_VALUE,
+  createStoreKernel,
+  createStoreProxyKernel,
+  getStoreAffectsNodesKernel,
+  isWrappableKernel,
+  markRawIngestKernel,
+  ownEnumerableKeysKernel,
+  wrapKernel
+} from "./_kernel";
+import { getOwner } from "../core/index";
+import { registerGraph } from "../core/dev";
+
+export JsValue $TRACK = $TRACK_VALUE;
+export JsValue $TARGET = $TARGET_VALUE;
+export JsValue $PROXY = $PROXY_VALUE;
+export JsValue $DELETED = $DELETED_VALUE;
+
+export bool isWrappable(JsValue value) {
+  return isWrappableKernel(value);
+}
+
+export JsValue createStore(JsValue first, JsValue second, JsValue options) {
+  JsValue result = createStoreKernel(first, second, options);
+  registerGraph(result[0], getOwner());
+  return result;
+}
+
+export JsValue createStoreProxy(JsValue value) {
+  return createStoreProxyKernel(value, false, false);
+}
+
+export JsValue wrap(JsValue value) {
+  return wrapKernel(value, null);
+}
+
+export JsValue ownEnumerableKeys(JsValue value) {
+  return ownEnumerableKeysKernel(value);
+}
+
+export void markRawIngest(JsValue value) {
+  markRawIngestKernel(value);
+}
+
+export JsValue getStoreAffectsNodes(JsValue target, JsValue key = JS.undefined()) {
+  return getStoreAffectsNodesKernel(target, key);
+}

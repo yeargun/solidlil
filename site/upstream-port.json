@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-28T21:35:37.414Z",
+  "generatedAt": "2026-08-29T08:03:28.908Z",
   "complete": false,
   "counts": {
     "total": 47,
     "verified": 0,
-    "unverified": 0,
-    "missing": 47
+    "unverified": 47,
+    "missing": 0
   },
   "repositories": {
     "solid": {
@@ -25,329 +25,329 @@
       "source": "packages/solid-signals/src/affects.ts",
       "sourceSha256": "ed27f038b786b037594575d4eab8f2d53103a2a7f5c9bd6e03705a4b08031b92",
       "target": "src/upstream/solid-signals/src/affects.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/boundaries.ts",
       "sourceSha256": "711960308c2e736790dd8c01eda89d0cd907f3e1e7b95e24e7d8178acd27c853",
       "target": "src/upstream/solid-signals/src/boundaries.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/index.ts",
       "sourceSha256": "5c87dd4e62523ea6577b8504a34e8644de11939b5e3c319ef26a7bc64f96b7e4",
       "target": "src/upstream/solid-signals/src/index.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/map.ts",
       "sourceSha256": "91b26b16788f5e36ada5e383979330baa9410196995ec2fe8d752bab3692cc30",
       "target": "src/upstream/solid-signals/src/map.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/signals.ts",
       "sourceSha256": "2718257da78980ab568f980a7cea05f69c75c98537d6681e6e30549fab5d29db",
       "target": "src/upstream/solid-signals/src/signals.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/action.ts",
       "sourceSha256": "694e74f9886bf56a4b277ce8c2e355526be50cd26237ac2cf540c5bbc39b0356",
       "target": "src/upstream/solid-signals/src/core/action.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/async.ts",
       "sourceSha256": "46be84a5a2eaf4a8f3145dd90c7f57d3003a7e4f6a8a592620da3f9bd5e081d5",
       "target": "src/upstream/solid-signals/src/core/async.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/constants.ts",
       "sourceSha256": "f6e8cf1225df38ddc8c0017586b3b7c845245aced04cedea58c7b60958f8235b",
       "target": "src/upstream/solid-signals/src/core/constants.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/context.ts",
       "sourceSha256": "ff1af23a7e433d8cbd4651b3d3b99377d845803f8add5a877b1a914fc3f1109e",
       "target": "src/upstream/solid-signals/src/core/context.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/core.ts",
       "sourceSha256": "5cce8f7e2283ff4981e4f9b234011d0dd1722aac174dff4fca0c8fac0112c633",
       "target": "src/upstream/solid-signals/src/core/core.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/dev.ts",
       "sourceSha256": "be94037f0b00a231ff38e41b21c8079859c9141d5884ca938f3e8f86704a2ccb",
       "target": "src/upstream/solid-signals/src/core/dev.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/effect.ts",
       "sourceSha256": "c0e2f64c8395005535fae3f0d8a82ba808370fc3d21d4dbd1475a8d278fd1ac0",
       "target": "src/upstream/solid-signals/src/core/effect.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/error.ts",
       "sourceSha256": "fd3354f7fdfdc8c6c78972fe847d4fd057a777e5583af46ce2858102b105dc39",
       "target": "src/upstream/solid-signals/src/core/error.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/external.ts",
       "sourceSha256": "923444db8904e288e3313ed16ee9a31152c913d8e571bb56df9edb9df4952ecd",
       "target": "src/upstream/solid-signals/src/core/external.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/graph.ts",
       "sourceSha256": "2f9d67cc455b30f00ec3d4ff0946c6fcf3a69a1a78651b2f6815cd56650a5b79",
       "target": "src/upstream/solid-signals/src/core/graph.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/heap.ts",
       "sourceSha256": "59d4d1bdb8787bec51122f39865c3986ca14a59591414a78b45ca46d6e3bd346",
       "target": "src/upstream/solid-signals/src/core/heap.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/index.ts",
       "sourceSha256": "60815a89bf87bc443a00d0db1c9a7495afc9cfb29bd296025a395b9eab989f58",
       "target": "src/upstream/solid-signals/src/core/index.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/invariants.ts",
       "sourceSha256": "de222cbfa15240d556beaf609c11994380d4f09a4a2e22e0cdd5019e0e88d0c0",
       "target": "src/upstream/solid-signals/src/core/invariants.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/lanes.ts",
       "sourceSha256": "cc11a0d4d6eb61be11d628535eca15eb34aef476a89d4dc970542f09b6f173f2",
       "target": "src/upstream/solid-signals/src/core/lanes.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/optimistic.ts",
       "sourceSha256": "cd7412192667277287e6c7ee768669091dc901c4b6ae084e17b405eb7261b479",
       "target": "src/upstream/solid-signals/src/core/optimistic.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/owner.ts",
       "sourceSha256": "c80cbbedd9b1998ad9e1f42a6807aeed996a276f8e3c286287e54f3a5950dc60",
       "target": "src/upstream/solid-signals/src/core/owner.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/scheduler.ts",
       "sourceSha256": "071c6afadb7c774013247dcb8fea5ef2b6cfc5d657f56618080d3896797d196c",
       "target": "src/upstream/solid-signals/src/core/scheduler.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/core/verdict.ts",
       "sourceSha256": "92373c09c864878b1fcb5a5842cbd104f2032e4755a7d299fdffca15dc7119b6",
       "target": "src/upstream/solid-signals/src/core/verdict.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/store/index.ts",
       "sourceSha256": "69983ad4d65e0a710622f2e05ac8fcabef2a94d065515d49866609be19808f9b",
       "target": "src/upstream/solid-signals/src/store/index.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/store/optimistic.ts",
       "sourceSha256": "0d683f1de189a19dae2f012ea99fdd6f91dc1197c4587e2bb3d0e2d18cb4d100",
       "target": "src/upstream/solid-signals/src/store/optimistic.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/store/projection.ts",
       "sourceSha256": "a34d48ac43419c235f56153eaa1871eab92ba25c78d0ed89c8f36d3e8425ed34",
       "target": "src/upstream/solid-signals/src/store/projection.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/store/reconcile.ts",
       "sourceSha256": "cafde396a22dc7b7f826a17453cbed22fcf5330c431cfb008d30982e18932b20",
       "target": "src/upstream/solid-signals/src/store/reconcile.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/store/store.ts",
       "sourceSha256": "69d9101d78a019b18e23bd9f86d9940ecd570f38db0c21673b0aa0757ec90b36",
       "target": "src/upstream/solid-signals/src/store/store.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/store/storePath.ts",
       "sourceSha256": "fbe9b642f771b726e575987af3b08e6bcf413081bc0d059d651fe5495af80997",
       "target": "src/upstream/solid-signals/src/store/storePath.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-signals/src/store/utils.ts",
       "sourceSha256": "292400c7134dc72bedb0263194146153b6587c5de68d16c8937235419bea3755",
       "target": "src/upstream/solid-signals/src/store/utils.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid/src/index.ts",
       "sourceSha256": "69cb52b5e817be0c90d5241121315ad425ffeb199e815228b82f1b5f0237a432",
       "target": "src/upstream/solid/src/index.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid/src/client/component.ts",
       "sourceSha256": "b7a84d2c0f5e3cd49bc51ad168c040e94f3c7acba557447458f7106910cc6f7a",
       "target": "src/upstream/solid/src/client/component.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid/src/client/core.ts",
       "sourceSha256": "a9a9987bcb1c47432045e8704d4c39817faf0a0d3a9e54fb064f62360dee1ec9",
       "target": "src/upstream/solid/src/client/core.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid/src/client/flow.ts",
       "sourceSha256": "699d13b1dd938e9efbf74e3319d4d82f46d831231a8297026b5f98ee6967990c",
       "target": "src/upstream/solid/src/client/flow.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid/src/client/hydration.ts",
       "sourceSha256": "b956c523f5fb97bfd3e2a9490e769e408222335341d52eddfd1e8f1c2f0b2147",
       "target": "src/upstream/solid/src/client/hydration.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-web/src/client.ts",
       "sourceSha256": "0e3c4b2256d4066c67d7fa98527c6c71647d5e0941e574bcd5132aec4a35fbf2",
       "target": "src/upstream/solid-web/src/client.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-web/src/core.ts",
       "sourceSha256": "b3cef8b7d01d12eeda7407210fef2c8b8a85e973c224e5dc8c015fd9055fb039",
       "target": "src/upstream/solid-web/src/core.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-web/src/index.ts",
       "sourceSha256": "0fc314dc791c48ddc49b23872d3a9bb415dedd3dc96469eebde90f50447eb067",
       "target": "src/upstream/solid-web/src/index.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-web/src/response.ts",
       "sourceSha256": "e6cd4964372196ba80f1aea8fca99771e48f9d64d30551908f395e48abbdd049",
       "target": "src/upstream/solid-web/src/response.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "solid",
       "source": "packages/solid-web/src/server-mock.ts",
       "sourceSha256": "61279376f57f6075a2c388fd5973d7959eff8abbd6a250b0f9fb7f7f99193a38",
       "target": "src/upstream/solid-web/src/server-mock.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "dom-expressions",
       "source": "packages/runtime/src/client.js",
       "sourceSha256": "6830346593efe83f12a83deeb12ab9988d7b4db133f96a32e195e5dde50c77c4",
       "target": "src/upstream/dom-expressions/runtime/client.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "dom-expressions",
       "source": "packages/runtime/src/constants.js",
       "sourceSha256": "bc898e6994e498e934715715d7ca85046b2660104953d4d93d7fbcfcf5799bb5",
       "target": "src/upstream/dom-expressions/runtime/constants.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "dom-expressions",
       "source": "packages/runtime/src/cookies.js",
       "sourceSha256": "7012ac1f35da9b922870477be2c46a43c708662239dde6f766a1401f9c2dad65",
       "target": "src/upstream/dom-expressions/runtime/cookies.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "dom-expressions",
       "source": "packages/runtime/src/head.js",
       "sourceSha256": "0a7f57d5124426b8bc8e4374a8e18f68fad864a2af51d1e6bf9658ee887d6da0",
       "target": "src/upstream/dom-expressions/runtime/head.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "dom-expressions",
       "source": "packages/runtime/src/reconcile.js",
       "sourceSha256": "d49982dbbd77c2c78cc83c1cfd26c7a8d29d91dbe2c25efa640c99eabb8190dc",
       "target": "src/upstream/dom-expressions/runtime/reconcile.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "dom-expressions",
       "source": "packages/runtime/src/response.js",
       "sourceSha256": "6c02ff0d8db846725124f34ce121e54044455f0693caaf47b53e3656ecec0084",
       "target": "src/upstream/dom-expressions/runtime/response.lil",
-      "status": "missing"
+      "status": "unverified"
     },
     {
       "repository": "dom-expressions",
       "source": "packages/runtime/src/server-functions/registry.js",
       "sourceSha256": "7920fa94987ec0d8f6361c1322bc92c757aabcfb853e0e1a811c909ccd96169f",
       "target": "src/upstream/dom-expressions/runtime/server-functions/registry.lil",
-      "status": "missing"
+      "status": "unverified"
     }
   ]
 }

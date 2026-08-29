@@ -1,0 +1,1943 @@
+import {
+  clearSnapshots,
+  createEffect as coreEffect,
+  createErrorBoundary as coreErrorBoundary,
+  createLoadingBoundary as coreLoadingBoundary,
+  createMemo as coreMemo,
+  createOptimistic as coreOptimistic,
+  createOptimisticStore as coreOptimisticStore,
+  createOwner,
+  createProjection as coreProjection,
+  createRenderEffect as coreRenderEffect,
+  createRevealOrder as coreRevealOrder,
+  createRoot,
+  createSignal as coreSignal,
+  createStore as coreStore,
+  flush,
+  getContext,
+  getNextChildId,
+  getOwner,
+  isDisposed,
+  markSnapshotScope,
+  onCleanup,
+  peekNextChildId,
+  releaseSnapshotScope,
+  runWithOwner,
+  setContext,
+  setSnapshotCapture
+} from "../../../solid-signals/src/index";
+import { IS_DEV } from "./core";
+import {
+  Array,
+  Error,
+  JSON,
+  Map,
+  Object,
+  Promise,
+  Proxy,
+  Reflect,
+  Set,
+  Symbol,
+  console,
+  globalThis,
+  queueMicrotask,
+  setTimeout as setTimeoutHost
+} from "../../../_host";
+
+JsValue setTimeout(JsValue callback) {
+  return JS.call(setTimeoutHost, JS.undefined(), callback, 0);
+}
+
+JsValue undefinedValue() {
+  return JS.undefined();
+}
+
+JsValue call0(JsValue fn) {
+  return JS.call(fn, undefinedValue());
+}
+
+JsValue call1(JsValue fn, JsValue value) {
+  return JS.call(fn, undefinedValue(), value);
+}
+
+JsValue call2(JsValue fn, JsValue first, JsValue second) {
+  return JS.call(fn, undefinedValue(), first, second);
+}
+
+JsValue call3(JsValue fn, JsValue first, JsValue second, JsValue third) {
+  return JS.call(fn, undefinedValue(), first, second, third);
+}
+
+JsValue invoke0(JsValue receiver, string name) {
+  return JS.invoke(receiver, name);
+}
+
+bool isFunction(JsValue value) {
+  return JS.typeOf(value) == "function";
+}
+
+bool isObjectValue(JsValue value) {
+  return !JS.isNullish(value) && JS.typeOf(value) == "object";
+}
+
+// LilScript currently lowers the signals control-flow error to a record. Brand
+// that record as the native Error subclass used by the pinned implementation.
+JsValue nativeErrorHasInstance = Error[Symbol["hasInstance"]];
+JS.invoke(
+  Object,
+  "defineProperty",
+  Error,
+  Symbol["hasInstance"],
+  JS.object(
+    "value", JS.method1((JsValue self, JsValue value) => {
+      if (isObjectValue(value) && JS.strictEqual(value["_kind"], "not-ready")) {
+        if (JS.isUndefined(value["message"])) value["message"] = "";
+        return true;
+      }
+      if (isObjectValue(value) && JS.strictEqual(value["_kind"], "status")) {
+        JsValue cause = value["cause"];
+        if (JS.isUndefined(value["message"])) {
+          value["message"] = if (
+            isObjectValue(cause) && JS.strictEqual(cause["_kind"], "not-ready")
+          ) {
+            ""
+          } else {
+            if (JS.call(nativeErrorHasInstance, self, cause).truthy()) {
+              cause["message"]
+            } else {
+              JS.string(cause)
+            }
+          };
+        }
+        return true;
+      }
+      return JS.call(nativeErrorHasInstance, self, value);
+    }),
+    "configurable", true
+  )
+);
+
+JsValue objectGet(JsValue value, string key) {
+  return value[key];
+}
+
+void objectSet(JsValue value, string key, JsValue next) {
+  value[key] = next;
+}
+
+/** Internal context flag used by NoHydration. */
+export JsValue NoHydrateContext = JS.object(
+  "id", JS.call(Symbol, JS.undefined(), "NoHydrateContext"),
+  "defaultValue", false
+);
+
+/** Shared hydration coordination object populated by enableHydration(). */
+export JsValue sharedConfig = JS.object(
+  "hydrating", false,
+  "registry", undefinedValue(),
+  "done", false
+);
+
+// Installed only when hydration is enabled, matching the tree-shakeable
+// override slots in the pinned source.
+JsValue createMemoOverride = undefinedValue();
+JsValue createSignalOverride = undefinedValue();
+JsValue createErrorBoundaryOverride = undefinedValue();
+JsValue createRenderEffectOverride = undefinedValue();
+JsValue createEffectOverride = undefinedValue();
+JsValue createLoadingBoundaryOverride = undefinedValue();
+JsValue hydrateSignalLikeOverride = undefinedValue();
+JsValue hydrateStoreLikeOverride = undefinedValue();
+export JsValue _lazyHydrationLookup = undefinedValue();
+
+JsValue hydrationEndCallbacks = null;
+int pendingBoundaries = 0;
+bool hydrationDone = false;
+JsValue snapshotRootOwner = null;
+bool hydratingValue = false;
+bool doneValue = false;
+
+JsValue fragments = JS.construct(Map);
+JsValue truncated = JS.construct(Set);
+JsValue revealSubscribers = JS.construct(Set);
+JsValue truncationRejectors = JS.construct(Map);
+
+void callVoid0(JsValue fn) {
+  JS.call(fn, undefinedValue());
+}
+
+void markTopLevelSnapshotScope() {
+  if (!JS.isNullish(snapshotRootOwner)) return;
+  JsValue owner = call0(getOwner);
+  if (JS.isNullish(owner)) return;
+  while (!JS.isNullish(owner["_parent"])) owner = owner["_parent"];
+  call1(markSnapshotScope, owner);
+  snapshotRootOwner = owner;
+}
+
+void ensureCurrentHydrationId() {
+  JsValue owner = call0(getOwner);
+  if (JS.isNullish(owner) || !JS.isNullish(owner["id"])) return;
+  JsValue parent = owner["_parent"];
+  while (!JS.isNullish(parent) && JS.isNullish(parent["id"])) {
+    parent = parent["_parent"];
+  }
+  if (!JS.isNullish(parent)) owner["id"] = call1(getNextChildId, parent);
+}
+
+JsValue hydrationRender(JsValue fn) {
+  return JS.method0((JsValue _self) => {
+    ensureCurrentHydrationId();
+    return call0(fn);
+  });
+}
+
+bool hydrationInProgress() {
+  return !hydrationDone && (sharedConfig["hydrating"].truthy() || pendingBoundaries > 0);
+}
+
+void registerHydrationEnd(JsValue callback) {
+  if (hydrationDone || (!sharedConfig["hydrating"].truthy() && pendingBoundaries == 0)) {
+    queueMicrotask(() => callVoid0(callback));
+    return;
+  }
+  if (JS.isNullish(hydrationEndCallbacks)) hydrationEndCallbacks = JS.array();
+  JS.push(hydrationEndCallbacks, callback);
+}
+
+void drainHydrationCallbacks() {
+  if (hydrationDone) return;
+  hydrationDone = true;
+  doneValue = true;
+  call0(clearSnapshots);
+  call1(setSnapshotCapture, false);
+  call0(flush);
+  JsValue callbacks = hydrationEndCallbacks;
+  hydrationEndCallbacks = null;
+  if (!JS.isNullish(callbacks)) {
+    int count = JS.number(callbacks["length"]).toInt();
+    for (int index = 0; index < count; index++) callVoid0(callbacks[index]);
+  }
+  setTimeout(() => {
+    JsValue verify = sharedConfig["verifyHydration"];
+    if (IS_DEV && isFunction(verify)) callVoid0(verify);
+    JsValue hy = globalThis["_$HY"];
+    if (!JS.isNullish(hy)) hy["done"] = true;
+    JsValue registry = sharedConfig["registry"];
+    if (!JS.isNullish(registry)) JS.invoke(registry, "clear");
+  });
+}
+
+void checkHydrationComplete() {
+  if (!hydratingValue && pendingBoundaries == 0) drainHydrationCallbacks();
+}
+
+JsValue hydrationGetNextContextId() {
+  JsValue owner = call0(getOwner);
+  if (JS.isNullish(owner)) {
+    throw JS.construct(Error, "getNextContextId cannot be used under non-hydrating context");
+  }
+  if (call1(getContext, NoHydrateContext).truthy()) return undefinedValue();
+  return call1(getNextChildId, owner);
+}
+
+JsValue mockPromiseConstructor() {
+  JsValue constructor = JS.method0((JsValue _self) => undefinedValue());
+  JsValue prototype = constructor["prototype"];
+  JsValue chain = JS.methodRest((JsValue _self, JsValue _args) =>
+    JS.construct(constructor)
+  );
+  prototype["catch"] = chain;
+  prototype["then"] = chain;
+  prototype["finally"] = chain;
+  string[] statics = ["all", "allSettled", "any", "race", "reject", "resolve"];
+  for (int index = 0; index < statics.length; index++) {
+    constructor[statics[index]] = JS.methodRest((JsValue _self, JsValue _args) =>
+      JS.construct(constructor)
+    );
+  }
+  return constructor;
+}
+
+JsValue MockPromise = mockPromiseConstructor();
+
+JsValue subFetch(JsValue fn, JsValue previous) {
+  JsValue originalFetch = globalThis["fetch"];
+  JsValue originalPromise = globalThis["Promise"];
+  try {
+    globalThis["fetch"] = JS.methodRest(
+      (JsValue _self, JsValue _args) => JS.construct(MockPromise)
+    );
+    globalThis["Promise"] = MockPromise;
+    JsValue result = call1(fn, previous);
+    if (isAsyncIterable(result)) {
+      JsValue iterator = JS.call(
+        result[Symbol["asyncIterator"]],
+        result
+      );
+      JS.invoke(iterator, "next");
+    }
+    return result;
+  } finally {
+    globalThis["fetch"] = originalFetch;
+    globalThis["Promise"] = originalPromise;
+  }
+}
+
+JsValue syncThenable(JsValue value) {
+  return JS.object(
+    "then", JS.method1((JsValue _self, JsValue fn) => call1(fn, value))
+  );
+}
+
+bool hasLoadingWindow(JsValue options) {
+  return isObjectValue(options) &&
+    (JS.in("loadingValue", options) || JS.strictEqual(options["seedLoadingValue"], true));
+}
+
+bool isAsyncIterable(JsValue value) {
+  return !JS.isNullish(value) && isFunction(value[Symbol["asyncIterator"]]);
+}
+
+JsValue readHydratedValue(JsValue initial, JsValue refresh, JsValue options) {
+  callVoid0(refresh);
+  if (isObjectValue(initial)) {
+    if (hasLoadingWindow(options) && isFunction(initial["then"])) {
+      JsValue source = initial;
+      return JS.object(
+        "then", JS.methodRest((JsValue self, JsValue args) =>
+          JS.apply(source["then"], source, args)
+        )
+      );
+    }
+    int status = JS.number(initial["s"]).toInt();
+    if (status == 2) throw initial["v"];
+    if (status == 1) return initial["v"];
+  }
+  return initial;
+}
+
+JsValue readSerializedOrCompute(JsValue compute, JsValue previous, JsValue options) {
+  JsValue owner = call0(getOwner);
+  JsValue has = sharedConfig["has"];
+  if (
+    sharedConfig["done"].truthy() ||
+    !isFunction(has) ||
+    !call1(has, owner["id"]).truthy()
+  ) {
+    return call1(compute, previous);
+  }
+  JsValue load = sharedConfig["load"];
+  JsValue initial = call1(load, owner["id"]);
+  return readHydratedValue(
+    initial,
+    JS.method0((JsValue _self) => subFetch(compute, previous)),
+    options
+  );
+}
+
+JsValue unasked = JS.object(
+  "then", JS.methodRest((JsValue _self, JsValue _args) => undefinedValue())
+);
+
+JsValue forwardIteratorReturn(JsValue iterator, JsValue value) {
+  JsValue returnMethod = iterator["return"];
+  JsValue returned = if (isFunction(returnMethod)) {
+    JS.call(returnMethod, iterator, value)
+  } else {
+    undefinedValue()
+  };
+  return if (!JS.isNullish(returned) && isFunction(returned["then"])) {
+    returned
+  } else {
+    syncThenable(
+      if (JS.isNullish(returned)) {
+        JS.object("done", true, "value", value)
+      } else {
+        returned
+      }
+    )
+  };
+}
+
+JsValue forwardIteratorReturnOnce(JsValue iterator, JsValue state, JsValue value) {
+  if (state["returned"].truthy()) {
+    return syncThenable(JS.object("done", true, "value", value));
+  }
+  state["returned"] = true;
+  return forwardIteratorReturn(iterator, value);
+}
+
+JsValue normalizeIterator(JsValue iterator, bool deferFirst) {
+  bool first = true;
+  JsValue buffered = null;
+  JsValue returnState = JS.object("returned", false);
+  return JS.object(
+    "next", JS.method0((JsValue _self) => {
+      if (first) {
+        first = false;
+        JsValue result = JS.invoke(iterator, "next");
+        if (!JS.isNullish(result) && isFunction(result["then"])) return result;
+        return if (deferFirst) {
+          JS.invoke(Promise, "resolve", result)
+        } else {
+          syncThenable(result)
+        };
+      }
+      if (!JS.isNullish(buffered)) {
+        JsValue result = buffered;
+        buffered = null;
+        return result;
+      }
+      JsValue latest = JS.invoke(iterator, "next");
+      if (!JS.isNullish(latest) && isFunction(latest["then"])) return latest;
+      JsValue result = latest;
+      while (!latest["done"].truthy()) {
+        JsValue peeked = JS.invoke(iterator, "next");
+        if (!JS.isNullish(peeked) && isFunction(peeked["then"])) {
+          buffered = peeked;
+          break;
+        }
+        latest = peeked;
+        if (!latest["done"].truthy()) result = latest;
+        else if (!JS.strictEqual(result, latest)) {
+          buffered = JS.invoke(Promise, "resolve", latest);
+        }
+      }
+      return JS.invoke(Promise, "resolve", result);
+    }),
+    "return", JS.method1((JsValue _self, JsValue value) => {
+      buffered = null;
+      return forwardIteratorReturnOnce(iterator, returnState, value);
+    })
+  );
+}
+
+void applyPatches(JsValue target, JsValue patches) {
+  int patchCount = JS.number(patches["length"]).toInt();
+  for (int patchIndex = 0; patchIndex < patchCount; patchIndex++) {
+    JsValue patch = patches[patchIndex];
+    JsValue path = patch[0];
+    JsValue current = target;
+    int pathLength = JS.number(path["length"]).toInt();
+    for (int index = 0; index < pathLength - 1; index++) current = current[path[index]];
+    JsValue key = path[pathLength - 1];
+    int patchLength = JS.number(patch["length"]).toInt();
+    if (patchLength == 1) {
+      if (JS.isArray(current)) JS.invoke(current, "splice", key, 1);
+      else JS.delete(current, key);
+    } else if (patchLength == 3) {
+      JS.invoke(current, "splice", key, 0, patch[1]);
+    } else {
+      current[key] = patch[1];
+    }
+  }
+}
+
+JsValue createShadowDraft(JsValue realDraft, JsValue initialShadow) {
+  JsValue source = if (JS.isNullish(initialShadow)) { realDraft } else { initialShadow };
+  JsValue shadow = JS.invoke(JSON, "parse", JS.invoke(JSON, "stringify", source));
+  bool useShadow = true;
+  JsValue handler = JS.object(
+    "get", JS.method3((JsValue _self, JsValue _target, JsValue property, JsValue _receiver) =>
+      if (useShadow) { shadow[property] } else { realDraft[property] }
+    ),
+    "set", JS.method3((JsValue _self, JsValue _target, JsValue property, JsValue value) => {
+      if (useShadow) {
+        shadow[property] = value;
+        return true;
+      }
+      return JS.invoke(Reflect, "set", realDraft, property, value);
+    }),
+    "deleteProperty", JS.method2((JsValue _self, JsValue _target, JsValue property) => {
+      JS.delete(if (useShadow) { shadow } else { realDraft }, property);
+      return true;
+    }),
+    "has", JS.method2((JsValue _self, JsValue _target, JsValue property) =>
+      JS.in(property, if (useShadow) { shadow } else { realDraft })
+    ),
+    "ownKeys", JS.method1((JsValue _self, JsValue _target) =>
+      JS.invoke(Reflect, "ownKeys", if (useShadow) { shadow } else { realDraft })
+    ),
+    "getOwnPropertyDescriptor", JS.method2((JsValue _self, JsValue _target, JsValue property) =>
+      JS.invoke(
+        Object,
+        "getOwnPropertyDescriptor",
+        if (useShadow) { shadow } else { realDraft },
+        property
+      )
+    )
+  );
+  return JS.object(
+    "proxy", JS.construct(Proxy, shadow, handler),
+    "activate", JS.method0((JsValue _self) => {
+      useShadow = false;
+      return undefinedValue();
+    })
+  );
+}
+
+JsValue wrapFirstYield(JsValue iterable, JsValue activate) {
+  JsValue sourceIterator = JS.call(
+    iterable[Symbol["asyncIterator"]],
+    iterable
+  );
+  bool first = true;
+  JsValue returnState = JS.object("returned", false);
+  call1(onCleanup, JS.method0((JsValue _self) => {
+    forwardIteratorReturnOnce(sourceIterator, returnState, undefinedValue());
+    return undefinedValue();
+  }));
+  JsValue wrapped = JS.object();
+  wrapped[Symbol["asyncIterator"]] = JS.method0((JsValue _self) =>
+    JS.object(
+      "next", JS.method0((JsValue _iteratorSelf) => {
+        JsValue task = JS.invoke(sourceIterator, "next");
+        if (first) {
+          first = false;
+          return JS.invoke(
+            task,
+            "then",
+            JS.method1((JsValue _thenSelf, JsValue result) => {
+              callVoid0(activate);
+              return if (result["done"].truthy()) {
+                result
+              } else {
+                JS.object("done", false, "value", undefinedValue())
+              };
+            })
+          );
+        }
+        return task;
+      }),
+      "return", JS.method1((JsValue _iteratorSelf, JsValue value) =>
+        forwardIteratorReturnOnce(sourceIterator, returnState, value)
+      )
+    )
+  );
+  return wrapped;
+}
+
+JsValue hydrateSignalFromAsyncIterable(
+  JsValue coreFunction,
+  JsValue compute,
+  JsValue options
+) {
+  JsValue expectedId = options["id"];
+  JsValue has = sharedConfig["has"];
+  if (!call1(has, expectedId).truthy()) return null;
+  JsValue loaded = call1(sharedConfig["load"], expectedId);
+  if (!isAsyncIterable(loaded)) return null;
+
+  JsValue sourceIterator = JS.call(
+    loaded[Symbol["asyncIterator"]],
+    loaded
+  );
+  JsValue iterator = normalizeIterator(sourceIterator, hasLoadingWindow(options));
+  call1(onCleanup, JS.method0((JsValue _self) => {
+    JS.invoke(iterator, "return");
+    return undefinedValue();
+  }));
+  JsValue iterable = JS.object();
+  iterable[Symbol["asyncIterator"]] = JS.method0((JsValue _self) => iterator);
+  return call2(
+    coreFunction,
+    JS.method1((JsValue _computeSelf, JsValue previous) => {
+      subFetch(compute, previous);
+      return iterable;
+    }),
+    options
+  );
+}
+
+JsValue hydrateStoreFromAsyncIterable(
+  JsValue coreFunction,
+  JsValue derive,
+  JsValue initialValue,
+  JsValue options
+) {
+  JsValue parent = call0(getOwner);
+  JsValue expectedId = call1(peekNextChildId, parent);
+  if (!call1(sharedConfig["has"], expectedId).truthy()) return null;
+  JsValue loaded = call1(sharedConfig["load"], expectedId);
+  if (!isAsyncIterable(loaded)) return null;
+
+  JsValue sourceIterator = JS.call(
+    loaded[Symbol["asyncIterator"]],
+    loaded
+  );
+  JsValue returnState = JS.object("returned", false);
+  call1(onCleanup, JS.method0((JsValue _self) => {
+    forwardIteratorReturnOnce(sourceIterator, returnState, undefinedValue());
+    return undefinedValue();
+  }));
+  bool loading = hasLoadingWindow(options);
+  bool first = true;
+  JsValue buffered = null;
+  return call3(
+    coreFunction,
+    JS.method1((JsValue _deriveSelf, JsValue draft) => {
+      JsValue shadow = createShadowDraft(draft, initialValue);
+      subFetch(derive, shadow["proxy"]);
+      JsValue process = JS.method1((JsValue _processSelf, JsValue result) => {
+        if (result["done"].truthy()) {
+          return JS.object("done", true, "value", undefinedValue());
+        }
+        if (first) {
+          first = false;
+          call1(setSnapshotCapture, false);
+          try {
+            JsValue value = result["value"];
+            if (JS.isArray(value)) {
+              int length = JS.number(value["length"]).toInt();
+              for (int index = 0; index < length; index++) draft[index] = value[index];
+              draft["length"] = length;
+            } else {
+              JsValue keys = JS.invoke(Object, "keys", draft);
+              int count = JS.number(keys["length"]).toInt();
+              for (int index = 0; index < count; index++) {
+                JsValue key = keys[index];
+                if (!JS.in(key, value)) JS.delete(draft, key);
+              }
+              JS.invoke(Object, "assign", draft, value);
+            }
+          } finally {
+            call1(setSnapshotCapture, true);
+          }
+        } else {
+          applyPatches(draft, result["value"]);
+        }
+        return JS.object("done", false, "value", undefinedValue());
+      });
+
+      JsValue iterable = JS.object();
+      iterable[Symbol["asyncIterator"]] = JS.method0((JsValue _iterableSelf) =>
+        JS.object(
+          "next", JS.method0((JsValue _iteratorSelf) => {
+            if (first) {
+              JsValue result = JS.invoke(sourceIterator, "next");
+              if (!JS.isNullish(result) && isFunction(result["then"])) {
+                return JS.invoke(result, "then", process);
+              }
+              if (loading) {
+                return JS.construct(
+                  Promise,
+                  JS.method1((JsValue _promiseSelf, JsValue resolve) => {
+                    registerHydrationEnd(
+                      JS.method0((JsValue _endSelf) => call1(resolve, call1(process, result)))
+                    );
+                    return undefinedValue();
+                  })
+                );
+              }
+              return syncThenable(call1(process, result));
+            }
+            if (!JS.isNullish(buffered)) {
+              JsValue result = buffered;
+              buffered = null;
+              return JS.invoke(result, "then", process);
+            }
+            JsValue result = JS.invoke(sourceIterator, "next");
+            if (!JS.isNullish(result) && isFunction(result["then"])) {
+              return JS.invoke(result, "then", process);
+            }
+            return JS.construct(
+              Promise,
+              JS.method1((JsValue _promiseSelf, JsValue resolve) => {
+                registerHydrationEnd(JS.method0((JsValue _endSelf) => {
+                  JsValue processed = call1(process, result);
+                  while (!result["done"].truthy()) {
+                    JsValue peeked = JS.invoke(sourceIterator, "next");
+                    if (!JS.isNullish(peeked) && isFunction(peeked["then"])) {
+                      buffered = peeked;
+                      break;
+                    }
+                    result = peeked;
+                    if (!result["done"].truthy()) processed = call1(process, result);
+                  }
+                  return call1(resolve, processed);
+                }));
+                return undefinedValue();
+              })
+            );
+          }),
+          "return", JS.method1((JsValue _iteratorSelf, JsValue value) => {
+            buffered = null;
+            return forwardIteratorReturnOnce(sourceIterator, returnState, value);
+          })
+        )
+      );
+      return iterable;
+    }),
+    initialValue,
+    options
+  );
+}
+
+JsValue withHydrationGate(JsValue create) {
+  JsValue pair = call2(
+    coreSignal,
+    false,
+    JS.object("ownedWrite", true)
+  );
+  JsValue hydrated = pair[0];
+  JsValue setHydrated = pair[1];
+  JsValue result = call1(create, hydrated);
+  registerHydrationEnd(JS.method0((JsValue _self) => {
+    call1(setHydrated, true);
+    queueMicrotask(() => { call0(flush); });
+    return undefinedValue();
+  }));
+  return result;
+}
+
+JsValue withHydrationId(JsValue options) {
+  if (isObjectValue(options) && !JS.isNullish(options["id"])) return options;
+  JsValue owner = call0(getOwner);
+  if (JS.isNullish(owner) || JS.isNullish(owner["id"])) return options;
+  JsValue id = if (isObjectValue(options) && options["transparent"].truthy()) {
+    owner["id"]
+  } else {
+    call1(getNextChildId, owner)
+  };
+  return JS.invoke(
+    Object,
+    "assign",
+    JS.object(),
+    options,
+    JS.object("id", id)
+  );
+}
+
+JsValue hydrateSignalLike(
+  JsValue coreFunction,
+  JsValue compute,
+  JsValue options
+) {
+  markTopLevelSnapshotScope();
+  options = withHydrationId(options);
+  JsValue source = if (JS.isNullish(options)) {
+    undefinedValue()
+  } else {
+    options["ssrSource"]
+  };
+  if (JS.strictEqual(source, "client")) {
+    return withHydrationGate(
+      JS.method1((JsValue _gateSelf, JsValue hydrated) =>
+        call2(
+          coreFunction,
+          JS.method1((JsValue _computeSelf, JsValue previous) =>
+            if (call0(hydrated).truthy()) {
+              call1(compute, previous)
+            } else {
+              unasked
+            }
+          ),
+          options
+        )
+      )
+    );
+  }
+
+  if (JS.strictEqual(source, "hybrid")) {
+    JsValue expected = options["id"];
+    if (call1(sharedConfig["has"], expected).truthy()) {
+      bool takeover = false;
+      JsValue detect = JS.method1((JsValue _detectSelf, JsValue previous) => {
+        JsValue result = call1(compute, previous);
+        takeover = isAsyncIterable(result);
+        return result;
+      });
+      return withHydrationGate(
+        JS.method1((JsValue _gateSelf, JsValue hydrated) =>
+          call2(
+            coreFunction,
+            JS.method1((JsValue _computeSelf, JsValue previous) =>
+              if (call0(hydrated).truthy()) {
+                if (takeover) { call1(compute, previous) } else { previous }
+              } else {
+                readSerializedOrCompute(detect, previous, options)
+              }
+            ),
+            options
+          )
+        )
+      );
+    }
+  }
+
+  JsValue iterableResult = hydrateSignalFromAsyncIterable(
+    coreFunction,
+    compute,
+    options
+  );
+  if (!JS.strictEqual(iterableResult, null)) return iterableResult;
+  return call2(
+    coreFunction,
+    JS.method1((JsValue _computeSelf, JsValue previous) =>
+      readSerializedOrCompute(compute, previous, options)
+    ),
+    options
+  );
+}
+
+JsValue hydratedCreateMemo(JsValue compute, JsValue options) {
+  if (!sharedConfig["hydrating"].truthy() || (!JS.isNullish(options) && options["transparent"].truthy())) {
+    return call2(coreMemo, compute, options);
+  }
+  return hydrateSignalLike(coreMemo, compute, options);
+}
+
+JsValue hydratedCreateSignal(JsValue first, JsValue second) {
+  if (!isFunction(first) || !sharedConfig["hydrating"].truthy()) {
+    return call2(coreSignal, first, second);
+  }
+  return hydrateSignalLike(coreSignal, first, second);
+}
+
+JsValue hydratedCreateErrorBoundary(JsValue fn, JsValue fallback) {
+  if (!sharedConfig["hydrating"].truthy()) {
+    return call2(coreErrorBoundary, fn, fallback);
+  }
+  markTopLevelSnapshotScope();
+  JsValue parent = call0(getOwner);
+  JsValue expected = call1(peekNextChildId, parent);
+  if (call1(sharedConfig["has"], expected).truthy()) {
+    JsValue error = call1(sharedConfig["load"], expected);
+    if (!JS.isUndefined(error)) {
+      bool hydrating = true;
+      return call2(
+        coreErrorBoundary,
+        JS.method0((JsValue _self) => {
+          ensureCurrentHydrationId();
+          if (hydrating) {
+            hydrating = false;
+            throw error;
+          }
+          return call0(fn);
+        }),
+        fallback
+      );
+    }
+  }
+  return call2(coreErrorBoundary, hydrationRender(fn), fallback);
+}
+
+JsValue wrapStoreFunction(JsValue derive, JsValue options) {
+  return JS.method1((JsValue _self, JsValue draft) =>
+    readSerializedOrCompute(
+      JS.method1((JsValue _deriveSelf, JsValue _previous) => call1(derive, draft)),
+      draft,
+      options
+    )
+  );
+}
+
+JsValue hydrateStoreLikeFunction(
+  JsValue coreFunction,
+  JsValue derive,
+  JsValue initialValue,
+  JsValue options,
+  JsValue source
+) {
+  if (JS.strictEqual(source, "client")) {
+    return withHydrationGate(
+      JS.method1((JsValue _gateSelf, JsValue hydrated) =>
+        call3(
+          coreFunction,
+          JS.method1((JsValue _deriveSelf, JsValue draft) => {
+            if (!call0(hydrated).truthy()) {
+              return if (hasLoadingWindow(options)) { unasked } else { undefinedValue() };
+            }
+            return call1(derive, draft);
+          }),
+          initialValue,
+          options
+        )
+      )
+    );
+  }
+  if (JS.strictEqual(source, "hybrid")) {
+    JsValue hydratedSeed = null;
+    return withHydrationGate(
+      JS.method1((JsValue _gateSelf, JsValue hydrated) =>
+        call3(
+          coreFunction,
+          JS.method1((JsValue _deriveSelf, JsValue draft) => {
+            JsValue owner = call0(getOwner);
+            if (!call0(hydrated).truthy()) {
+              if (call1(sharedConfig["has"], owner["id"]).truthy()) {
+                JsValue loaded = call1(sharedConfig["load"], owner["id"]);
+                hydratedSeed = if (
+                  isObjectValue(loaded) && JS.number(loaded["s"]).toInt() == 1
+                ) {
+                  loaded["v"]
+                } else {
+                  loaded
+                };
+                return readHydratedValue(
+                  loaded,
+                  JS.method0((JsValue _refreshSelf) => subFetch(derive, draft)),
+                  options
+                );
+              }
+              return call1(derive, draft);
+            }
+            JsValue shadow = createShadowDraft(draft, hydratedSeed);
+            JsValue result = call1(derive, shadow["proxy"]);
+            return if (isAsyncIterable(result)) {
+              wrapFirstYield(result, shadow["activate"])
+            } else {
+              result
+            };
+          }),
+          initialValue,
+          options
+        )
+      )
+    );
+  }
+  JsValue iterableResult = hydrateStoreFromAsyncIterable(
+    coreFunction,
+    derive,
+    initialValue,
+    options
+  );
+  if (!JS.strictEqual(iterableResult, null)) return iterableResult;
+  return call3(coreFunction, wrapStoreFunction(derive, options), initialValue, options);
+}
+
+JsValue hydrateStoreLike(
+  JsValue coreFunction,
+  JsValue derive,
+  JsValue initialValue,
+  JsValue options
+) {
+  markTopLevelSnapshotScope();
+  JsValue source = if (JS.isNullish(options)) {
+    undefinedValue()
+  } else {
+    options["ssrSource"]
+  };
+  if (JS.isNullish(options)) options = JS.object();
+  return hydrateStoreLikeFunction(
+    coreFunction,
+    derive,
+    initialValue,
+    options,
+    source
+  );
+}
+
+JsValue hydratedEffect(
+  JsValue coreFunction,
+  JsValue compute,
+  JsValue effectFunction,
+  JsValue options
+) {
+  if (!sharedConfig["hydrating"].truthy() || (!JS.isNullish(options) && options["transparent"].truthy())) {
+    JsValue owner = call0(getOwner);
+    JsValue childCount = if (
+      sharedConfig["hydrating"].truthy() &&
+      !JS.isNullish(owner) &&
+      !JS.isNullish(options) &&
+      options["transparent"].truthy()
+    ) {
+      owner["_childCount"]
+    } else {
+      undefinedValue()
+    };
+    JsValue result = call3(coreFunction, compute, effectFunction, options);
+    if (!JS.isUndefined(childCount)) owner["_childCount"] = childCount;
+    return result;
+  }
+  JsValue source = if (JS.isNullish(options)) {
+    undefinedValue()
+  } else {
+    options["ssrSource"]
+  };
+  if (JS.isNullish(options)) options = JS.object();
+  if (JS.strictEqual(source, "client")) {
+    bool active = false;
+    withHydrationGate(
+      JS.method1((JsValue _gateSelf, JsValue hydrated) =>
+        call3(
+          coreFunction,
+          JS.method1((JsValue _computeSelf, JsValue previous) => {
+            if (!call0(hydrated).truthy()) return previous;
+            active = true;
+            return call1(compute, previous);
+          }),
+          JS.method2((JsValue _effectSelf, JsValue next, JsValue previous) => {
+            if (!active) return undefinedValue();
+            return call2(effectFunction, next, previous);
+          }),
+          options
+        )
+      )
+    );
+    return undefinedValue();
+  }
+  markTopLevelSnapshotScope();
+  return call3(
+    coreFunction,
+    JS.method1((JsValue _computeSelf, JsValue previous) =>
+      readSerializedOrCompute(compute, previous, undefinedValue())
+    ),
+    effectFunction,
+    options
+  );
+}
+
+JsValue hydratedCreateRenderEffect(
+  JsValue compute,
+  JsValue effectFunction,
+  JsValue options
+) {
+  return hydratedEffect(coreRenderEffect, compute, effectFunction, options);
+}
+
+JsValue hydratedCreateEffect(
+  JsValue compute,
+  JsValue effectFunction,
+  JsValue options
+) {
+  return hydratedEffect(coreEffect, compute, effectFunction, options);
+}
+
+/**
+ * Materializes the server projection trace protocol as a detached local
+ * projection. The first yield is the full snapshot and later yields are patch
+ * batches, preserving the pinned continuation contract.
+ */
+export JsValue materializeContainerTrace = JS.method1(
+  (JsValue _self, JsValue marker) => {
+    JsValue source = marker["$tr"];
+    return call1(
+      createRoot,
+      JS.method0((JsValue _rootSelf) => {
+        JsValue derive = JS.method1((JsValue _deriveSelf, JsValue draft) => {
+          JsValue iterable = JS.object();
+          iterable[Symbol["asyncIterator"]] = JS.method0((JsValue _iterableSelf) => {
+            JsValue sourceIterator = JS.call(
+              source[Symbol["asyncIterator"]],
+              source
+            );
+            bool first = true;
+            return JS.object(
+              "next", JS.method0((JsValue _iteratorSelf) => {
+                JsValue pull = JS.invoke(sourceIterator, "next");
+                JsValue settled = JS.invoke(Promise, "resolve", pull);
+                return JS.invoke(
+                  settled,
+                  "then",
+                  JS.method1((JsValue _thenSelf, JsValue result) => {
+                    if (result["done"].truthy()) {
+                      return JS.object("done", true, "value", undefinedValue());
+                    }
+                    if (first) {
+                      first = false;
+                      JsValue value = result["value"];
+                      if (JS.isArray(value)) {
+                        int length = JS.number(value["length"]).toInt();
+                        for (int index = 0; index < length; index++) draft[index] = value[index];
+                        draft["length"] = length;
+                      } else {
+                        JS.invoke(Object, "assign", draft, value);
+                      }
+                    } else {
+                      applyPatches(draft, result["value"]);
+                    }
+                    return JS.object("done", false, "value", undefinedValue());
+                  })
+                );
+              }),
+              "return", JS.method1((JsValue _iteratorSelf, JsValue value) =>
+                forwardIteratorReturn(sourceIterator, value)
+              )
+            );
+          });
+          return iterable;
+        });
+        JsValue seed = if (marker["$ta"].truthy()) { JS.array() } else { JS.object() };
+        return createProjectionArguments(JS.array(derive, seed));
+      })
+    );
+  }
+);
+
+/** Hydration-aware createMemo wrapper. Runtime arity matches the rest wrapper. */
+export JsValue createMemo = JS.staticRest((JsValue args) => {
+  JsValue implementation = if (createMemoOverride.truthy()) {
+    createMemoOverride
+  } else {
+    coreMemo
+  };
+  return call2(implementation, args[0], args[1]);
+});
+
+/** Hydration-aware createSignal wrapper. */
+export JsValue createSignal = JS.staticRest((JsValue args) => {
+  JsValue implementation = if (createSignalOverride.truthy()) {
+    createSignalOverride
+  } else {
+    coreSignal
+  };
+  return call2(implementation, args[0], args[1]);
+});
+
+/** Hydration-aware error boundary wrapper. */
+export JsValue createErrorBoundary = JS.staticRest((JsValue args) => {
+  JsValue implementation = if (createErrorBoundaryOverride.truthy()) {
+    createErrorBoundaryOverride
+  } else {
+    coreErrorBoundary
+  };
+  return call2(implementation, args[0], args[1]);
+});
+
+/** Reveal-order delegation has no hydration override. */
+export JsValue createRevealOrder = JS.method2(
+  (JsValue _self, JsValue fn, JsValue options) =>
+    call2(coreRevealOrder, fn, options)
+);
+
+/** Hydration-aware optimistic signal wrapper. */
+export JsValue createOptimistic = JS.staticRest((JsValue args) => {
+  if (
+    isFunction(args[0]) &&
+    sharedConfig["hydrating"].truthy()
+  ) {
+    return call3(hydrateSignalLikeOverride, coreOptimistic, args[0], args[1]);
+  }
+  return call2(coreOptimistic, args[0], args[1]);
+});
+
+JsValue createProjectionArguments(JsValue args) {
+  if (sharedConfig["hydrating"].truthy()) {
+    return JS.call(
+      hydrateStoreLikeOverride,
+      undefinedValue(),
+      coreProjection,
+      args[0],
+      args[1],
+      args[2]
+    );
+  }
+  return call3(coreProjection, args[0], args[1], args[2]);
+}
+
+/** Hydration-aware projection wrapper. */
+export JsValue createProjection = JS.staticRest(
+  (JsValue args) => createProjectionArguments(args)
+);
+
+/** Hydration-aware mutable store wrapper. */
+export JsValue createStore = JS.staticRest((JsValue args) => {
+  if (isFunction(args[0]) && sharedConfig["hydrating"].truthy()) {
+    JsValue seed = if (JS.isNullish(args[1])) { JS.object() } else { args[1] };
+    return JS.call(
+      hydrateStoreLikeOverride,
+      undefinedValue(),
+      coreStore,
+      args[0],
+      seed,
+      args[2]
+    );
+  }
+  return JS.call(coreStore, undefinedValue(), args[0], args[1], args[2]);
+});
+
+/** Hydration-aware optimistic store wrapper. */
+export JsValue createOptimisticStore = JS.staticRest((JsValue args) => {
+  if (isFunction(args[0]) && sharedConfig["hydrating"].truthy()) {
+    JsValue seed = if (JS.isNullish(args[1])) { JS.object() } else { args[1] };
+    return JS.call(
+      hydrateStoreLikeOverride,
+      undefinedValue(),
+      coreOptimisticStore,
+      args[0],
+      seed,
+      args[2]
+    );
+  }
+  return JS.call(
+    coreOptimisticStore,
+    undefinedValue(),
+    args[0],
+    args[1],
+    args[2]
+  );
+});
+
+/** Hydration-aware render effect wrapper. */
+export JsValue createRenderEffect = JS.staticRest((JsValue args) => {
+  JsValue implementation = if (createRenderEffectOverride.truthy()) {
+    createRenderEffectOverride
+  } else {
+    coreRenderEffect
+  };
+  return call3(implementation, args[0], args[1], args[2]);
+});
+
+/** Hydration-aware user effect wrapper. */
+export JsValue createEffect = JS.staticRest((JsValue args) => {
+  JsValue implementation = if (createEffectOverride.truthy()) {
+    createEffectOverride
+  } else {
+    coreEffect
+  };
+  return call3(implementation, args[0], args[1], args[2]);
+});
+
+JsValue createBoundaryTrigger() {
+  call1(setSnapshotCapture, false);
+  JsValue pair = call2(
+    coreSignal,
+    undefinedValue(),
+    JS.object("equals", false)
+  );
+  call0(pair[0]);
+  call1(setSnapshotCapture, true);
+  return pair[1];
+}
+
+void resumeBoundaryHydration(
+  JsValue owner,
+  string id,
+  JsValue set,
+  JsValue release,
+  bool shouldHydrate
+) {
+  JsValue scopes = sharedConfig["boundaryScopes"];
+  JsValue scope = if (JS.isNullish(scopes)) {
+    undefinedValue()
+  } else {
+    JS.invoke(scopes, "get", id)
+  };
+  if (!call0(release).truthy()) return;
+  if (call1(isDisposed, owner).truthy()) {
+    checkHydrationComplete();
+    return;
+  }
+  JsValue previousRegistry = sharedConfig["registry"];
+  JsValue previousGather = sharedConfig["gather"];
+  if (!JS.isNullish(scope)) {
+    sharedConfig["registry"] = scope["registry"];
+    sharedConfig["gather"] = scope["gather"];
+  }
+  try {
+    JsValue gather = sharedConfig["gather"];
+    if (shouldHydrate && isFunction(gather)) call1(gather, id);
+    hydratingValue = shouldHydrate;
+    if (shouldHydrate) {
+      call1(markSnapshotScope, owner);
+      snapshotRootOwner = owner;
+    }
+    callVoid0(set);
+    call0(flush);
+    if (shouldHydrate) snapshotRootOwner = null;
+    hydratingValue = false;
+    if (shouldHydrate) call1(releaseSnapshotScope, owner);
+    call0(flush);
+  } finally {
+    if (!JS.isNullish(scope)) {
+      sharedConfig["registry"] = previousRegistry;
+      sharedConfig["gather"] = previousGather;
+    }
+  }
+  checkHydrationComplete();
+}
+
+JsValue initBoundaryResume(JsValue owner, string id) {
+  pendingBoundaries += 1;
+  JsValue capture = sharedConfig["captureBoundaryScope"];
+  if (isFunction(capture)) call1(capture, id);
+  bool released = false;
+  JsValue release = JS.method0((JsValue _self) => {
+    if (released) return false;
+    released = true;
+    pendingBoundaries -= 1;
+    JsValue scopes = sharedConfig["boundaryScopes"];
+    if (!JS.isNullish(scopes)) JS.invoke(scopes, "delete", id);
+    JsValue claim = JS.invoke(fragments, "get", id);
+    if (!JS.isNullish(claim)) claim["claimed"] = false;
+    return true;
+  });
+  call1(
+    onCleanup,
+    JS.method0((JsValue _self) => {
+      if (!call1(isDisposed, owner).truthy()) return undefinedValue();
+      JsValue cleanup = sharedConfig["cleanupFragment"];
+      if (isFunction(cleanup)) call1(cleanup, id);
+      if (call0(release).truthy()) checkHydrationComplete();
+      return undefinedValue();
+    })
+  );
+  JsValue set = createBoundaryTrigger();
+  JsValue resume = JS.method1((JsValue _self, JsValue shouldHydrate) => {
+    resumeBoundaryHydration(
+      owner,
+      id,
+      set,
+      release,
+      JS.isUndefined(shouldHydrate) || shouldHydrate.truthy()
+    );
+    return undefinedValue();
+  });
+  return JS.array(set, resume, release);
+}
+
+JsValue fragmentState(string id) {
+  JsValue state = JS.invoke(fragments, "get", id);
+  if (JS.isNullish(state)) {
+    state = JS.object();
+    JS.invoke(fragments, "set", id, state);
+  }
+  return state;
+}
+
+JsValue fragmentPolicy(string id) {
+  JsValue state = fragmentState(id);
+  if (!hydrationDone || state["claimed"].truthy()) {
+    return call1(globalThis["$dfr"], id);
+  }
+  state["held"] = true;
+  return 0;
+}
+
+void replayHeldFragment(string id) {
+  JsValue state = JS.invoke(fragments, "get", id);
+  if (!JS.isNullish(state) && state["held"].truthy()) {
+    state["held"] = false;
+    call1(globalThis["$dfr"], id);
+  }
+}
+
+void claimFragment(string id) {
+  fragmentState(id)["claimed"] = true;
+  replayHeldFragment(id);
+}
+
+void releaseFragment(string id) {
+  JsValue state = JS.invoke(fragments, "get", id);
+  if (!JS.isNullish(state)) state["claimed"] = false;
+}
+
+bool fragmentPending(JsValue hy, string id) {
+  if (JS.invoke(truncated, "has", id).truthy()) return false;
+  JsValue reference = hy["r"][id + "_fr"];
+  if (!isObjectValue(reference)) return false;
+  if (!reference["s"].truthy()) return true;
+  JsValue revealed = hy["v"];
+  if (!JS.isNullish(revealed) && revealed[id].truthy()) return false;
+  JsValue document = globalThis["document"];
+  if (JS.isNullish(JS.invoke(document, "getElementById", id))) return false;
+  return !JS.isNullish(JS.invoke(document, "getElementById", "pl-" + id));
+}
+
+bool anyFragmentPending() {
+  JsValue hy = globalThis["_$HY"];
+  if (JS.isNullish(hy) || JS.isNullish(hy["r"])) return false;
+  for (string key in hy["r"]) {
+    if (
+      key.length > 3 &&
+      key.endsWith("_fr") &&
+      fragmentPending(hy, key.slice(0, key.length - 3))
+    ) return true;
+  }
+  return false;
+}
+
+JsValue subscribeFragments(JsValue callback) {
+  JS.invoke(revealSubscribers, "add", callback);
+  return JS.method0((JsValue _self) =>
+    JS.invoke(revealSubscribers, "delete", callback)
+  );
+}
+
+void notifyFragmentSubscribers(string id, JsValue parent) {
+  JsValue iterator = JS.call(
+    revealSubscribers[Symbol["iterator"]],
+    revealSubscribers
+  );
+  while (true) {
+    JsValue step = JS.invoke(iterator, "next");
+    if (step["done"].truthy()) return;
+    JS.call(step["value"], undefinedValue(), id, parent);
+  }
+}
+
+void reportAssetFailure(JsValue error) {
+  JS.invoke(
+    console,
+    "error",
+    "Hydration module preload failed; rendering boundary content on the client:",
+    error
+  );
+}
+
+void markTruncated(JsValue hy, string id) {
+  if (JS.invoke(truncated, "has", id).truthy()) return;
+  JS.invoke(truncated, "add", id);
+  JsValue error = JS.construct(
+    Error,
+    "Hydration fragment \"" + id + "\" was truncated: the stream ended before its content arrived."
+  );
+  JsValue reference = hy["r"][id + "_fr"];
+  if (isObjectValue(reference)) {
+    reference["s"] = 2;
+    reference["v"] = error;
+  }
+  JsValue reject = JS.invoke(truncationRejectors, "get", id);
+  if (!JS.isNullish(reject)) {
+    JS.invoke(truncationRejectors, "delete", id);
+    call1(reject, error);
+  }
+  notifyFragmentSubscribers(id, undefinedValue());
+}
+
+void rejectTruncatedRefs(JsValue hy) {
+  JsValue resolvers = globalThis["$R"];
+  if (!isObjectValue(resolvers)) return;
+  JsValue registryKeys = null;
+  JsValue sweep = JS.method1((JsValue _self, JsValue entry) => {
+    if (
+      !isObjectValue(entry) ||
+      !isFunction(entry["f"]) ||
+      !entry["p"].truthy() ||
+      !isFunction(entry["p"]["then"]) ||
+      entry["p"]["s"].truthy()
+    ) return undefinedValue();
+    if (JS.isNullish(registryKeys)) {
+      registryKeys = JS.construct(Map);
+      for (string key in hy["r"]) {
+        JS.invoke(registryKeys, "set", hy["r"][key], key);
+      }
+    }
+    JsValue key = JS.invoke(registryKeys, "get", entry["p"]);
+    if (!JS.isUndefined(key)) {
+      JS.delete(hy["r"], key);
+      return undefinedValue();
+    }
+    JsValue error = JS.construct(
+      Error,
+      "Hydration value was truncated: the stream ended before it settled."
+    );
+    call1(entry["f"], error);
+    entry["p"]["s"] = 2;
+    entry["p"]["v"] = error;
+    JS.invoke(
+      entry["p"],
+      "then",
+      undefinedValue(),
+      JS.method0((JsValue _ignored) => undefinedValue())
+    );
+    return undefinedValue();
+  });
+  for (string key in resolvers) {
+    JsValue value = resolvers[key];
+    if (JS.isArray(value)) {
+      int count = JS.number(value["length"]).toInt();
+      for (int index = 0; index < count; index++) call1(sweep, value[index]);
+    } else {
+      call1(sweep, value);
+    }
+  }
+}
+
+void watchTruncation(JsValue hy) {
+  JsValue document = globalThis["document"];
+  if (JS.isUndefined(document) || !JS.strictEqual(document["readyState"], "loading")) return;
+  JS.invoke(
+    document,
+    "addEventListener",
+    "DOMContentLoaded",
+    JS.method0((JsValue _self) => {
+      if (JS.isNullish(hy["r"])) return undefinedValue();
+      for (string key in hy["r"]) {
+        if (key.length <= 3 || !key.endsWith("_fr")) continue;
+        JsValue reference = hy["r"][key];
+        if (isObjectValue(reference) && !reference["s"].truthy()) {
+          markTruncated(hy, key.slice(0, key.length - 3));
+        }
+      }
+      setTimeout(() => rejectTruncatedRefs(hy));
+      return undefinedValue();
+    }),
+    JS.object("once", true)
+  );
+}
+
+JsValue fragmentAbort(string id) {
+  return JS.construct(
+    Promise,
+    JS.method2((JsValue _self, JsValue _resolve, JsValue reject) => {
+      JS.invoke(truncationRejectors, "set", id, reject);
+      return undefinedValue();
+    })
+  );
+}
+
+void waitAndResume(
+  JsValue promise,
+  JsValue resume,
+  JsValue assetPromise,
+  bool hydrateRejected,
+  JsValue abort
+) {
+  JsValue dataPromise = JS.invoke(Promise, "resolve", promise);
+  if (!JS.isNullish(abort)) {
+    dataPromise = JS.invoke(
+      Promise,
+      "race",
+      JS.array(JS.invoke(Promise, "resolve", promise), abort)
+    );
+  }
+  JsValue data = JS.invoke(
+    dataPromise,
+    "then",
+    JS.method0((JsValue _self) => {
+      if (isObjectValue(promise)) promise["s"] = 1;
+      return true;
+    }),
+    JS.method1((JsValue _self, JsValue error) => {
+      if (isObjectValue(promise)) {
+        promise["s"] = 2;
+        promise["v"] = error;
+      }
+      return hydrateRejected;
+    })
+  );
+  if (JS.isNullish(assetPromise)) {
+    JS.invoke(data, "then", resume);
+    return;
+  }
+  JsValue assets = JS.invoke(
+    assetPromise,
+    "then",
+    JS.method0((JsValue _self) => true),
+    JS.method1((JsValue _self, JsValue error) => {
+      reportAssetFailure(error);
+      return false;
+    })
+  );
+  JsValue combined = JS.invoke(Promise, "all", JS.array(data, assets));
+  JS.invoke(
+    combined,
+    "then",
+    JS.method1((JsValue _self, JsValue values) => {
+      call1(resume, if (values[1].truthy()) { values[0] } else { false });
+      return undefinedValue();
+    })
+  );
+}
+
+bool scheduleResumeAfterAssets(
+  string id,
+  JsValue resume,
+  JsValue assetPromise
+) {
+  JsValue gather = sharedConfig["gather"];
+  if (isFunction(gather)) call1(gather, id);
+  if (!JS.isNullish(assetPromise)) {
+    JS.invoke(
+      assetPromise,
+      "then",
+      JS.method0((JsValue _self) => {
+        queueMicrotask(() => callVoid0(resume));
+        return undefinedValue();
+      }),
+      JS.method1((JsValue _self, JsValue error) => {
+        reportAssetFailure(error);
+        queueMicrotask(() => {
+          call1(resume, false);
+        });
+        return undefinedValue();
+      })
+    );
+    return true;
+  }
+  queueMicrotask(() => callVoid0(resume));
+  return false;
+}
+
+JsValue hydratedCreateLoadingBoundary(
+  JsValue fn,
+  JsValue fallback,
+  JsValue options
+) {
+  if (!sharedConfig["hydrating"].truthy()) {
+    return call3(coreLoadingBoundary, fn, fallback, options);
+  }
+  bool settledSerializationResumeQueued = false;
+  JsValue render = hydrationRender(fn);
+  return call2(
+    coreMemo,
+    JS.method1((JsValue _memoSelf, JsValue _previous) => {
+      JsValue owner = call0(getOwner);
+      string id = JS.string(owner["id"]);
+      JsValue assetPromise = undefinedValue();
+      if (
+        sharedConfig["hydrating"].truthy() &&
+        call1(sharedConfig["has"], id + "_assets").truthy()
+      ) {
+        JsValue mapping = call1(sharedConfig["load"], id + "_assets");
+        JsValue loadAssets = sharedConfig["loadModuleAssets"];
+        if (isObjectValue(mapping) && isFunction(loadAssets)) {
+          assetPromise = call1(loadAssets, mapping);
+        }
+      }
+
+      if (
+        sharedConfig["hydrating"].truthy() &&
+        call1(sharedConfig["has"], id).truthy()
+      ) {
+        JsValue reference = call1(sharedConfig["load"], id);
+        JsValue pending = undefinedValue();
+        if (reference.truthy()) {
+          if (!isObjectValue(reference) || JS.isNullish(reference["s"])) {
+            pending = reference;
+          } else {
+            int status = JS.number(reference["s"]).toInt();
+            if (status == 1 || status == 2) {
+              JsValue gather = sharedConfig["gather"];
+              if (isFunction(gather)) call1(gather, id);
+            } else {
+              pending = reference;
+            }
+          }
+        }
+        if (
+          isObjectValue(reference) &&
+          JS.number(reference["s"]).toInt() == 1 &&
+          JS.isNullish(pending) &&
+          !settledSerializationResumeQueued
+        ) {
+          if (!JS.isNullish(assetPromise)) {
+            settledSerializationResumeQueued = true;
+            JsValue controls = initBoundaryResume(owner, id);
+            scheduleResumeAfterAssets(id, controls[1], assetPromise);
+            return undefinedValue();
+          }
+          return call3(coreLoadingBoundary, render, fallback, options);
+        }
+        if (pending.truthy()) {
+          JsValue controls = initBoundaryResume(owner, id);
+          JsValue set = controls[0];
+          JsValue resume = controls[1];
+          JsValue release = controls[2];
+          if (!JS.strictEqual(pending, "$$f")) {
+            waitAndResume(pending, resume, assetPromise, true, null);
+          } else {
+            JsValue afterAssets = JS.method0((JsValue _self) => {
+              if (!call0(release).truthy()) return undefinedValue();
+              callVoid0(set);
+              checkHydrationComplete();
+              return undefinedValue();
+            });
+            if (!JS.isNullish(assetPromise)) {
+              JS.invoke(
+                assetPromise,
+                "then",
+                JS.method0((JsValue _self) => {
+                  queueMicrotask(() => callVoid0(afterAssets));
+                  return undefinedValue();
+                }),
+                JS.method1((JsValue _self, JsValue error) => {
+                  reportAssetFailure(error);
+                  queueMicrotask(() => callVoid0(afterAssets));
+                  return undefinedValue();
+                })
+              );
+            } else {
+              queueMicrotask(() => callVoid0(afterAssets));
+            }
+          }
+          return call0(fallback);
+        }
+      }
+
+      if (
+        sharedConfig["hydrating"].truthy() &&
+        call1(sharedConfig["has"], id + "_fr").truthy() &&
+        !settledSerializationResumeQueued
+      ) {
+        JsValue fragment = call1(sharedConfig["load"], id + "_fr");
+        replayHeldFragment(id);
+        if (
+          isObjectValue(fragment) &&
+          JS.number(fragment["s"]).toInt() == 1 &&
+          JS.isNullish(assetPromise)
+        ) {
+          JsValue gather = sharedConfig["gather"];
+          if (isFunction(gather)) call1(gather, id);
+          return call3(coreLoadingBoundary, render, fallback, options);
+        }
+
+        settledSerializationResumeQueued = true;
+        JsValue controls = initBoundaryResume(owner, id);
+        JsValue resume = controls[1];
+        if (isObjectValue(fragment)) {
+          int status = JS.number(fragment["s"]).toInt();
+          if (status == 1 || status == 2) {
+            if (status == 2) {
+              if (isFunction(fragment["catch"])) {
+                JS.invoke(
+                  fragment,
+                  "catch",
+                  JS.method0((JsValue _self) => undefinedValue())
+                );
+              }
+              JsValue resumeRejected = JS.method0((JsValue _self) => {
+                call1(resume, false);
+                return undefinedValue();
+              });
+              if (!JS.isNullish(assetPromise)) {
+                JS.invoke(
+                  assetPromise,
+                  "then",
+                  JS.method0((JsValue _self) => {
+                    queueMicrotask(() => callVoid0(resumeRejected));
+                    return undefinedValue();
+                  }),
+                  JS.method1((JsValue _self, JsValue error) => {
+                    reportAssetFailure(error);
+                    queueMicrotask(() => callVoid0(resumeRejected));
+                    return undefinedValue();
+                  })
+                );
+              } else {
+                queueMicrotask(() => callVoid0(resumeRejected));
+              }
+              return undefinedValue();
+            }
+            scheduleResumeAfterAssets(id, resume, assetPromise);
+            return undefinedValue();
+          }
+        }
+        claimFragment(id);
+        waitAndResume(
+          fragment,
+          resume,
+          assetPromise,
+          false,
+          fragmentAbort(id)
+        );
+        return call0(fallback);
+      }
+
+      if (
+        !JS.isNullish(assetPromise) &&
+        !call1(sharedConfig["has"], id).truthy()
+      ) {
+        JsValue controls = initBoundaryResume(owner, id);
+        JsValue resume = controls[1];
+        JS.invoke(
+          assetPromise,
+          "then",
+          JS.method0((JsValue _self) => {
+            callVoid0(resume);
+            return undefinedValue();
+          }),
+          JS.method1((JsValue _self, JsValue error) => {
+            reportAssetFailure(error);
+            call1(resume, false);
+            return undefinedValue();
+          })
+        );
+        return undefinedValue();
+      }
+      return call3(coreLoadingBoundary, render, fallback, options);
+    }),
+    JS.object()
+  );
+}
+
+/** Hydration-aware loading-boundary wrapper. */
+export JsValue createLoadingBoundary = JS.method3(
+  (JsValue _self, JsValue fn, JsValue fallback, JsValue options) => {
+    JsValue implementation = if (createLoadingBoundaryOverride.truthy()) {
+      createLoadingBoundaryOverride
+    } else {
+      coreLoadingBoundary
+    };
+    return call3(implementation, fn, fallback, options);
+  }
+);
+
+JsValue lazyHydrationLookup(JsValue component, JsValue moduleUrl) {
+  JsValue owner = call0(getOwner);
+  JsValue key = undefinedValue();
+  if (!JS.isNullish(owner) && !JS.isNullish(owner["id"])) {
+    key = call1(peekNextChildId, owner);
+  }
+  JsValue hy = globalThis["_$HY"];
+  JsValue cached = undefinedValue();
+  if (!JS.isNullish(key) && !JS.isNullish(hy) && !JS.isNullish(hy["modules"])) {
+    cached = hy["modules"][key];
+  }
+  if (cached.truthy()) {
+    return JS.method0((JsValue _self) => cached["default"]);
+  }
+  if (!component.truthy() && moduleUrl.truthy()) {
+    throw JS.construct(
+      Error,
+      "lazy() module \"" + JS.string(moduleUrl) + "\" (hydration id \"" +
+        JS.string(key) + "\") was not preloaded before hydration. Ensure it is inside a Loading boundary."
+    );
+  }
+  return component;
+}
+
+/** Installs hydration-aware primitive and lifecycle overrides. */
+export void enableHydration() {
+  createMemoOverride = JS.method2(
+    (JsValue _self, JsValue compute, JsValue options) =>
+      hydratedCreateMemo(compute, options)
+  );
+  createSignalOverride = JS.method2(
+    (JsValue _self, JsValue first, JsValue second) =>
+      hydratedCreateSignal(first, second)
+  );
+  createErrorBoundaryOverride = JS.method2(
+    (JsValue _self, JsValue fn, JsValue fallback) =>
+      hydratedCreateErrorBoundary(fn, fallback)
+  );
+  hydrateSignalLikeOverride = JS.method3(
+    (JsValue _self, JsValue coreFunction, JsValue compute, JsValue options) =>
+      hydrateSignalLike(coreFunction, compute, options)
+  );
+  hydrateStoreLikeOverride = JS.methodRest((JsValue _self, JsValue args) =>
+    hydrateStoreLike(args[0], args[1], args[2], args[3])
+  );
+  createRenderEffectOverride = JS.method3(
+    (JsValue _self, JsValue compute, JsValue effectFunction, JsValue options) =>
+      hydratedCreateRenderEffect(compute, effectFunction, options)
+  );
+  createEffectOverride = JS.method3(
+    (JsValue _self, JsValue compute, JsValue effectFunction, JsValue options) =>
+      hydratedCreateEffect(compute, effectFunction, options)
+  );
+  createLoadingBoundaryOverride = JS.method3(
+    (JsValue _self, JsValue fn, JsValue fallback, JsValue options) =>
+      hydratedCreateLoadingBoundary(fn, fallback, options)
+  );
+  _lazyHydrationLookup = JS.method2(
+    (JsValue _self, JsValue component, JsValue moduleUrl) =>
+      lazyHydrationLookup(component, moduleUrl)
+  );
+  sharedConfig["getNextContextId"] = JS.method0(
+    (JsValue _self) => hydrationGetNextContextId()
+  );
+  sharedConfig["isHydrationInProgress"] = JS.method0(
+    (JsValue _self) => hydrationInProgress()
+  );
+  sharedConfig["onHydrationEnd"] = JS.method1(
+    (JsValue _self, JsValue callback) => {
+      registerHydrationEnd(callback);
+      return undefinedValue();
+    }
+  );
+
+  JsValue hy = globalThis["_$HY"];
+  if (!JS.isNullish(hy) && !hy["fr"].truthy()) {
+    if (!hy["f"].truthy()) {
+      hy["f"] = JS.method1((JsValue _self, JsValue id) =>
+        fragmentPolicy(JS.string(id))
+      );
+    }
+    hy["fr"] = JS.object(
+      "pending", JS.method0((JsValue _self) => anyFragmentPending()),
+      "subscribe", JS.method1((JsValue _self, JsValue callback) =>
+        subscribeFragments(callback)
+      ),
+      "claim", JS.method1((JsValue _self, JsValue id) => {
+        claimFragment(JS.string(id));
+        return undefinedValue();
+      }),
+      "release", JS.method1((JsValue _self, JsValue id) => {
+        releaseFragment(JS.string(id));
+        return undefinedValue();
+      })
+    );
+    JsValue previousFragmentEvent = hy["fe"];
+    hy["fe"] = JS.method2((JsValue _self, JsValue id, JsValue parent) => {
+      if (isFunction(previousFragmentEvent)) {
+        call2(previousFragmentEvent, id, parent);
+      }
+      notifyFragmentSubscribers(JS.string(id), parent);
+      return undefinedValue();
+    });
+    watchTruncation(hy);
+  }
+
+  hydratingValue = sharedConfig["hydrating"].truthy();
+  doneValue = sharedConfig["done"].truthy();
+  JS.invoke(
+    Object,
+    "defineProperty",
+    sharedConfig,
+    "hydrating",
+    JS.object(
+      "get", JS.method0((JsValue _self) => hydratingValue),
+      "set", JS.method1((JsValue _self, JsValue next) => {
+        bool was = hydratingValue;
+        hydratingValue = next.truthy();
+        if (!was && hydratingValue) {
+          hydrationDone = false;
+          doneValue = false;
+          call1(setSnapshotCapture, true);
+          snapshotRootOwner = null;
+        } else if (was && !hydratingValue) {
+          if (!JS.isNullish(snapshotRootOwner)) {
+            call1(releaseSnapshotScope, snapshotRootOwner);
+            snapshotRootOwner = null;
+          }
+          checkHydrationComplete();
+        }
+        return undefinedValue();
+      }),
+      "configurable", true,
+      "enumerable", true
+    )
+  );
+  JS.invoke(
+    Object,
+    "defineProperty",
+    sharedConfig,
+    "done",
+    JS.object(
+      "get", JS.method0((JsValue _self) => doneValue),
+      "set", JS.method1((JsValue _self, JsValue next) => {
+        doneValue = next.truthy();
+        if (doneValue) drainHydrationCallbacks();
+        return undefinedValue();
+      }),
+      "configurable", true,
+      "enumerable", true
+    )
+  );
+}
+
+/** Disables hydration for a subtree while retaining its owner/context scope. */
+export JsValue NoHydration = JS.method1((JsValue _self, JsValue props) => {
+  JsValue owner = call0(createOwner);
+  return call2(
+    runWithOwner,
+    owner,
+    JS.method0((JsValue _ownerSelf) => {
+      JS.call(setContext, undefinedValue(), NoHydrateContext, true);
+      return if (sharedConfig["hydrating"].truthy()) {
+        undefinedValue()
+      } else {
+        props["children"]
+      };
+    })
+  );
+});
+
+/** Re-enables hydration beneath a NoHydration region; client passthrough. */
+export JsValue Hydration = JS.method1(
+  (JsValue _self, JsValue props) => props["children"]
+);

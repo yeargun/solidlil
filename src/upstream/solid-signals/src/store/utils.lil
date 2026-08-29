@@ -1,0 +1,21 @@
+import {
+  deepKernel,
+  mergeArgumentsKernel,
+  omitArgumentsKernel,
+  snapshotKernel
+} from "./_kernel";
+import { arguments } from "../../../_host";
+
+export JsValue snapshot(JsValue item, JsValue map, JsValue lookup) {
+  return snapshotKernel(item);
+}
+
+export JsValue deep(JsValue item) {
+  return deepKernel(item);
+}
+
+export JsValue merge = JS.staticRest((JsValue args) => mergeArgumentsKernel(args));
+
+export JsValue omit(JsValue props) {
+  return omitArgumentsKernel(arguments);
+}

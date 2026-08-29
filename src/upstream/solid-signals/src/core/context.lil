@@ -1,0 +1,25 @@
+import {
+  Context,
+  createContext as createKernelContext,
+  getContext as getKernelContext,
+  setContext as setKernelContext
+} from "./kernel";
+
+export { Context };
+
+export JsValue createContext(JsValue defaultValue, JsValue description) {
+  string label = "";
+  if (!JS.isUndefined(description)) label = JS.string(description);
+  Context<JsValue> context = createKernelContext(defaultValue, label);
+  return JS.assume(context);
+}
+
+export JsValue getContext(JsValue rawContext) {
+  Context<JsValue> context = JS.assume(rawContext);
+  return getKernelContext(context);
+}
+
+export void setContext(JsValue rawContext, JsValue value) {
+  Context<JsValue> context = JS.assume(rawContext);
+  setKernelContext(context, value);
+}

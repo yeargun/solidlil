@@ -1,0 +1,68 @@
+import {
+  Errored,
+  For,
+  Hydration,
+  Loading,
+  Match,
+  NoHydrateContext,
+  NoHydration,
+  Repeat,
+  Reveal,
+  Show,
+  Switch,
+  children,
+  createComponent,
+  createContext,
+  createEffect,
+  createErrorBoundary,
+  createLoadingBoundary,
+  createMemo,
+  createOwner,
+  createRoot,
+  createSignal,
+  createUniqueId,
+  enableHydration,
+  flush,
+  getNextChildId,
+  getOwner,
+  lazy,
+  runWithOwner,
+  sharedConfig,
+  useContext
+} from "../../src/upstream/solid/src/index";
+
+/** Keeps the differential surface live without relying on re-export aliases. */
+export JsValue behaviorApi() {
+  JsValue api = JS.object();
+  api["Errored"] = Errored;
+  api["For"] = For;
+  api["Hydration"] = Hydration;
+  api["Loading"] = Loading;
+  api["Match"] = Match;
+  api["NoHydrateContext"] = NoHydrateContext;
+  api["NoHydration"] = NoHydration;
+  api["Repeat"] = Repeat;
+  api["Reveal"] = Reveal;
+  api["Show"] = Show;
+  api["Switch"] = Switch;
+  api["children"] = children;
+  api["createComponent"] = createComponent;
+  api["createContext"] = createContext;
+  api["createEffect"] = createEffect;
+  api["createErrorBoundary"] = createErrorBoundary;
+  api["createLoadingBoundary"] = createLoadingBoundary;
+  api["createMemo"] = createMemo;
+  api["createOwner"] = createOwner;
+  api["createRoot"] = createRoot;
+  api["createSignal"] = createSignal;
+  api["createUniqueId"] = createUniqueId;
+  api["enableHydration"] = JS.assume(enableHydration);
+  api["flush"] = JS.assume(flush);
+  api["getNextChildId"] = JS.assume(getNextChildId);
+  api["getOwner"] = JS.assume(getOwner);
+  api["lazy"] = lazy;
+  api["runWithOwner"] = runWithOwner;
+  api["sharedConfig"] = sharedConfig;
+  api["useContext"] = useContext;
+  return api;
+}

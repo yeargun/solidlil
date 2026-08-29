@@ -1,0 +1,63 @@
+import {
+  Computed,
+  Owner,
+  Root,
+  cleanup,
+  createOwner as createKernelOwner,
+  createRoot as createKernelRoot,
+  dispose,
+  disposeChildren,
+  getNextChildId,
+  getObserver,
+  getOwner,
+  isDisposed,
+  markDisposal,
+  peekNextChildId,
+  runWithOwner as runWithKernelOwner
+} from "./kernel";
+
+export {
+  Computed,
+  Owner,
+  Root,
+  cleanup,
+  dispose,
+  disposeChildren,
+  getNextChildId,
+  getObserver,
+  getOwner,
+  isDisposed,
+  markDisposal,
+  peekNextChildId
+};
+
+export Root createOwner(JsValue options = JS.undefined()) {
+  string? id = null;
+  bool transparent = false;
+  if (!JS.isNullish(options)) {
+    if (!JS.isUndefined(options["id"])) id = JS.string(options["id"]);
+    transparent = options["transparent"].truthy();
+  }
+  return createKernelOwner(id, transparent);
+}
+
+export JsValue createRoot(JsValue initializer, JsValue options = JS.undefined()) {
+  Root owner = createOwner(options);
+  return runWithKernelOwner(owner, () =>
+    JS.call(initializer, JS.undefined(), JS.assume(() => owner.dispose()))
+  );
+}
+
+export JsValue runWithOwner(Owner? owner, JsValue callback) {
+  return runWithKernelOwner(owner, () => JS.call(callback, JS.undefined()));
+}
+
+export string? inheritId(JsValue options, bool transparent, Owner? parent) {
+  if (!JS.isNullish(options) && !JS.isUndefined(options["id"])) {
+    return JS.string(options["id"]);
+  }
+  if (parent == null) return null;
+  if (transparent) return parent.id;
+  if (parent.id == null) return null;
+  return getNextChildId(parent);
+}

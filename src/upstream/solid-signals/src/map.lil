@@ -1,0 +1,230 @@
+import {
+  CONFIG_AUTO_DISPOSE,
+  Computed,
+  NodeOptions,
+  Owner,
+  Root,
+  Signal,
+  computed,
+  createOwner,
+  getObserver,
+  read,
+  runWithOwner,
+  setSignal,
+  signal
+} from "./core/kernel";
+import { accessor, computedAccessor } from "./signals";
+
+class MapState {
+  JsValue list;
+  JsValue mapper;
+  JsValue key;
+  JsValue fallback;
+  Root owner;
+  int mode;
+  JsValue[] items;
+  JsValue[] mappings;
+  Root[] owners;
+  (Signal<JsValue>?)[] rows;
+  (Signal<int>?)[] indexes;
+  Root? fallbackOwner;
+  NodeOptions<JsValue> rowOptions;
+
+  init(JsValue list, JsValue mapper, JsValue options, Root owner) {
+    this.list = list;
+    this.mapper = mapper;
+    this.key = JS.undefined();
+    this.fallback = JS.undefined();
+    this.owner = owner;
+    this.mode = 0;
+    this.items = [];
+    this.mappings = [];
+    this.owners = [];
+    this.rows = [];
+    this.indexes = [];
+    this.fallbackOwner = null;
+    this.rowOptions = new NodeOptions<JsValue>();
+    this.rowOptions.ownedWrite = true;
+    if (!JS.isNullish(options)) {
+      if (JS.strictEqual(options["keyed"], false)) this.mode = 1;
+      else if (JS.typeOf(options["keyed"]) == "function") {
+        this.mode = 2;
+        this.key = options["keyed"];
+      }
+      this.fallback = options["fallback"];
+    }
+  }
+
+  bool matches(JsValue previous, JsValue next) {
+    if (this.mode == 1) return true;
+    if (this.mode == 2) {
+      JsValue previousKey = JS.call(this.key, JS.undefined(), previous);
+      JsValue nextKey = JS.call(this.key, JS.undefined(), next);
+      return JS.strictEqual(previousKey, nextKey);
+    }
+    return JS.strictEqual(previous, next);
+  }
+
+  JsValue createMapping(JsValue item, int index, Root owner, Signal<JsValue>? row, Signal<int>? position) {
+    return runWithOwner(owner, () => {
+      if (this.mode == 1) {
+        Signal<JsValue> rowSignal = JS.assume(row);
+        return JS.call(this.mapper, JS.undefined(), accessor(rowSignal), index);
+      }
+      if (this.mode == 2) {
+        Signal<JsValue> rowSignal = JS.assume(row);
+        Signal<int> indexSignal = JS.assume(position);
+        return JS.call(this.mapper, JS.undefined(), accessor(rowSignal), accessor(indexSignal));
+      }
+      Signal<int> indexSignal = JS.assume(position);
+      return JS.call(this.mapper, JS.undefined(), item, accessor(indexSignal));
+    });
+  }
+
+  JsValue update() {
+    Owner? observer = getObserver();
+    if (observer != null && observer._computed) {
+      this.owner._parentComputed = JS.assume(observer);
+    }
+    JsValue input = JS.call(this.list, JS.undefined());
+    int nextLength = 0;
+    if (JS.isArray(input)) nextLength = JS.number(input["length"]).toInt();
+
+    if (nextLength == 0) {
+      for (int index = 0; index < this.owners.length; index++) this.owners[index].dispose();
+      this.items = [];
+      this.mappings = [];
+      this.owners = [];
+      this.rows = [];
+      this.indexes = [];
+      if (JS.typeOf(this.fallback) == "function") {
+        if (this.fallbackOwner == null) {
+          Root owner = runWithOwner(this.owner, () => createOwner());
+          try {
+            JsValue mapped = runWithOwner(owner, () => JS.call(this.fallback, JS.undefined()));
+            this.fallbackOwner = owner;
+            this.mappings.push(mapped);
+          } catch (JsValue failure) {
+            owner.dispose();
+            throw failure;
+          }
+        }
+      }
+      return JS.assume(this.mappings);
+    }
+
+    if (this.fallbackOwner != null) {
+      Root oldFallbackOwner = JS.assume(this.fallbackOwner);
+      oldFallbackOwner.dispose();
+      this.fallbackOwner = null;
+    }
+
+    bool[] used = [];
+    for (int index = 0; index < this.items.length; index++) used.push(false);
+    JsValue[] nextItems = [];
+    JsValue[] nextMappings = [];
+    Root[] nextOwners = [];
+    (Signal<JsValue>?)[] nextRows = [];
+    (Signal<int>?)[] nextIndexes = [];
+    Root[] createdOwners = [];
+
+    try {
+      for (int index = 0; index < nextLength; index++) {
+        JsValue item = input[index];
+        int matched = -1;
+        if (this.mode == 1 && index < this.items.length) {
+          matched = index;
+        } else {
+          for (int cursor = 0; cursor < this.items.length; cursor++) {
+            if (!used[cursor] && this.matches(this.items[cursor], item)) {
+              matched = cursor;
+              break;
+            }
+          }
+        }
+
+        if (matched >= 0) {
+          used[matched] = true;
+          Signal<JsValue>? row = this.rows[matched];
+          Signal<int>? position = this.indexes[matched];
+          nextItems.push(item);
+          nextMappings.push(this.mappings[matched]);
+          nextOwners.push(this.owners[matched]);
+          nextRows.push(row);
+          nextIndexes.push(position);
+        } else {
+          Root owner = runWithOwner(this.owner, () => createOwner());
+          createdOwners.push(owner);
+          Signal<JsValue>? row = null;
+          Signal<int>? position = null;
+          if (this.mode != 0) row = signal(item, this.rowOptions);
+          if (this.mode != 1) {
+            NodeOptions<int> indexOptions = new NodeOptions<int>();
+            indexOptions.ownedWrite = true;
+            position = signal(index, indexOptions);
+          }
+          JsValue mapped = this.createMapping(item, index, owner, row, position);
+          nextItems.push(item);
+          nextMappings.push(mapped);
+          nextOwners.push(owner);
+          nextRows.push(row);
+          nextIndexes.push(position);
+        }
+      }
+    } catch (JsValue failure) {
+      for (int index = 0; index < createdOwners.length; index++) createdOwners[index].dispose();
+      throw failure;
+    }
+
+    for (int index = 0; index < nextLength; index++) {
+      Signal<JsValue>? row = nextRows[index];
+      Signal<int>? position = nextIndexes[index];
+      if (row != null) setSignal(row, nextItems[index]);
+      if (position != null) setSignal(position, index);
+    }
+
+    for (int index = 0; index < this.owners.length; index++) {
+      if (!used[index]) this.owners[index].dispose();
+    }
+    this.items = nextItems;
+    this.mappings = nextMappings;
+    this.owners = nextOwners;
+    this.rows = nextRows;
+    this.indexes = nextIndexes;
+    return JS.assume(this.mappings);
+  }
+}
+
+export JsValue mapArray(JsValue list, JsValue mapper, JsValue options) {
+  Root owner = createOwner();
+  MapState state = new MapState(list, mapper, options, owner);
+  Computed<JsValue> node = computed(() => state.update());
+  owner._parentComputed = node;
+  node._config = node._config ^ (node._config & CONFIG_AUTO_DISPOSE);
+  return computedAccessor(node);
+}
+
+export JsValue repeat(JsValue count, JsValue mapper, JsValue options) {
+  JsValue list = JS.method0((JsValue _self) => {
+    int length = JS.number(JS.call(count, JS.undefined())).toInt();
+    int from = 0;
+    if (!JS.isNullish(options) && JS.typeOf(options["from"]) == "function") {
+      JsValue offset = JS.call(options["from"], JS.undefined());
+      if (!JS.isUndefined(offset)) from = JS.number(offset).toInt();
+    }
+    JsValue values = JS.array();
+    for (int index = 0; index < length; index++) JS.invoke(values, "push", from + index);
+    return values;
+  });
+  JsValue mapOptions = JS.object("keyed", true);
+  if (!JS.isNullish(options) && JS.typeOf(options["fallback"]) == "function") {
+    mapOptions["fallback"] = options["fallback"];
+  }
+  return mapArray(
+    list,
+    JS.method2((JsValue _self, JsValue index, JsValue _position) =>
+      JS.call(mapper, JS.undefined(), index)
+    ),
+    mapOptions
+  );
+}

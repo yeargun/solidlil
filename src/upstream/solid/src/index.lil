@@ -1,0 +1,190 @@
+import {
+  $PROXY,
+  $REFRESH,
+  $TRACK,
+  DEV as signalsDEV,
+  NotReadyError,
+  action,
+  affects,
+  createOwner,
+  createReaction,
+  createRoot,
+  createTrackedEffect,
+  deep,
+  enableExternalSource,
+  enforceLoadingBoundary,
+  flatten,
+  flush,
+  getNextChildId,
+  getObserver,
+  getOwner,
+  isDisposed,
+  isEqual,
+  isPending,
+  isWrappable,
+  latest,
+  mapArray,
+  merge,
+  omit,
+  onCleanup,
+  onSettled,
+  reconcile,
+  refresh,
+  repeat,
+  resolve,
+  runWithOwner,
+  snapshot,
+  storePath,
+  untrack
+} from "../../solid-signals/src/index";
+import {
+  $DEVCOMP,
+  IS_DEV,
+  children,
+  createContext,
+  useContext
+} from "./client/core";
+import {
+  createComponent,
+  createUniqueId,
+  lazy
+} from "./client/component";
+import {
+  Errored,
+  For,
+  Loading,
+  Match,
+  Repeat,
+  Reveal,
+  Show,
+  Switch
+} from "./client/flow";
+import {
+  Hydration,
+  NoHydrateContext,
+  NoHydration,
+  createEffect,
+  createErrorBoundary,
+  createLoadingBoundary,
+  createMemo,
+  createOptimistic,
+  createOptimisticStore,
+  createProjection,
+  createRenderEffect,
+  createSignal,
+  createStore,
+  enableHydration,
+  materializeContainerTrace,
+  sharedConfig
+} from "./client/hydration";
+
+import { console, globalThis } from "../../_host";
+
+export {
+  $PROXY,
+  $REFRESH,
+  $TRACK,
+  action,
+  affects,
+  createOwner,
+  createReaction,
+  createRoot,
+  createTrackedEffect,
+  deep,
+  enableExternalSource,
+  enforceLoadingBoundary,
+  flatten,
+  flush,
+  getNextChildId,
+  getObserver,
+  getOwner,
+  isDisposed,
+  isEqual,
+  isPending,
+  isWrappable,
+  latest,
+  mapArray,
+  merge,
+  omit,
+  onCleanup,
+  onSettled,
+  reconcile,
+  refresh,
+  repeat,
+  resolve,
+  NotReadyError,
+  runWithOwner,
+  snapshot,
+  storePath,
+  untrack,
+  $DEVCOMP,
+  children,
+  createContext,
+  useContext,
+  createComponent,
+  createUniqueId,
+  lazy,
+  Errored,
+  For,
+  Loading,
+  Match,
+  Repeat,
+  Reveal,
+  Show,
+  Switch,
+  sharedConfig,
+  enableHydration,
+  createErrorBoundary,
+  createLoadingBoundary,
+  createMemo,
+  createSignal,
+  createStore,
+  createProjection,
+  createOptimistic,
+  createOptimisticStore,
+  createRenderEffect,
+  createEffect,
+  NoHydration,
+  Hydration,
+  NoHydrateContext,
+  materializeContainerTrace
+};
+
+/** Client-side no-op retained for the isomorphic server API surface. */
+export void ssrHandleError() {}
+
+/** Client-side server-scope identity wrapper. */
+export func()->T ssrScope<T>(func()->T fn) {
+  return fn;
+}
+
+/** Executes directly because client components have no server scope. */
+export T runInServerComponentScope<T>(func()->T fn) {
+  return fn();
+}
+
+export int creationStamp() {
+  return 0;
+}
+
+export bool inServerComponentScope() {
+  return false;
+}
+
+/** Client values never carry server projection traces. */
+export JsValue getProjectionTrace(JsValue _value) {
+  return JS.undefined();
+}
+
+export JsValue DEV = if (IS_DEV) { signalsDEV } else { JS.undefined() };
+
+if (IS_DEV && globalThis.truthy()) {
+  if (!globalThis["Solid$$"].truthy()) globalThis["Solid$$"] = true;
+  else {
+    JS.invoke(
+      console,
+      "warn",
+      "You appear to have multiple instances of Solid. This can lead to unexpected behavior."
+    );
+  }
+}

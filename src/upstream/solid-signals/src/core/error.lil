@@ -1,0 +1,33 @@
+import {
+  ContextNotFoundError as KernelContextNotFoundError,
+  NoOwnerError as KernelNoOwnerError,
+  NotReadyError as KernelNotReadyError,
+  StatusError as KernelStatusError,
+  unwrapStatusError
+} from "./kernel";
+
+export {
+  unwrapStatusError
+};
+
+JsValue contextNotFoundInstance = JS.assume(new KernelContextNotFoundError());
+JsValue noOwnerInstance = JS.assume(new KernelNoOwnerError());
+JsValue notReadyInstance = JS.assume(new KernelNotReadyError(JS.undefined()));
+JsValue statusInstance = JS.assume(new KernelStatusError(JS.undefined(), JS.undefined()));
+
+JsValue kernelContextNotFoundError = contextNotFoundInstance["constructor"];
+JsValue kernelNoOwnerError = noOwnerInstance["constructor"];
+JsValue kernelNotReadyError = notReadyInstance["constructor"];
+JsValue kernelStatusError = statusInstance["constructor"];
+
+export JsValue ContextNotFoundError = JS.method0((JsValue _self) => JS.undefined());
+export JsValue NoOwnerError = JS.method0((JsValue _self) => JS.undefined());
+export JsValue NotReadyError = JS.method1((JsValue _self, JsValue _source) => JS.undefined());
+export JsValue StatusError = JS.method2(
+  (JsValue _self, JsValue _source, JsValue _cause) => JS.undefined()
+);
+
+ContextNotFoundError["prototype"] = kernelContextNotFoundError["prototype"];
+NoOwnerError["prototype"] = kernelNoOwnerError["prototype"];
+NotReadyError["prototype"] = kernelNotReadyError["prototype"];
+StatusError["prototype"] = kernelStatusError["prototype"];

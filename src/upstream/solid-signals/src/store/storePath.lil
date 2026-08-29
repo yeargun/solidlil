@@ -1,0 +1,9 @@
+import { $PATH_DELETE_VALUE, storePathArgumentsKernel } from "./_kernel";
+
+JsValue makeStorePath() {
+  JsValue path = JS.staticRest((JsValue args) => storePathArgumentsKernel(args));
+  path["DELETE"] = $PATH_DELETE_VALUE;
+  return path;
+}
+
+export JsValue storePath = makeStorePath();

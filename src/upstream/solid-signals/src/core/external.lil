@@ -1,0 +1,36 @@
+import {
+  ExternalSource,
+  ExternalSourceConfig,
+  _resetExternalSourceConfig,
+  enableExternalSource as enableKernelExternalSource
+} from "./kernel";
+
+export {
+  ExternalSource,
+  ExternalSourceConfig,
+  _resetExternalSourceConfig
+};
+
+export void enableExternalSource(JsValue config) {
+  JsValue factory = config["factory"];
+  JsValue untrack = config["untrack"];
+  ExternalSourceConfig typed = new ExternalSourceConfig(
+    (func(JsValue)->JsValue track, func()->void trigger) => {
+      JsValue source = JS.call(
+        factory,
+        JS.undefined(),
+        JS.method1((JsValue _self, JsValue previous) => track(previous)),
+        JS.method0((JsValue _self) => {
+          trigger();
+          return JS.undefined();
+        })
+      );
+      return new ExternalSource(
+        (JsValue previous) => JS.call(source["track"], source, previous),
+        () => { JS.call(source["dispose"], source); }
+      );
+    },
+    untrack
+  );
+  enableKernelExternalSource(typed);
+}

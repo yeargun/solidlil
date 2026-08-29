@@ -1,0 +1,161 @@
+Set<string> headSet(string[] values) {
+  Set<string> result = new Set<string>();
+  for (int index = 0; index < values.length; index++) result.add(values[index]);
+  return result;
+}
+
+export Set<string> HEAD_ELIGIBLE_TAGS = headSet([
+  "title", "meta", "link", "style", "script", "base"
+]);
+export Regex HEAD_ATTR_NAME = new Regex("^[a-zA-Z_][a-zA-Z0-9_:.-]*$");
+export Set<string> RESOURCE_LINK_RELS = headSet([
+  "preload", "modulepreload", "prefetch", "preconnect", "dns-prefetch", "stylesheet"
+]);
+string[] RESOURCE_QUALIFIERS = [
+  "as", "crossorigin", "type", "media", "imagesrcset", "imagesizes"
+];
+export Set<string> STYLESHEET_FETCH_META = headSet([
+  "crossorigin", "integrity", "referrerpolicy", "fetchpriority"
+]);
+
+export JsValue evalHeadValue(JsValue value) {
+  if (JS.typeOf(value) == "function") return JS.call(value, JS.undefined());
+  return value;
+}
+
+export JsValue evalHeadProps(JsValue props, JsValue presets = JS.undefined()) {
+  JsValue out = JS.object();
+  for (string name in props) {
+    if (!JS.isUndefined(presets) && JS.has(presets, name)) out[name] = presets[name];
+    else out[name] = evalHeadValue(props[name]);
+  }
+  return out;
+}
+
+export JsValue classifyHeadTag(JsValue description) {
+  string tag = JS.assume(description["tag"]);
+  JsValue props = description["props"];
+  if (tag == "link") {
+    JsValue rel = JS.undefined();
+    if (!JS.isNullish(props)) rel = evalHeadValue(props["rel"]);
+    string relText = "";
+    if (!JS.isNullish(rel)) relText = JS.string(rel);
+    return JS.object("resource", RESOURCE_LINK_RELS.has(relText), "rel", rel);
+  }
+  if (tag == "style") {
+    return JS.object("resource", !JS.isNullish(props) && JS.has(props, "href"));
+  }
+  if (tag == "script") {
+    return JS.object("resource", !JS.isNullish(props) && JS.has(props, "src"));
+  }
+  return JS.object("resource", false);
+}
+
+export string resourceIdentity(string tag, JsValue props) {
+  JsValue rel = props["rel"];
+  JsValue href = props["href"];
+  JsValue src = props["src"];
+  string relText = "";
+  string urlText = "";
+  if (rel.truthy()) relText = JS.string(rel);
+  if (href.truthy()) urlText = JS.string(href);
+  else if (src.truthy()) urlText = JS.string(src);
+  string id = "res:" + tag + ":" + relText + ":" + urlText;
+  for (int index = 0; index < RESOURCE_QUALIFIERS.length; index++) {
+    string qualifier = RESOURCE_QUALIFIERS[index];
+    JsValue value = props[qualifier];
+    if (!JS.isNullish(value)) id += ":" + qualifier + "=" + value;
+  }
+  return id;
+}
+
+export string replaceableIdentity(
+  string tag,
+  JsValue props,
+  JsValue key,
+  string unique
+) {
+  if (tag == "title") return "title";
+  if (tag == "base") return "base";
+  if (tag == "meta" && !JS.isNullish(props["charset"])) return "charset";
+  if (!JS.isNullish(key)) return tag + ":key:" + key;
+  if (tag == "meta") {
+    string[] names = ["name", "property", "http-equiv"];
+    for (int index = 0; index < names.length; index++) {
+      string name = names[index];
+      JsValue value = props[name];
+      if (!JS.isNullish(value)) {
+        JsValue media = props["media"];
+        string suffix = "";
+        if (!JS.isNullish(media)) suffix = ":media=" + media;
+        return "meta:" + name + ":" + value + suffix;
+      }
+    }
+    return unique;
+  }
+  if (tag == "link") {
+    JsValue relValue = props["rel"];
+    string rel = "";
+    if (relValue.truthy()) rel = JS.string(relValue);
+    if (rel == "icon" || rel == "apple-touch-icon") {
+      JsValue sizes = props["sizes"];
+      JsValue kind = props["type"];
+      string suffix = "";
+      if (!JS.isNullish(sizes)) suffix += ":sizes=" + sizes;
+      if (!JS.isNullish(kind)) suffix += ":type=" + kind;
+      return "link:" + rel + suffix;
+    }
+    JsValue href = props["href"];
+    string hrefText = "";
+    if (href.truthy()) hrefText = JS.string(href);
+    return "link:" + rel + ":" + hrefText;
+  }
+  return unique;
+}
+
+void insertGroupBySequence(JsValue[] sorted, JsValue group) {
+  number sequence = JS.number(group["seq"]);
+  int index = sorted.length;
+  while (index > 0 && JS.number(sorted[index - 1]["seq"]) > sequence) index -= 1;
+  sorted.push(group);
+  int cursor = sorted.length - 1;
+  while (cursor > index) {
+    sorted[cursor] = sorted[cursor - 1];
+    cursor -= 1;
+  }
+  sorted[index] = group;
+}
+
+export Map<string, JsValue> resolveHead(JsValue[] groups) {
+  Map<string, JsValue> winners = new Map<string, JsValue>();
+  JsValue[] sorted = [];
+  for (int index = 0; index < groups.length; index++) insertGroupBySequence(sorted, groups[index]);
+  for (int index = 0; index < sorted.length; index++) {
+    JsValue group = sorted[index];
+    Map<string, JsValue[]> byIdentity = new Map<string, JsValue[]>();
+    string[] identities = [];
+    JsValue tagsValue = group["tags"];
+    int tagsLength = JS.number(tagsValue["length"]).toInt();
+    for (int tagIndex = 0; tagIndex < tagsLength; tagIndex++) {
+      JsValue tag = tagsValue[tagIndex];
+      string identity = JS.assume(tag["identity"]);
+      JsValue[]? existing = byIdentity.get(identity);
+      JsValue[] list = [];
+      if (existing == null) {
+        byIdentity.set(identity, list);
+        identities.push(identity);
+      } else {
+        list = existing;
+      }
+      list.push(tag);
+    }
+    for (int identityIndex = 0; identityIndex < identities.length; identityIndex++) {
+      string identity = identities[identityIndex];
+      JsValue[] tags = byIdentity.get(identity) ?? [];
+      JsValue resolvedTags = JS.assume(tags);
+      if (identity == "title") resolvedTags = JS.array(tags[tags.length - 1]);
+      winners.set(identity, JS.object("seq", group["seq"], "tags", resolvedTags));
+    }
+  }
+  return winners;
+}

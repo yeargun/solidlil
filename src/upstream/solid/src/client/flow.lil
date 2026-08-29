@@ -1,0 +1,330 @@
+import {
+  createMemo,
+  createRevealOrder,
+  mapArray,
+  repeat,
+  untrack
+} from "../../../solid-signals/src/index";
+import { children, IS_DEV } from "./core";
+import { createErrorBoundary, createLoadingBoundary } from "./hydration";
+
+import { console } from "../../../_host";
+
+JsValue undefinedValue() {
+  return JS.undefined();
+}
+
+JsValue call0(JsValue fn) {
+  return JS.call(fn, undefinedValue());
+}
+
+JsValue call1(JsValue fn, JsValue value) {
+  return JS.call(fn, undefinedValue(), value);
+}
+
+JsValue call2(JsValue fn, JsValue first, JsValue second) {
+  return JS.call(fn, undefinedValue(), first, second);
+}
+
+JsValue call3(JsValue fn, JsValue first, JsValue second, JsValue third) {
+  return JS.call(fn, undefinedValue(), first, second, third);
+}
+
+JsValue memo(JsValue compute, JsValue options) {
+  return call2(createMemo, compute, options);
+}
+
+JsValue untracked(JsValue compute, string label) {
+  if (IS_DEV) return call2(untrack, compute, label);
+  return call1(untrack, compute);
+}
+
+string narrowedError(string name) {
+  if (IS_DEV) {
+    return "Attempting to access a stale value from <" + name + "> that could possibly be undefined. This may occur because you are reading the accessor returned from the component at a time where it has already been unmounted. We recommend cleaning up any stale timers or async, or reading from the initial condition.";
+  }
+  return "Stale read from <" + name + ">.";
+}
+
+/** Solid's keyed, indexed, and custom-key list control flow. */
+export JsValue For = JS.method1((JsValue _self, JsValue props) => {
+  JsValue options = JS.object("keyed", props["keyed"]);
+  if (JS.in("fallback", props)) {
+    options["fallback"] = JS.method0(
+      (JsValue _fallbackSelf) => props["fallback"]
+    );
+  }
+  if (IS_DEV) options["name"] = "<For>";
+  JsValue mapper = props["children"];
+  if (JS.strictEqual(props["keyed"], false)) {
+    mapper = JS.method2((JsValue _mapperSelf, JsValue _item, JsValue index) => {
+      int position = JS.number(index).toInt();
+      JsValue item = JS.method0((JsValue _itemSelf) => props["each"][position]);
+      return call2(props["children"], item, index);
+    });
+  } else if (JS.typeOf(props["keyed"]) != "function") {
+    mapper = JS.method2((JsValue _mapperSelf, JsValue item, JsValue _index) => {
+      JsValue index = JS.method0((JsValue _indexSelf) =>
+        JS.invoke(props["each"], "indexOf", item)
+      );
+      return call2(props["children"], item, index);
+    });
+  }
+  return call3(
+    mapArray,
+    JS.method0((JsValue _eachSelf) => props["each"]),
+    mapper,
+    options
+  );
+});
+
+/** Count-based list control flow. */
+export JsValue Repeat = JS.method1((JsValue _self, JsValue props) => {
+  JsValue options = JS.object(
+    "from", JS.method0((JsValue _fromSelf) => props["from"])
+  );
+  if (JS.in("fallback", props)) {
+    options["fallback"] = JS.method0(
+      (JsValue _fallbackSelf) => props["fallback"]
+    );
+  }
+  if (IS_DEV) options["name"] = "<Repeat>";
+  return call3(
+    repeat,
+    JS.method0((JsValue _countSelf) => props["count"]),
+    JS.method1((JsValue _childSelf, JsValue index) => {
+      JsValue child = props["children"];
+      return if (JS.typeOf(child) == "function") {
+        call1(child, index)
+      } else {
+        child
+      };
+    }),
+    options
+  );
+});
+
+/** Truthy conditional preserving either keyed or stale-checked semantics. */
+export JsValue Show = JS.method1((JsValue _self, JsValue props) => {
+  bool keyed = props["keyed"].truthy();
+  JsValue conditionValue = memo(
+    JS.method1((JsValue _conditionSelf, JsValue _previous) => props["when"]),
+    if (IS_DEV) { JS.object("name", "condition value") } else { undefinedValue() }
+  );
+  JsValue condition = conditionValue;
+  if (!keyed) {
+    condition = memo(
+      conditionValue,
+      if (IS_DEV) {
+          JS.object(
+            "equals", JS.method2((JsValue _equalsSelf, JsValue left, JsValue right) =>
+              left.truthy() == right.truthy()
+            ),
+            "name", "condition",
+            "sync", true
+          )
+      } else {
+          JS.object(
+            "equals", JS.method2((JsValue _equalsSelf, JsValue left, JsValue right) =>
+              left.truthy() == right.truthy()
+            ),
+            "sync", true
+          )
+      }
+    );
+  }
+  JsValue activeCondition = condition;
+  return memo(
+    JS.method1((JsValue _valueSelf, JsValue _previous) => {
+      JsValue value = call0(activeCondition);
+      if (value.truthy()) {
+        JsValue child = props["children"];
+        bool functionChild =
+          JS.typeOf(child) == "function" && JS.number(child["length"]).toInt() > 0;
+        if (!functionChild) return child;
+        if (keyed) {
+          return untracked(
+            JS.method0((JsValue _untrackSelf) => call1(child, value)),
+            "<Show>"
+          );
+        }
+        JsValue accessor = JS.method0((JsValue _accessorSelf) => {
+          if (!call1(untrack, activeCondition).truthy()) {
+            throw narrowedError("Show");
+          }
+          return call0(conditionValue);
+        });
+        return untracked(
+          JS.method0((JsValue _untrackSelf) => call1(child, accessor)),
+          "<Show>"
+        );
+      }
+      return props["fallback"];
+    }),
+    if (IS_DEV) {
+      JS.object("name", "value", "sync", true)
+    } else {
+      JS.object("sync", true)
+    }
+  );
+});
+
+/** First-match conditional selection with stale accessor protection. */
+export JsValue Switch = JS.method1((JsValue _self, JsValue props) => {
+  JsValue resolved = call1(
+    children,
+    JS.method0((JsValue _childrenSelf) => props["children"])
+  );
+  JsValue switchFunc = undefinedValue();
+  switchFunc = memo(
+    JS.method1((JsValue _switchSelf, JsValue _previous) => {
+      JsValue matches = JS.call(resolved["toArray"], resolved);
+      JsValue select = JS.method0((JsValue _selectSelf) => undefinedValue());
+      int count = JS.number(matches["length"]).toInt();
+      for (int cursor = 0; cursor < count; cursor++) {
+        JsValue matchProps = matches[cursor];
+        if (JS.isNullish(matchProps)) continue;
+        int index = cursor;
+        JsValue previousSelect = select;
+        JsValue conditionValue = memo(
+          JS.method1((JsValue _conditionSelf, JsValue _conditionPrevious) =>
+            if (call0(previousSelect).truthy()) {
+              undefinedValue()
+            } else {
+              matchProps["when"]
+            }
+          ),
+          if (IS_DEV) { JS.object("name", "condition value") } else { undefinedValue() }
+        );
+        JsValue condition = conditionValue;
+        if (!matchProps["keyed"].truthy()) {
+          condition = memo(
+            conditionValue,
+            if (IS_DEV) {
+                JS.object(
+                  "equals", JS.method2((JsValue _equalsSelf, JsValue left, JsValue right) =>
+                    left.truthy() == right.truthy()
+                  ),
+                  "name", "condition",
+                  "sync", true
+                )
+            } else {
+                JS.object(
+                  "equals", JS.method2((JsValue _equalsSelf, JsValue left, JsValue right) =>
+                    left.truthy() == right.truthy()
+                  ),
+                  "sync", true
+                )
+            }
+          );
+        }
+        JsValue currentCondition = condition;
+        select = JS.method0((JsValue _selectSelf) => {
+          JsValue previous = call0(previousSelect);
+          if (previous.truthy()) return previous;
+          JsValue value = call0(currentCondition);
+          return if (value.truthy()) {
+            JS.array(index, value, conditionValue, matchProps)
+          } else {
+            undefinedValue()
+          };
+        });
+      }
+      return select;
+    }),
+    JS.object("sync", true)
+  );
+
+  return memo(
+    JS.method1((JsValue _evaluateSelf, JsValue _previous) => {
+      JsValue selector = call0(switchFunc);
+      JsValue selected = call0(selector);
+      if (!selected.truthy()) return props["fallback"];
+      int index = JS.number(selected[0]).toInt();
+      JsValue value = selected[1];
+      JsValue conditionValue = selected[2];
+      JsValue matchProps = selected[3];
+      JsValue child = matchProps["children"];
+      bool functionChild =
+        JS.typeOf(child) == "function" && JS.number(child["length"]).toInt() > 0;
+      if (!functionChild) return child;
+      if (matchProps["keyed"].truthy()) {
+        return untracked(
+          JS.method0((JsValue _untrackSelf) => call1(child, value)),
+          "<Match>"
+        );
+      }
+      JsValue accessor = JS.method0((JsValue _accessorSelf) => {
+        JsValue currentSelector = call1(untrack, switchFunc);
+        JsValue current = call0(currentSelector);
+        if (!current.truthy() || JS.number(current[0]).toInt() != index) {
+          throw narrowedError("Match");
+        }
+        return call0(conditionValue);
+      });
+      return untracked(
+        JS.method0((JsValue _untrackSelf) => call1(child, accessor)),
+        "<Match>"
+      );
+    }),
+    if (IS_DEV) {
+      JS.object("name", "eval conditions", "sync", true)
+    } else {
+      JS.object("sync", true)
+    }
+  );
+});
+
+/** Match is an identity marker consumed by Switch. */
+export JsValue Match = JS.method1(
+  (JsValue _self, JsValue props) => props
+);
+
+/** Error boundary component. */
+export JsValue Errored = JS.method1((JsValue _self, JsValue props) =>
+  call2(
+    createErrorBoundary,
+    JS.method0((JsValue _childrenSelf) => props["children"]),
+    JS.method2((JsValue _fallbackSelf, JsValue error, JsValue reset) => {
+      JsValue fallback = props["fallback"];
+      bool callable =
+        JS.typeOf(fallback) == "function" &&
+        JS.number(fallback["length"]).toInt() > 0;
+      if (IS_DEV && !callable) {
+        JS.invoke(console, "error", call0(error));
+      }
+      return if (callable) { call2(fallback, error, reset) } else { fallback };
+    })
+  )
+);
+
+/** Loading boundary component. */
+export JsValue Loading = JS.method1((JsValue _self, JsValue props) => {
+  JsValue options = if (JS.in("on", props)) {
+    JS.object("on", JS.method0((JsValue _onSelf) => props["on"]))
+  } else {
+    undefinedValue()
+  };
+  return call3(
+    createLoadingBoundary,
+    JS.method0((JsValue _childrenSelf) => props["children"]),
+    JS.method0((JsValue _fallbackSelf) => props["fallback"]),
+    options
+  );
+});
+
+/** Coordinates sibling loading-boundary reveal order. */
+export JsValue Reveal = JS.method1((JsValue _self, JsValue props) => {
+  return call2(
+    createRevealOrder,
+    JS.method0((JsValue _childrenSelf) => props["children"]),
+    JS.object(
+      "order", JS.method0((JsValue _orderSelf) =>
+        if (JS.isNullish(props["order"])) { "sequential" } else { props["order"] }
+      ),
+      "collapsed", JS.method0((JsValue _collapsedSelf) =>
+        props["collapsed"].truthy()
+      )
+    )
+  );
+});

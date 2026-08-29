@@ -1,0 +1,744 @@
+import {
+  CONFIG_AUTO_DISPOSE,
+  EFFECT_PURE,
+  REACTIVE_DISPOSED,
+  STATUS_ERROR,
+  STATUS_PENDING,
+  Computed,
+  Context,
+  Link,
+  NodeOptions,
+  Owner,
+  Queue,
+  Signal,
+  cleanup,
+  computed,
+  createContext,
+  createOwner,
+  dispose,
+  getContext,
+  getOwner,
+  haltReactivity,
+  isNotReadyError,
+  read,
+  readComputed,
+  recompute,
+  runWithOwner,
+  schedule,
+  setContext,
+  setSignal,
+  signal,
+  untrack,
+  unwrapStatusError
+} from "./core/kernel";
+import { accessor, computedAccessor } from "./signals";
+
+export class BoundaryComputed<T> {
+  Computed<T> node;
+  int _propagationMask;
+
+  init(Computed<T> node, int propagationMask) {
+    this.node = node;
+    this._propagationMask = propagationMask;
+  }
+}
+
+class RevealEntry {
+  CollectionQueue? queue;
+  RevealController? controller;
+
+  init(CollectionQueue? queue, RevealController? controller) {
+    this.queue = queue;
+    this.controller = controller;
+  }
+}
+
+bool revealUsed = false;
+
+NodeOptions<bool> boundaryBoolOptions() {
+  NodeOptions<bool> options = new NodeOptions<bool>();
+  options.ownedWrite = true;
+  options.noSnapshot = true;
+  return options;
+}
+
+NodeOptions<JsValue> boundaryValueOptions() {
+  NodeOptions<JsValue> options = new NodeOptions<JsValue>();
+  options.ownedWrite = true;
+  options.noSnapshot = true;
+  return options;
+}
+
+export class RevealController {
+  JsValue order;
+  JsValue collapsed;
+  RevealEntry[] slots;
+  RevealController? parent;
+  Signal<bool> disabled;
+  Signal<bool> collapsedState;
+  bool ready;
+  bool minimallyReady;
+  bool evaluating;
+
+  init(JsValue order, JsValue collapsed) {
+    this.order = order;
+    this.collapsed = collapsed;
+    this.slots = [];
+    this.parent = null;
+    this.disabled = signal(false, boundaryBoolOptions());
+    this.collapsedState = signal(false, boundaryBoolOptions());
+    this.ready = true;
+    this.minimallyReady = true;
+    this.evaluating = false;
+  }
+
+  void register(RevealEntry slot) {
+    for (int index = 0; index < this.slots.length; index++) {
+      if (this.slots[index] == slot) return;
+    }
+    this.slots.push(slot);
+    string order = untrack(() => revealOrder(this));
+    bool collapsed = order == "sequential" && untrack(() => revealCollapsed(this));
+    setEntryState(slot, this, true, collapsed);
+    untrack(() => {
+      evaluateReveal(this);
+      return 0;
+    });
+  }
+
+  void unregister(RevealEntry slot) {
+    for (int index = 0; index < this.slots.length; index++) {
+      if (this.slots[index] == slot) {
+        this.slots.splice(index, 1);
+        untrack(() => {
+          evaluateReveal(this);
+          return 0;
+        });
+        return;
+      }
+    }
+  }
+}
+
+Context<JsValue> revealControllerContext = createContext(JS.assume(null), "RevealController");
+
+export class CollectionQueue extends Queue {
+  int collectionType;
+  Computed<JsValue>[] sources;
+  Set<Computed<JsValue> > sourceSet;
+  Computed<JsValue>? tree;
+  bool pendingState;
+  Signal<bool> disabled;
+  Signal<bool> collapsed;
+  Signal<JsValue>? error;
+  RevealController? revealController;
+  Queue? propagationParent;
+  bool initialized;
+  bool checkingOn;
+  JsValue onFn;
+  JsValue previousOn;
+  Set<Signal<JsValue> > onSources;
+  bool revealReady;
+
+  init(int collectionType = STATUS_PENDING) {
+    super();
+    this.collectionType = collectionType;
+    this.sources = [];
+    this.sourceSet = new Set<Computed<JsValue> >();
+    this.tree = null;
+    this.pendingState = true;
+    this.disabled = signal(false, boundaryBoolOptions());
+    this.collapsed = signal(false, boundaryBoolOptions());
+    this.error = null;
+    this.revealController = null;
+    this.propagationParent = null;
+    this.initialized = false;
+    this.checkingOn = false;
+    this.onFn = JS.undefined();
+    this.previousOn = JS.assume(new Symbol("boundary-on-init"));
+    this.onSources = new Set<Signal<JsValue> >();
+    this.revealReady = false;
+    this._skipRunHook = JS.assume((int type) =>
+      type == EFFECT_PURE || (read(this.disabled) && (!revealUsed || read(this.collapsed)))
+    );
+    this._notifyHook = JS.assume((
+      Computed<JsValue> node,
+      int mask,
+      int flags,
+      JsValue failure
+    ) => notifyCollection(this, node, mask, flags, failure));
+    this._checkSourcesHook = JS.assume(() => checkCollectionSources(this));
+  }
+}
+
+bool notifyCollection(
+  CollectionQueue queue,
+  Computed<JsValue> node,
+  int mask,
+  int flags,
+  JsValue failure
+) {
+  Queue? parent = queue.propagationParent;
+  JsValue actualFailure = if (JS.isUndefined(failure)) { node._error } else { failure };
+  Computed<JsValue>? failureSource = null;
+  if (!JS.isNullish(actualFailure) && !JS.isNullish(actualFailure["source"])) {
+    failureSource = JS.assume(actualFailure["source"]);
+  }
+  if ((mask & queue.collectionType) == 0) {
+    if (parent != null) return parent.notify(node, mask, flags, failure);
+    return false;
+  }
+
+  if (
+    queue.initialized &&
+    !queue.checkingOn &&
+    JS.typeOf(queue.onFn) == "function"
+  ) {
+    JsValue currentOn = JS.assume(new Symbol("boundary-on-error"));
+    queue.checkingOn = true;
+    try {
+      try {
+        currentOn = untrack(() => JS.call(queue.onFn, JS.undefined()));
+      } catch (JsValue _failure) {
+        // A pending `on` accessor must reset collection without escaping the boundary.
+      }
+    } finally {
+      queue.checkingOn = false;
+    }
+    if (!JS.strictEqual(currentOn, queue.previousOn)) {
+      queue.previousOn = currentOn;
+      queue.initialized = false;
+      queue.sources = [];
+      queue.sourceSet.clear();
+    }
+  }
+
+  if (queue.collectionType == STATUS_PENDING && queue.initialized) {
+    if (parent != null) return parent.notify(node, mask, flags, failure);
+    return false;
+  }
+
+  if ((flags & queue.collectionType) != 0) {
+    queue.pendingState = true;
+    Computed<JsValue>? source = failureSource;
+    if (source != null) {
+      if (!queue.sourceSet.has(source)) {
+        bool wasEmpty = queue.sources.length == 0;
+        queue.sourceSet.add(source);
+        queue.sources.push(source);
+        if (wasEmpty) setSignal(queue.disabled, true);
+      }
+      Signal<JsValue>? errorSignal = queue.error;
+      if (queue.collectionType == STATUS_ERROR && errorSignal != null) {
+        setSignal(errorSignal, unwrapStatusError(source._error));
+      }
+    }
+  }
+
+  int remainder = mask ^ (mask & queue.collectionType);
+  if (remainder != 0 && parent != null) return parent.notify(node, remainder, flags, actualFailure);
+  return true;
+}
+
+void captureOnValue(CollectionQueue queue) {
+  Computed<JsValue> probe = computed(() => JS.call(queue.onFn, JS.undefined()));
+  if ((probe._statusFlags & (STATUS_PENDING | STATUS_ERROR)) == 0) {
+    queue.previousOn = probe._value;
+    queue.onSources.clear();
+    Link? dependency = probe._deps;
+    while (dependency != null) {
+      queue.onSources.add(dependency._dep);
+      dependency = dependency._nextDep;
+    }
+  }
+  dispose(probe);
+}
+
+void checkCollectionSources(CollectionQueue queue) {
+  Computed<JsValue>[] retained = [];
+  Set<Computed<JsValue> > retainedSet = new Set<Computed<JsValue> >();
+  for (int index = 0; index < queue.sources.length; index++) {
+    Computed<JsValue> source = queue.sources[index];
+    bool disposed = source._disposed || (source._flags & REACTIVE_DISPOSED) != 0;
+    bool sourceActive = source._affectsCount > 0 ||
+      source._pendingOwner != 0 ||
+      source._optimisticLane != null ||
+      (source._statusFlags & queue.collectionType) != 0 ||
+      (queue.collectionType == STATUS_ERROR && (source._statusFlags & STATUS_PENDING) != 0);
+    if (!disposed && sourceActive) {
+      retained.push(source);
+      retainedSet.add(source);
+    }
+  }
+  queue.sources = retained;
+  queue.sourceSet = retainedSet;
+  if (queue.sources.length == 0) {
+    Computed<JsValue>? tree = queue.tree;
+    if (
+      queue.collectionType == STATUS_PENDING &&
+      queue.pendingState &&
+      !queue.initialized &&
+      tree != null
+    ) {
+      queue.pendingState =
+        (tree._statusFlags & queue.collectionType) != 0 || isNotReadyError(tree._error);
+    } else {
+      queue.pendingState = false;
+    }
+    if (queue.sources.length == 0 && !queue.pendingState) {
+      // The controller computes the final gate state. Avoid staging false and
+      // immediately restoring true, which would keep this queued-write core hot.
+      if (queue.revealController == null) {
+        setSignal(queue.disabled, false);
+      }
+      if (JS.typeOf(queue.onFn) == "function") {
+        captureOnValue(queue);
+      }
+    }
+  }
+  RevealController? controller = queue.revealController;
+  bool ready = queue.sources.length == 0 && !queue.pendingState;
+  if (revealUsed && controller != null && ready != queue.revealReady) {
+    queue.revealReady = ready;
+    evaluateReveal(controller);
+  } else {
+    queue.revealReady = ready;
+  }
+}
+
+string revealOrder(RevealController controller) {
+  JsValue value = controller.order;
+  if (JS.typeOf(value) == "function") value = JS.call(value, JS.undefined());
+  if (JS.isNullish(value)) return "sequential";
+  return JS.string(value);
+}
+
+bool revealCollapsed(RevealController controller) {
+  JsValue value = controller.collapsed;
+  if (JS.typeOf(value) == "function") value = JS.call(value, JS.undefined());
+  return value.truthy();
+}
+
+bool pendingBool(Signal<bool> target) {
+  if (target._hasPending) return target._pendingValue;
+  return target._value;
+}
+
+void setBoundarySignal(Signal<bool> target, bool value) {
+  setSignal(target, value);
+  // Reveal evaluation is synchronous, but this core normally stages writes.
+  // Make ambient gate writes immediately visible while preserving action-owned writes.
+  if (target._pendingOwner == 0 && target._hasPending) {
+    target._value = target._pendingValue;
+    target._hasPending = false;
+  }
+}
+
+bool entryReady(RevealEntry entry) {
+  CollectionQueue? queue = entry.queue;
+  if (queue != null) return queue.sources.length == 0 && !queue.pendingState;
+  RevealController? controller = entry.controller;
+  if (controller != null) return controller.ready;
+  return true;
+}
+
+bool entryOwnedBy(RevealEntry entry, RevealController controller) {
+  CollectionQueue? queue = entry.queue;
+  if (queue != null) return queue.revealController == controller;
+  RevealController? nested = entry.controller;
+  return nested != null && nested.parent == controller;
+}
+
+bool entryMinimallyReady(RevealEntry entry) {
+  RevealController? controller = entry.controller;
+  if (controller != null) return controller.minimallyReady;
+  return entryReady(entry);
+}
+
+void setEntryState(
+  RevealEntry entry,
+  RevealController owner,
+  bool disabled,
+  bool collapsed
+) {
+  CollectionQueue? queue = entry.queue;
+  if (queue != null) {
+    setBoundarySignal(queue.disabled, disabled);
+    setBoundarySignal(queue.collapsed, collapsed);
+    if (!disabled && queue.revealController == owner && queue.initialized) {
+      queue.revealController = null;
+    }
+    return;
+  }
+  RevealController? controller = entry.controller;
+  if (controller != null) {
+    setBoundarySignal(controller.disabled, disabled);
+    setBoundarySignal(controller.collapsedState, collapsed);
+    if (!disabled && controller.parent == owner) controller.parent = null;
+    evaluateReveal(controller, true, disabled, collapsed);
+  }
+}
+
+void releaseNestedController(RevealController controller) {
+  setBoundarySignal(controller.collapsedState, false);
+  setBoundarySignal(controller.disabled, false);
+  evaluateReveal(controller, true, false, false);
+}
+
+void evaluateReveal(
+  RevealController controller,
+  bool hasOverride = false,
+  bool disabledOverride = false,
+  bool collapsedOverride = false
+) {
+  if (controller.evaluating) return;
+  controller.evaluating = true;
+  bool wasReady = controller.ready;
+  bool wasMinimallyReady = controller.minimallyReady;
+  try {
+    bool disabled = if (hasOverride) { disabledOverride } else { pendingBool(controller.disabled) };
+    string order = untrack(() => revealOrder(controller));
+    bool collapseTail = order == "sequential" && untrack(() => revealCollapsed(controller));
+    bool collapsed = if (hasOverride) { collapsedOverride } else { collapseTail };
+
+    if (disabled) {
+      bool hasNested = false;
+      for (int index = 0; index < controller.slots.length; index++) {
+        RevealEntry entry = controller.slots[index];
+        if (entryOwnedBy(entry, controller) && entry.controller != null) hasNested = true;
+      }
+      for (int index = 0; index < controller.slots.length; index++) {
+        RevealEntry entry = controller.slots[index];
+        if (entryOwnedBy(entry, controller)) {
+          bool slotCollapsed = collapsed;
+          // Preserve the current core's pinned nested reveal ordering: direct
+          // leaves remain the visible frontier while nested tails stay collapsed.
+          if (collapsed && hasNested && entry.controller == null) slotCollapsed = false;
+          setEntryState(entry, controller, true, slotCollapsed);
+        }
+      }
+    } else if (order == "natural") {
+      for (int index = 0; index < controller.slots.length; index++) {
+        RevealEntry entry = controller.slots[index];
+        if (!entryOwnedBy(entry, controller)) continue;
+        RevealController? nested = entry.controller;
+        if (nested != null) releaseNestedController(nested);
+        else setEntryState(entry, controller, !entryReady(entry), false);
+      }
+    } else if (order == "together") {
+      bool allReady = true;
+      for (int index = 0; index < controller.slots.length; index++) {
+        RevealEntry entry = controller.slots[index];
+        if (entryOwnedBy(entry, controller) && !entryMinimallyReady(entry)) allReady = false;
+      }
+      for (int index = 0; index < controller.slots.length; index++) {
+        RevealEntry entry = controller.slots[index];
+        if (entryOwnedBy(entry, controller)) setEntryState(entry, controller, !allReady, false);
+      }
+    } else {
+      bool pendingSeen = false;
+      for (int index = 0; index < controller.slots.length; index++) {
+        RevealEntry entry = controller.slots[index];
+        if (!entryOwnedBy(entry, controller)) continue;
+        if (pendingSeen) {
+          setEntryState(entry, controller, true, collapseTail);
+        } else if (entryReady(entry)) {
+          setEntryState(entry, controller, false, false);
+        } else {
+          pendingSeen = true;
+          RevealController? nested = entry.controller;
+          if (nested != null) releaseNestedController(nested);
+          else setEntryState(entry, controller, true, false);
+        }
+      }
+    }
+
+    controller.ready = true;
+    bool hasOwnedSlot = false;
+    bool anyMinimallyReady = false;
+    bool everyMinimallyReady = true;
+    bool firstMinimallyReady = true;
+    bool foundFirst = false;
+    for (int index = 0; index < controller.slots.length; index++) {
+      RevealEntry entry = controller.slots[index];
+      if (!entryOwnedBy(entry, controller)) continue;
+      hasOwnedSlot = true;
+      bool ready = entryReady(entry);
+      bool minimallyReady = entryMinimallyReady(entry);
+      if (!ready) controller.ready = false;
+      if (minimallyReady) anyMinimallyReady = true;
+      else everyMinimallyReady = false;
+      if (!foundFirst) {
+        firstMinimallyReady = minimallyReady;
+        foundFirst = true;
+      }
+    }
+    if (order == "together") {
+      controller.minimallyReady = everyMinimallyReady;
+    } else if (order == "natural") {
+      controller.minimallyReady = !hasOwnedSlot || anyMinimallyReady;
+    } else {
+      controller.minimallyReady = !hasOwnedSlot || firstMinimallyReady;
+    }
+  } finally {
+    controller.evaluating = false;
+  }
+  RevealController? parent = controller.parent;
+  if (parent != null && (wasReady != controller.ready || wasMinimallyReady != controller.minimallyReady)) {
+    evaluateReveal(parent);
+  }
+}
+
+void collectInitialBoundarySources(Computed<JsValue> content, CollectionQueue queue) {
+  Link? dependency = content._deps;
+  while (dependency != null) {
+    Signal<JsValue> candidate = dependency._dep;
+    Signal<JsValue>? parentSource = candidate._parentSource;
+    if (parentSource != null) candidate = parentSource;
+    Computed<JsValue> source = JS.assume(candidate);
+    int status = source._statusFlags & (STATUS_PENDING | STATUS_ERROR);
+    if ((status & queue.collectionType) != 0) {
+      queue.pendingState = true;
+      if (!queue.sourceSet.has(source)) {
+        queue.sourceSet.add(source);
+        queue.sources.push(source);
+      }
+      setSignal(queue.disabled, true);
+      Signal<JsValue>? errorSignal = queue.error;
+      if (queue.collectionType == STATUS_ERROR && errorSignal != null) {
+        setSignal(errorSignal, unwrapStatusError(source._error));
+      }
+    }
+    dependency = dependency._nextDep;
+  }
+}
+
+Computed<JsValue> createBoundaryTree(Owner owner, JsValue render, CollectionQueue queue, int mask) {
+  Queue parentQueue = owner._queue;
+  parentQueue.addChild(queue);
+  queue.propagationParent = parentQueue;
+  owner._queue = queue;
+  cleanup(() => parentQueue.removeChild(queue));
+  return runWithOwner(owner, () => {
+    Computed<JsValue> content = computed(() => JS.call(render, JS.undefined()));
+    collectInitialBoundarySources(content, queue);
+    NodeOptions<JsValue> options = new NodeOptions<JsValue>();
+    options.lazy = true;
+    Computed<JsValue> tree = computed(() => flatten(readComputed(content)), options);
+    tree._config = tree._config ^ (tree._config & CONFIG_AUTO_DISPOSE);
+    tree._notifyStatus = (int status, JsValue failure) => {
+      tree._statusFlags = tree._statusFlags ^ (tree._statusFlags & mask);
+      bool handled = tree._queue.notify(
+        tree,
+        STATUS_PENDING | STATUS_ERROR,
+        status,
+        failure
+      );
+      int boundaryStatus = status & (STATUS_PENDING | STATUS_ERROR);
+      int foreign = boundaryStatus ^ (boundaryStatus & mask);
+      if (foreign != 0) {
+        tree._statusFlags = tree._statusFlags ^ (tree._statusFlags & foreign);
+        if ((tree._statusFlags & (STATUS_PENDING | STATUS_ERROR)) == 0) tree._error = JS.undefined();
+      }
+      if (!handled && (status & STATUS_ERROR) != 0) {
+        if (
+          queue._parent == null ||
+          tree._disposed ||
+          (tree._flags & REACTIVE_DISPOSED) != 0
+        ) return;
+        haltReactivity(unwrapStatusError(failure));
+        throw failure;
+      }
+    };
+    recompute(tree, true);
+    return tree;
+  });
+}
+
+JsValue createCollectionBoundary(int type, JsValue render, JsValue fallback, JsValue options) {
+  RevealController? controller = null;
+  if (revealUsed && type == STATUS_PENDING && getOwner() != null) {
+    JsValue rawController = getContext(revealControllerContext);
+    if (!JS.isNullish(rawController)) controller = JS.assume(rawController);
+  }
+  Owner owner = createOwner();
+  if (revealUsed) setContext(revealControllerContext, JS.assume(null), owner);
+  CollectionQueue queue = new CollectionQueue(type);
+  if (type == STATUS_ERROR) queue.error = signal(JS.undefined(), boundaryValueOptions());
+  if (!JS.isNullish(options) && JS.typeOf(options["on"]) == "function") {
+    queue.onFn = options["on"];
+  }
+  Computed<JsValue> tree = createBoundaryTree(owner, render, queue, type);
+  queue.tree = tree;
+
+  bool pending = false;
+  untrack(() => {
+    try {
+      readComputed(tree);
+    } catch (JsValue failure) {
+      if (isNotReadyError(failure)) pending = true;
+      else throw failure;
+    }
+    return 0;
+  });
+  queue.pendingState =
+    pending || (tree._statusFlags & type) != 0 || isNotReadyError(tree._error);
+  if (type == STATUS_PENDING && queue.pendingState) setSignal(queue.disabled, true);
+  queue.revealReady = queue.sources.length == 0 && !queue.pendingState;
+
+  if (controller != null) {
+    queue.revealController = controller;
+    RevealEntry entry = new RevealEntry(queue, null);
+    controller.register(entry);
+    runWithOwner(owner, () => {
+      cleanup(() => controller.unregister(entry));
+      return 0;
+    });
+  }
+
+  NodeOptions<JsValue> resultOptions = new NodeOptions<JsValue>();
+  resultOptions.noSnapshot = true;
+  Computed<JsValue> result = computed(() => {
+    if (!read(queue.disabled)) {
+      JsValue resolved = readComputed(tree);
+      if (!untrack(() => read(queue.disabled))) {
+        queue.initialized = true;
+        RevealController? activeController = queue.revealController;
+        if (activeController != null) evaluateReveal(activeController);
+        return resolved;
+      }
+    }
+    if (revealUsed && read(queue.collapsed)) return JS.undefined();
+    if (type == STATUS_ERROR) {
+      Signal<JsValue> error = JS.assume(queue.error);
+      JsValue reset = JS.method0((JsValue _self) => {
+        Computed<JsValue>[] sources = queue.sources.slice();
+        for (int index = 0; index < sources.length; index++) recompute(sources[index]);
+        schedule();
+        return JS.undefined();
+      });
+      return JS.call(fallback, JS.undefined(), accessor(error), reset);
+    }
+    return JS.call(fallback, JS.undefined());
+  }, resultOptions);
+  return computedAccessor(result);
+}
+
+export JsValue createLoadingBoundary(JsValue render, JsValue fallback, JsValue options) {
+  return createCollectionBoundary(STATUS_PENDING, render, fallback, options);
+}
+
+export JsValue createErrorBoundary(JsValue render, JsValue fallback) {
+  return createCollectionBoundary(STATUS_ERROR, render, fallback, JS.undefined());
+}
+
+export JsValue createRevealOrder(JsValue render, JsValue options) {
+  revealUsed = true;
+  JsValue order = JS.undefined();
+  JsValue collapsed = JS.undefined();
+  if (!JS.isNullish(options)) {
+    order = options["order"];
+    collapsed = options["collapsed"];
+  }
+  RevealController? parent = null;
+  if (getOwner() != null) {
+    JsValue rawParent = getContext(revealControllerContext);
+    if (!JS.isNullish(rawParent)) parent = JS.assume(rawParent);
+  }
+  Owner owner = createOwner();
+  RevealController controller = new RevealController(order, collapsed);
+  setContext(revealControllerContext, JS.assume(controller), owner);
+  return runWithOwner(owner, () => {
+    JsValue value = JS.call(render, JS.undefined());
+    NodeOptions<int> optionsNode = new NodeOptions<int>();
+    optionsNode.equalsFalse = true;
+    computed(() => {
+      revealOrder(controller);
+      revealCollapsed(controller);
+      evaluateReveal(controller);
+      return 0;
+    }, optionsNode);
+    if (parent != null) {
+      controller.parent = parent;
+      RevealEntry entry = new RevealEntry(null, controller);
+      parent.register(entry);
+      cleanup(() => parent.unregister(entry));
+    }
+    return value;
+  });
+}
+
+bool skipValue(JsValue value, bool skip) {
+  if (!skip) return false;
+  return JS.isNullish(value) ||
+    JS.strictEqual(value, true) ||
+    JS.strictEqual(value, false) ||
+    JS.strictEqual(value, "");
+}
+
+class FlattenState {
+  bool pending;
+  JsValue failure;
+
+  init() {
+    this.pending = false;
+    this.failure = JS.undefined();
+  }
+}
+
+bool flattenArray(JsValue children, JsValue output, bool skip, bool doNotUnwrap, FlattenState state) {
+  bool needsUnwrap = false;
+  int length = JS.number(children["length"]).toInt();
+  for (int index = 0; index < length; index++) {
+    try {
+      JsValue child = children[index];
+      if (JS.typeOf(child) == "function" && JS.number(child["length"]).toInt() == 0) {
+        if (doNotUnwrap) {
+          JS.invoke(output, "push", child);
+          needsUnwrap = true;
+          continue;
+        }
+        child = JS.call(child, JS.undefined());
+        while (JS.typeOf(child) == "function" && JS.number(child["length"]).toInt() == 0) {
+          child = JS.call(child, JS.undefined());
+        }
+      }
+      if (JS.isArray(child)) {
+        if (flattenArray(child, output, skip, doNotUnwrap, state)) needsUnwrap = true;
+      } else if (!skipValue(child, skip)) {
+        JS.invoke(output, "push", child);
+      }
+    } catch (JsValue failure) {
+      if (!isNotReadyError(failure)) throw failure;
+      state.pending = true;
+      state.failure = failure;
+    }
+  }
+  return needsUnwrap;
+}
+
+export JsValue flatten(JsValue children, JsValue options = JS.undefined()) {
+  bool skip = !JS.isNullish(options) && options["skipNonRendered"].truthy();
+  bool doNotUnwrap = !JS.isNullish(options) && options["doNotUnwrap"].truthy();
+  if (!JS.isArray(children)) {
+    if (doNotUnwrap && JS.typeOf(children) == "function" && JS.number(children["length"]).toInt() == 0) {
+      return children;
+    }
+    while (JS.typeOf(children) == "function" && JS.number(children["length"]).toInt() == 0) {
+      children = JS.call(children, JS.undefined());
+    }
+    if (skipValue(children, skip)) return JS.undefined();
+    return children;
+  }
+  JsValue output = JS.array();
+  FlattenState state = new FlattenState();
+  bool needsUnwrap = flattenArray(children, output, skip, doNotUnwrap, state);
+  if (state.pending) throw state.failure;
+  if (needsUnwrap) {
+    return JS.method0((JsValue _self) => flatten(output, JS.object(
+      "skipNonRendered", skip,
+      "doNotUnwrap", false
+    )));
+  }
+  return output;
+}

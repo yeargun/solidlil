@@ -1,0 +1,3 @@
+import { installOptimisticEngine } from "./kernel";
+
+export { installOptimisticEngine };

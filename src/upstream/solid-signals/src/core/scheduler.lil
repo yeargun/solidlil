@@ -1,0 +1,72 @@
+import {
+  GlobalQueue,
+  Heap,
+  OptimisticLane,
+  Queue,
+  activeAffectsMarks,
+  activeLanes,
+  armReaskClear,
+  assignOrMergeLane,
+  clock,
+  dirtyQueue,
+  enforceLoadingBoundary,
+  findLane,
+  flush as kernelFlush,
+  flushWith,
+  getOrCreateLane,
+  globalQueue,
+  haltReactivity,
+  hasActiveOverride,
+  insertSubs,
+  mergeLanes,
+  projectionWriteActive,
+  queuePendingNode,
+  resetErrorHalt,
+  resolveLane,
+  schedule,
+  setProjectionWriteActive,
+  setTrackedQueueCallback,
+  shiftAffectsMarks,
+  trackOptimisticStore,
+  zombieQueue
+} from "./kernel";
+
+export {
+  GlobalQueue,
+  Heap,
+  OptimisticLane,
+  Queue,
+  activeAffectsMarks,
+  activeLanes,
+  armReaskClear,
+  assignOrMergeLane,
+  clock,
+  dirtyQueue,
+  enforceLoadingBoundary,
+  findLane,
+  flushWith,
+  getOrCreateLane,
+  globalQueue,
+  haltReactivity,
+  hasActiveOverride,
+  insertSubs,
+  mergeLanes,
+  projectionWriteActive,
+  queuePendingNode,
+  resetErrorHalt,
+  resolveLane,
+  schedule,
+  setProjectionWriteActive,
+  setTrackedQueueCallback,
+  shiftAffectsMarks,
+  trackOptimisticStore,
+  zombieQueue
+};
+
+export JsValue flush(JsValue callback) {
+  if (JS.typeOf(callback) == "function") {
+    return flushWith(() => JS.call(callback, JS.undefined()));
+  }
+  kernelFlush();
+  return JS.undefined();
+}
