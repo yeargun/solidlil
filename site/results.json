@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-28T21:35:37.063Z",
+  "generatedAt": "2026-09-02T14:59:19.089Z",
   "compression": {
     "gzip": 9,
     "brotli": 11
@@ -11,8 +11,8 @@
   "metrics": {
     "raw": {
       "solid": 660807,
-      "solidlil": 158416,
-      "weightedReduction": 76.02688833502067,
+      "solidlil": 158398,
+      "weightedReduction": 76.02961227710966,
       "medianReduction": 78.24846820198606,
       "minimumReduction": 62.26511732129709,
       "maximumReduction": 84.16802316977781,
@@ -20,8 +20,8 @@
     },
     "gzip": {
       "solid": 253383,
-      "solidlil": 67255,
-      "weightedReduction": 73.4571774744162,
+      "solidlil": 67145,
+      "weightedReduction": 73.50059001590478,
       "medianReduction": 75.59284932506385,
       "minimumReduction": 60.63198458574182,
       "maximumReduction": 81.51726503544478,
@@ -29,8 +29,8 @@
     },
     "brotli": {
       "solid": 229901,
-      "solidlil": 59474,
-      "weightedReduction": 74.13060404260965,
+      "solidlil": 59362,
+      "weightedReduction": 74.17932066411194,
       "medianReduction": 76.52069345625814,
       "minimumReduction": 61.80767923887189,
       "maximumReduction": 81.8946436476317,
@@ -49,14 +49,14 @@
       "brotli": 2979
     },
     "web": {
-      "raw": 38285,
-      "gzip": 13589,
-      "brotli": 12090
+      "raw": 38226,
+      "gzip": 13400,
+      "brotli": 11993
     },
     "full": {
-      "raw": 17910,
-      "gzip": 6705,
-      "brotli": 5984
+      "raw": 17909,
+      "gzip": 6653,
+      "brotli": 5945
     },
     "index.bundle": {
       "raw": 18588,
@@ -135,13 +135,13 @@
         "brotli": 9759
       },
       "solidlil": {
-        "raw": 5595,
-        "gzip": 2515,
+        "raw": 5576,
+        "gzip": 2523,
         "brotli": 2221
       },
       "reduction": {
-        "raw": 79.90734755440639,
-        "gzip": 76.5632280309384,
+        "raw": 79.97557997557998,
+        "gzip": 76.48867766284596,
         "brotli": 77.24152064760735
       }
     },
@@ -155,14 +155,14 @@
         "brotli": 11854
       },
       "solidlil": {
-        "raw": 7452,
-        "gzip": 3210,
-        "brotli": 2835
+        "raw": 7470,
+        "gzip": 3206,
+        "brotli": 2817
       },
       "reduction": {
-        "raw": 78.24170048760548,
-        "gzip": 75.48120989917507,
-        "brotli": 76.08402227096339
+        "raw": 78.18914420859004,
+        "gzip": 75.51176290864649,
+        "brotli": 76.23586974860807
       }
     },
     {
@@ -175,14 +175,14 @@
         "brotli": 10658
       },
       "solidlil": {
-        "raw": 6008,
-        "gzip": 2694,
-        "brotli": 2383
+        "raw": 5994,
+        "gzip": 2690,
+        "brotli": 2374
       },
       "reduction": {
-        "raw": 80.47892907040972,
-        "gzip": 77.12296195652173,
-        "brotli": 77.64120848189154
+        "raw": 80.5244175845599,
+        "gzip": 77.1569293478261,
+        "brotli": 77.72565209232502
       }
     },
     {
@@ -195,14 +195,14 @@
         "brotli": 11029
       },
       "solidlil": {
-        "raw": 7764,
-        "gzip": 3261,
-        "brotli": 2883
+        "raw": 7760,
+        "gzip": 3229,
+        "brotli": 2877
       },
       "reduction": {
-        "raw": 75.39690084608803,
-        "gzip": 73.15165486579944,
-        "brotli": 73.85982410009973
+        "raw": 75.4095763222106,
+        "gzip": 73.41511608760085,
+        "brotli": 73.91422613110889
       }
     },
     {
@@ -235,14 +235,14 @@
         "brotli": 10076
       },
       "solidlil": {
-        "raw": 6953,
-        "gzip": 3020,
-        "brotli": 2650
+        "raw": 6925,
+        "gzip": 3003,
+        "brotli": 2628
       },
       "reduction": {
-        "raw": 75.89279522917967,
-        "gzip": 72.80504277352544,
-        "brotli": 73.69988090512108
+        "raw": 75.9898758754594,
+        "gzip": 72.95812696983342,
+        "brotli": 73.91822151647479
       }
     },
     {
@@ -255,14 +255,14 @@
         "brotli": 9910
       },
       "solidlil": {
-        "raw": 5642,
-        "gzip": 2559,
-        "brotli": 2227
+        "raw": 5640,
+        "gzip": 2526,
+        "brotli": 2226
       },
       "reduction": {
-        "raw": 79.99645452933876,
-        "gzip": 76.54445462878094,
-        "brotli": 77.52774974772957
+        "raw": 80.00354547066124,
+        "gzip": 76.84692942254811,
+        "brotli": 77.53784056508577
       }
     },
     {
@@ -295,14 +295,14 @@
         "brotli": 10222
       },
       "solidlil": {
-        "raw": 5947,
-        "gzip": 2608,
-        "brotli": 2309
+        "raw": 5952,
+        "gzip": 2615,
+        "brotli": 2304
       },
       "reduction": {
-        "raw": 79.55725138358942,
-        "gzip": 76.78062678062678,
-        "brotli": 77.41146546664058
+        "raw": 79.5400639373002,
+        "gzip": 76.71830484330484,
+        "brotli": 77.46037957346898
       }
     },
     {
@@ -435,14 +435,14 @@
         "brotli": 10281
       },
       "solidlil": {
-        "raw": 7323,
-        "gzip": 3165,
-        "brotli": 2806
+        "raw": 7327,
+        "gzip": 3139,
+        "brotli": 2767
       },
       "reduction": {
-        "raw": 74.93153498562235,
-        "gzip": 72.06777866031243,
-        "brotli": 72.7069351230425
+        "raw": 74.91784198274682,
+        "gzip": 72.29723766657841,
+        "brotli": 73.08627565411925
       }
     },
     {
@@ -455,14 +455,14 @@
         "brotli": 9827
       },
       "solidlil": {
-        "raw": 4942,
-        "gzip": 2336,
-        "brotli": 2050
+        "raw": 4964,
+        "gzip": 2327,
+        "brotli": 2038
       },
       "reduction": {
-        "raw": 82.20317620368036,
-        "gzip": 78.31414779056813,
-        "brotli": 79.13910654319731
+        "raw": 82.12395116856926,
+        "gzip": 78.39769773486817,
+        "brotli": 79.26121909026152
       }
     },
     {
@@ -497,7 +497,7 @@
       "exactSourcePort": false,
       "reason": "The current SolidLil runtime is a compatibility implementation, not the required file-for-file port of the pinned Solid browser runtime."
     },
-    "generatedAt": "2026-08-28T21:30:42.320Z",
+    "generatedAt": "2026-09-02T14:59:35.921Z",
     "source": "https://github.com/krausest/js-framework-benchmark",
     "workloadContract": "jfb-keyed-v2-object-identity",
     "methodology": {
@@ -531,22 +531,22 @@
         },
         "treeShaking": true,
         "retainedModules": {
-          "node_modules/@solidjs/signals/dist/prod/core/error.js": 1607,
-          "node_modules/@solidjs/signals/dist/prod/core/constants.js": 1509,
-          "node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1662,
-          "node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11959,
-          "node_modules/@solidjs/signals/dist/prod/core/heap.js": 2594,
-          "node_modules/@solidjs/signals/dist/prod/core/owner.js": 4390,
-          "node_modules/@solidjs/signals/dist/prod/core/graph.js": 1363,
-          "node_modules/@solidjs/signals/dist/prod/core/async.js": 8050,
-          "node_modules/@solidjs/signals/dist/prod/core/core.js": 12883,
-          "node_modules/@solidjs/signals/dist/prod/core/effect.js": 1659,
-          "node_modules/@solidjs/signals/dist/prod/signals.js": 1612,
-          "node_modules/@solidjs/signals/dist/prod/store/store.js": 254,
-          "node_modules/@solidjs/signals/dist/prod/map.js": 4096,
-          "node_modules/@solidjs/signals/dist/prod/boundaries.js": 2040,
-          "node_modules/solid-js/dist/solid.js": 655,
-          "node_modules/@solidjs/web/dist/web.js": 15277,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/error.js": 1619,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/constants.js": 1521,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1674,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11971,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/heap.js": 2606,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/owner.js": 4402,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/graph.js": 1375,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/async.js": 8062,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/core.js": 12895,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/effect.js": 1671,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/signals.js": 1624,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/store/store.js": 266,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/map.js": 4108,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/boundaries.js": 2052,
+          "/home/azureuser/solidlil/node_modules/solid-js/dist/solid.js": 667,
+          "/home/azureuser/solidlil/node_modules/@solidjs/web/dist/web.js": 15289,
           "src/main.jsx": 4559
         },
         "sourceSha256": "3eca46cf7881f1184507fac0b5d475b9a718bd2b7da810bc995a195a30740d75",
@@ -561,12 +561,12 @@
         "frontend": {
           "name": "lilscript",
           "version": "lilscript 0.1.0",
-          "binarySha256": "3b28d414c6db5ead40b9aee8a5110956345211e518d38c84acacf48b0dcda64a",
-          "revision": "2d2268ab651463631551bf7ca5a3187f418b8753",
+          "binarySha256": "1b9e04fc98805de3c12a8c371ececabb87dd3cb26a303408ac23d0c23017caa0",
+          "revision": "87da2deec0e3caf2aa2c212b8a5fb5bf4e2e86f8",
           "dirty": true
         },
         "source": {
-          "revision": "d51127a4a0bfe4261749445e3df4ef4b9e19f4a3",
+          "revision": "448ada097a0d5814299aac12a2814e823d588c9a",
           "dirty": true
         },
         "bundler": {
@@ -586,7 +586,7 @@
       },
       "codec": {
         "path": "../lilscript/target/release/lilscript-codec",
-        "sha256": "153057be25c1dc2c2c2943c39e637ce62233464eed840e10b15cebcdeee126da",
+        "sha256": "9dfcc9671ca5ee21d36407f35e9b5a31e32860a92acd1e9309899d4423d3e59c",
         "gzip9": {
           "encoder": "upstream-stock-zlib-c",
           "libraryVersion": "1.3.1",
@@ -654,22 +654,22 @@
         }
       },
       "solidRetainedModules": {
-        "node_modules/@solidjs/signals/dist/prod/core/error.js": 1607,
-        "node_modules/@solidjs/signals/dist/prod/core/constants.js": 1509,
-        "node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1662,
-        "node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11959,
-        "node_modules/@solidjs/signals/dist/prod/core/heap.js": 2594,
-        "node_modules/@solidjs/signals/dist/prod/core/owner.js": 4390,
-        "node_modules/@solidjs/signals/dist/prod/core/graph.js": 1363,
-        "node_modules/@solidjs/signals/dist/prod/core/async.js": 8050,
-        "node_modules/@solidjs/signals/dist/prod/core/core.js": 12883,
-        "node_modules/@solidjs/signals/dist/prod/core/effect.js": 1659,
-        "node_modules/@solidjs/signals/dist/prod/signals.js": 1612,
-        "node_modules/@solidjs/signals/dist/prod/store/store.js": 254,
-        "node_modules/@solidjs/signals/dist/prod/map.js": 4096,
-        "node_modules/@solidjs/signals/dist/prod/boundaries.js": 2040,
-        "node_modules/solid-js/dist/solid.js": 655,
-        "node_modules/@solidjs/web/dist/web.js": 15277,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/error.js": 1619,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/constants.js": 1521,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1674,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11971,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/heap.js": 2606,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/owner.js": 4402,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/graph.js": 1375,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/async.js": 8062,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/core.js": 12895,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/effect.js": 1671,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/signals.js": 1624,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/store/store.js": 266,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/map.js": 4108,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/boundaries.js": 2052,
+        "/home/azureuser/solidlil/node_modules/solid-js/dist/solid.js": 667,
+        "/home/azureuser/solidlil/node_modules/@solidjs/web/dist/web.js": 15289,
         "src/main.jsx": 4559
       }
     },
@@ -731,12 +731,12 @@
         }
       },
       {
-        "id": "current-3b28d414c6db",
+        "id": "current-1b9e04fc9880",
         "role": "current",
         "label": "Current compiler · rebuilt packaged core",
-        "recordedAt": "2026-08-28T21:30:42.330Z",
+        "recordedAt": "2026-09-02T14:59:35.928Z",
         "source": {
-          "revision": "d51127a4a0bfe4261749445e3df4ef4b9e19f4a3",
+          "revision": "448ada097a0d5814299aac12a2814e823d588c9a",
           "tree": null,
           "entrySha256": "a836c4e2150fb699c51e16e98b6522f97037f3c28af5df66a67f9a0f169cc7b7",
           "packageLockSha256": "1e34b7839a15e45394e75e3e761fc96461659d9eb566d66a692297e77f88350d"
@@ -749,12 +749,12 @@
           }
         },
         "compiler": {
-          "revision": "2d2268ab651463631551bf7ca5a3187f418b8753",
-          "binarySha256": "3b28d414c6db5ead40b9aee8a5110956345211e518d38c84acacf48b0dcda64a",
+          "revision": "87da2deec0e3caf2aa2c212b8a5fb5bf4e2e86f8",
+          "binarySha256": "1b9e04fc98805de3c12a8c371ececabb87dd3cb26a303408ac23d0c23017caa0",
           "dirty": true
         },
         "codec": {
-          "binarySha256": "153057be25c1dc2c2c2943c39e637ce62233464eed840e10b15cebcdeee126da",
+          "binarySha256": "9dfcc9671ca5ee21d36407f35e9b5a31e32860a92acd1e9309899d4423d3e59c",
           "gzipLevel": 9,
           "brotliQuality": 11
         },
@@ -779,5 +779,51 @@
         }
       }
     ]
+  },
+  "performance": {
+    "generatedAt": "2026-09-02T15:04:32.686Z",
+    "node": "v20.19.0",
+    "iterations": {
+      "signal": 50000,
+      "memo": 50000,
+      "effect": 10000
+    },
+    "nodeMs": {
+      "solidlil": {
+        "signal50k": 35.131865,
+        "memo50k": 54.229303,
+        "effect10k": 13.711972
+      },
+      "solid": {
+        "signal50k": 21.135503,
+        "memo50k": 40.919882,
+        "effect10k": 25.796506
+      },
+      "ratio": {
+        "signal50k": 1.662220435444569,
+        "memo50k": 1.3252556055757931,
+        "effect10k": 0.5315437679816019
+      }
+    },
+    "browserMs": {
+      "solid": {
+        "create1k": 76.90000000596046,
+        "updateEvery10th": 58,
+        "swap": 41.20000001788139,
+        "clear": 49.599999994039536
+      },
+      "solidlil": {
+        "create1k": 82.40000000596046,
+        "updateEvery10th": 60.900000005960464,
+        "swap": 32.5,
+        "clear": 50.39999997615814
+      },
+      "ratio": {
+        "create1k": 1.0715214564313875,
+        "updateEvery10th": 1.0500000001027667,
+        "swap": 0.788834951113945,
+        "clear": 1.0161290318994909
+      }
+    }
   }
 }

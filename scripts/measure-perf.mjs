@@ -166,14 +166,16 @@ function serve(directory) {
   })
 }
 
+let benchmarkServer = null
+let benchmarkBrowser = null
 try {
   const { chromium } = await import("playwright")
-  const server = await serve(join(root, "dist"))
-  const port = server.address().port
-  const browser = await chromium.launch({ headless: true })
+  benchmarkServer = await serve(join(root, "dist"))
+  const port = benchmarkServer.address().port
+  benchmarkBrowser = await chromium.launch({ headless: true })
 
   async function bench(kind, run) {
-    const page = await browser.newPage()
+    const page = await benchmarkBrowser.newPage()
     await page.goto(`http://127.0.0.1:${port}/apps/keyed/${kind}.html`, { waitUntil: "networkidle" })
     const samples = { create: [], update: [], swap: [], clear: [] }
     for (let i = 0; i < 9; i++) {
@@ -233,12 +235,13 @@ try {
     clear: ratio(browserMs.solidlil.clear, browserMs.solid.clear),
   }
   report.browserMs = browserMs
-  await browser.close()
-  server.close()
   await mergeIntoResults()
   console.log(JSON.stringify({ browserMs }, null, 2))
 } catch (error) {
   report.browserMs = { skipped: true, error: error.message }
   await mergeIntoResults()
   console.log("browser bench skipped:", error.message)
+} finally {
+  await benchmarkBrowser?.close()
+  benchmarkServer?.close()
 }

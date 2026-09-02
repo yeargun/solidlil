@@ -50,8 +50,11 @@ test("size summaries are derived from raw/gzip/brotli case data", () => {
   }
 })
 
-test("stale performance metrics are not mixed with current bundles", () => {
-  assert.equal(results.performance, undefined)
+test("performance metrics belong to the current bundle generation", () => {
+  assert.ok(results.performance)
+  assert.ok(Date.parse(results.performance.generatedAt) >= Date.parse(results.generatedAt))
+  assert.equal(typeof results.performance.nodeMs.ratio.signal50k, "number")
+  assert.equal(typeof results.performance.browserMs.ratio.create1k, "number")
   assert.equal(results.jsFrameworkBenchmark.status.cpu, "not-measured-for-current-artifacts")
   assert.equal(results.jsFrameworkBenchmark.status.memory, "not-measured-for-current-artifacts")
 })
