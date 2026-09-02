@@ -1,13 +1,16 @@
 import assert from "node:assert/strict"
 import { after, before, test } from "node:test"
 import { readFile, stat, writeFile } from "node:fs/promises"
+import { existsSync } from "node:fs"
 import { createServer } from "node:http"
 import { extname, resolve, sep } from "node:path"
 import { chromium } from "playwright"
 import { apps } from "../scripts/apps.mjs"
 
 const root = resolve(import.meta.dirname, "..", "site")
-const chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+// Local Chrome on macOS; elsewhere fall back to Playwright's bundled Chromium.
+const macChrome = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+const chromePath = process.env.SOLIDLIL_CHROME ?? (existsSync(macChrome) ? macChrome : undefined)
 let server
 let browser
 let base
