@@ -39,7 +39,12 @@ function compile(name, input) {
     )
     let output = ""
     child.stdout.on("data", (chunk) => { output += chunk })
-    child.stderr.on("data", (chunk) => { output += chunk })
+    // The compiler writes its `lilscript-timing` line to stderr under
+    // LILSCRIPT_TIMING=1, and the build pool reads that line as proof a
+    // compile really happened -- a build that exits 0 without one is
+    // reported as failed, so its dist is never copied back. Buffering
+    // stderr for the error path is right; swallowing it on success is not.
+    child.stderr.on("data", (chunk) => { output += chunk; process.stderr.write(chunk) })
     child.on("error", reject)
     child.on("close", (status) => {
       if (status !== 0) reject(new Error(output || `${name} failed`))
