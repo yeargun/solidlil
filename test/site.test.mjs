@@ -92,16 +92,8 @@ test("the keyed diagnostic is ineligible until the exact source port passes", as
   assert.equal(upstreamPort.counts.verified, 0)
 })
 
-test("the frozen compiler artifact remains available for before/after history", () => {
-  const comparison = results.compilerComparison
-  const before = comparison.runs.find((run) => run.role === "before")
-  assert.equal(comparison.schemaVersion, 1)
-  assert.equal(comparison.objective, "brotli11")
-  assert.deepEqual(before.artifact.sizes, { raw: 8179, gzip9: 3250, brotli11: 2909 })
-  assert.match(before.source.revision, /^[0-9a-f]{40}$/)
-  assert.match(before.config.sha256, /^[0-9a-f]{64}$/)
-  assert.match(before.artifact.sha256, /^[0-9a-f]{64}$/)
-  assert.deepEqual(before.timing.samples, [])
+test("comparison data contains no compiler history", () => {
+  assert.equal(results.compilerComparison, undefined)
 })
 
 test("every API used by the live recreations exists in solidlil", () => {
@@ -150,7 +142,7 @@ test("the generated Pages artifact includes demos, sizes, and performance", asyn
   assert.match(html, /id="why"/)
   assert.match(html, /Exact before/)
   assert.match(html, /Behavior before bytes/)
-  assert.match(html, /id="compiler-comparison"/)
+  assert.match(html, /id="build-comparison"/)
   assert.match(html, /Same boundaries/)
   assert.match(html, /No façade credit/)
   assert.match(html, /data-filter="async"/)

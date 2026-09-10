@@ -1,4 +1,4 @@
-import { renderCompilerComparison } from "./compiler-comparison.js"
+const esmComparison = await fetch("./comparison.json").then(response => response.json())
 
 const [data, sourceParity] = await Promise.all([
   fetch("./results.json?v=exact2").then((response) => {
@@ -294,8 +294,6 @@ function renderPerf() {
 renderDemos()
 renderResults()
 renderPerf()
-renderCompilerComparison(data)
-
 document.querySelector(".filters").addEventListener("click", (event) => {
   const button = event.target.closest("button[data-filter]")
   if (!button) return
@@ -328,3 +326,18 @@ function updateProgress() {
 }
 window.addEventListener("scroll", updateProgress, { passive: true })
 updateProgress()
+
+function renderCurrentEsm() {
+  const {lilscript,original}=esmComparison.esm
+  document.querySelector("#score-jfb-main").textContent=`${formatter.format(lilscript.brotli11)} B`
+  document.querySelector("#score-jfb-bytes").textContent=`LilScript ESM · ${formatter.format(original.brotli11)} B original ESM`
+  document.querySelector("#score-jfb-gzip").textContent=`${formatter.format(lilscript.gzip9)} B`
+  document.querySelector("#score-jfb-raw").textContent=`${formatter.format(lilscript.raw)} B`
+  document.querySelector("#score-jfb-cpu").textContent=`${formatter.format(original.brotli11)} B`
+  document.querySelector("#score-jfb-select").textContent="Partial"
+  document.querySelector("#score-jfb-select").parentElement.querySelector("span").textContent="API coverage"
+  const max=Math.max(lilscript.brotli11,original.brotli11)
+  document.querySelector("#total-bar").innerHTML=[["Original ESM",original,"bar-solid"],["LilScript ESM",lilscript,"bar-lil"]].map(([name,lane,cls])=>`<div class="${cls}" style="width:${Math.max(18,lane.brotli11/max*100)}%"><span>${name}</span><strong>${formatter.format(lane.brotli11)} B</strong></div>`).join("")
+  resultsBody.innerHTML=`<tr><th scope="row">Public ESM · partial implementation</th><td>${formatter.format(original.raw)}</td><td>${formatter.format(lilscript.raw)}</td><td>${formatter.format(original.gzip9)}</td><td>${formatter.format(lilscript.gzip9)}</td><td>${formatter.format(original.brotli11)}</td><td>${formatter.format(lilscript.brotli11)}</td><td>API coverage differs</td></tr>`
+}
+renderCurrentEsm()

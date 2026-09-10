@@ -43,28 +43,26 @@
 
         <div class="scoreboard" aria-label="Compression and performance results">
           <div class="score-main">
-            <span class="score-label">Exact-comparison gate</span>
+            <span class="score-label">Public ESM · partial implementation</span>
             <strong id="score-jfb-main">—</strong>
             <p id="score-jfb-bytes">Checking upstream source parity</p>
           </div>
           <div class="score-grid">
             <div><strong id="score-jfb-gzip">—</strong><span>canonical gzip-9</span></div>
-            <div><strong id="score-jfb-cpu">—</strong><span>current CPU</span></div>
+            <div><strong id="score-jfb-cpu">—</strong><span>original ESM Brotli</span></div>
             <div><strong id="score-jfb-raw">—</strong><span>canonical raw JS</span></div>
-            <div><strong id="score-jfb-select">—</strong><span>current select</span></div>
+            <div><strong id="score-jfb-select">—</strong><span>API comparison</span></div>
           </div>
-          <p class="score-note">No size winner is claimed until the runtime implementation, module inventory, DOM behavior, hydration, stores, and scheduler semantics match the pinned upstream source.</p>
+          <p class="score-note">No size winner is claimed until the runtime implementation, module inventory, DOM behavior, hydration, stores, and scheduler semantics match the pinned upstream source. Repository checks pass.</p>
         </div>
       </section>
-
-      <p data-audit-history="2026-09-10" style="max-width:1160px;margin:18px auto;padding:12px 20px;font:14px/1.6 system-ui;color:#344b54;background:#edf3f4">The build audit above records the current compiler check. Runtime throughput and application benchmarks below retain their earlier measurement dates.</p>
 <section class="performance shell" id="performance">
         <div class="section-heading">
           <div>
             <p class="eyebrow">Comparison status</p>
             <h2>Not eligible<br />yet.</h2>
           </div>
-          <p>The local audit is pinned to Solid <code>v2.0.0-rc.0</code> and its exact DOM runtime dependency. The previous compact implementation does not satisfy that source or behavior boundary, so its size, CPU, and memory results are diagnostics only.</p>
+          <p>The comparison is pinned to Solid <code>v2.0.0-rc.0</code> and its exact DOM runtime dependency. The compact implementation does not satisfy that source or behavior boundary, so its size, CPU, and memory results are diagnostics only.</p>
         </div>
         <div class="perf-cards" id="perf-cards"></div>
         <div class="table-wrap light">
@@ -211,20 +209,6 @@
             <p><strong>Publication rule.</strong> The tracked <a href="https://github.com/krausest/js-framework-benchmark">js-framework-benchmark</a>-compatible pair may be measured during development, but no winner is published until every required runtime module and exact behavior gate passes.</p>
             <a href="#why">Why smaller ↗</a>
           </div>
-        </div>
-      </section>
-
-
-      <section class="compiler-progress shell" id="compiler-progress">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Compiler progress</p>
-            <h2>Prototype compiler<br />history.</h2>
-          </div>
-          <p>This records compiler movement on the existing prototype package. It is useful regression evidence, but it is not an exact Solid runtime comparison.</p>
-        </div>
-        <div class="compiler-comparison" id="compiler-comparison" aria-live="polite">
-          Loading compiler comparison…
         </div>
       </section>
 

@@ -38,7 +38,7 @@
     {
       "id": "async-profile",
       "snapshot": {
-        "status": "ready · latest Ada Lovelace #2",
+        "status": "ready \u00b7 latest Ada Lovelace #2",
         "profile": "Ada Lovelace #2",
         "stale": false
       }
@@ -172,7 +172,7 @@
           "Selector notify",
           "Store draft"
         ],
-        "cart": "Cart · 3",
+        "cart": "Cart \u00b7 3",
         "total": "Total $33"
       }
     },
