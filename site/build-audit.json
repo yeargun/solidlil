@@ -1,0 +1,390 @@
+{
+  "schemaVersion": 1,
+  "name": "solidlil",
+  "measuredAt": "2026-09-10T14:01:05Z",
+  "status": "verified",
+  "buildPassed": true,
+  "summary": "The fresh artifact was checked against the repository test command.",
+  "sourceCommit": "ad2a0442c418ea4feecba44074a92f0583970d14",
+  "previousPublicCommit": "bd8c8de36863e1b3e73c35eca55c310528fb5f22",
+  "compiler": {
+    "commit": "63c2896a71e60cbcca7870fe979f9d6ecaff3452",
+    "sha256": "2319462ef7d858c8e2a5a767260aa4f80d325e0045afa0cc86cc122d1299b059",
+    "profile": "release",
+    "dirty": false
+  },
+  "machine": {
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "logicalCpus": 16,
+    "affinityCpus": 16,
+    "memoryBytes": 33648431104,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.17.0-1022-azure",
+    "architecture": "x86_64",
+    "node": "v22.23.2",
+    "rayonThreads": 16,
+    "provider": "Azure",
+    "instanceClass": "Standard_D16als_v7",
+    "parallelPortBuildsOnMachine": 1,
+    "loadAtStart": [
+      5.62548828125,
+      4.345703125,
+      3.02392578125
+    ],
+    "loadAtEnd": [
+      2.708984375,
+      3.830078125,
+      2.974609375
+    ],
+    "concurrencyNote": "The audit scheduled one port per worker, but this is a shared pool. Outside compiler jobs were observed during the run; timings are contextual wall times, not controlled speedup benchmarks."
+  },
+  "upstream": {
+    "name": "solidlil",
+    "package": "solid-js",
+    "pinned": "2.0.0-rc.0",
+    "latest": "1.9.15",
+    "source": "https://www.npmjs.com/package/solid-js",
+    "note": "This port targets the Solid 2 release-candidate track; npm latest currently points to the separate stable 1.x track."
+  },
+  "comparisonScope": "solid-js@2.0.0-rc.0 public ESM runtime graph; dependency installation excluded; this is a comparison bundle build, not the upstream vendor release pipeline Sizes use canonical zlib 1.3.1 gzip-9 and Google Brotli 1.1.0 quality 11. This is diagnostic: full-library feature/API equivalence is not established, so no full-library size-win claim is eligible.",
+  "sizes": {
+    "previous": {
+      "raw": 8267,
+      "gzip9": 3309,
+      "brotli11": 2979
+    },
+    "current": {
+      "path": "dist/core.js",
+      "raw": 8221,
+      "gzip9": 3330,
+      "brotli11": 2964,
+      "sha256": "17741ecf00de5d52f6ccec45325be65ff651c73ea275c0dba19ade507e24f805"
+    },
+    "upstream": {
+      "path": ".page-audit/upstream/official.esm.js",
+      "raw": 77519,
+      "gzip9": 27183,
+      "brotli11": 24613,
+      "sha256": "6d5f90252ef7fd1260779b417d1c621234d1727cae28c970d50215023ac90fa7"
+    }
+  },
+  "officialArtifacts": [
+    {
+      "path": ".page-audit/upstream/official.terser-nomangle.js",
+      "raw": 113006,
+      "gzip9": 32884,
+      "brotli11": 29538,
+      "sha256": "927739e07a49621348f5d475aa62079a3e6e62e7cf40e981dcad45f6e1947adc"
+    },
+    {
+      "path": ".page-audit/upstream/official.oxc-nomangle.js",
+      "raw": 118546,
+      "gzip9": 33680,
+      "brotli11": 30146,
+      "sha256": "2ea0363f36f23008ed0886c8da2671030a8b2f8a1aa76ce0c586f202648ee1c7"
+    },
+    {
+      "path": ".page-audit/upstream/official.esm.js",
+      "raw": 77519,
+      "gzip9": 27183,
+      "brotli11": 24613,
+      "sha256": "6d5f90252ef7fd1260779b417d1c621234d1727cae28c970d50215023ac90fa7"
+    },
+    {
+      "path": ".page-audit/upstream/official.unminified.js",
+      "raw": 178665,
+      "gzip9": 41132,
+      "brotli11": 35625,
+      "sha256": "1f47ca425668e687b7565ed70f9291f865b0311655beecf60c559c1441fea49c"
+    },
+    {
+      "path": ".page-audit/upstream/official.esbuild.js",
+      "raw": 78163,
+      "gzip9": 28280,
+      "brotli11": 25558,
+      "sha256": "b1eb6541912367c00b39fe7dadebb1bf773a5a0525e9475c9794cba03eacf589"
+    },
+    {
+      "path": ".page-audit/upstream/official.oxc-mangle.js",
+      "raw": 76314,
+      "gzip9": 27157,
+      "brotli11": 24532,
+      "sha256": "de57df9e974d6065d06913ae63beba2a38a253fe2752f182c38d86ec065612bb"
+    }
+  ],
+  "candidateArtifacts": [
+    {
+      "path": "dist/index.cjs",
+      "raw": 20135,
+      "gzip9": 7378,
+      "brotli11": 6673,
+      "sha256": "6bfbb5142c5cbe1bce1daf5773bb235ef5a510e6ce4af0d99a571930215c948e"
+    },
+    {
+      "path": "dist/compat.js",
+      "raw": 7818,
+      "gzip9": 1887,
+      "brotli11": 1681,
+      "sha256": "8f255cc733d0bcd2be7b06f83dbcf9ed158359eaa0998e8d06e983b36bae573f"
+    },
+    {
+      "path": "dist/lil-web.js",
+      "raw": 15143,
+      "gzip9": 5754,
+      "brotli11": 5128,
+      "sha256": "ee7d05b9b6f68f1afee4c070f15c575fc86403c82e596f211eb0436963324ba9"
+    },
+    {
+      "path": "dist/web.js",
+      "raw": 38029,
+      "gzip9": 13261,
+      "brotli11": 11862,
+      "sha256": "dccbfd262b65e2c9ef76ede7fbefd4b2680f0a0a07df00c98f72b44e097940ce"
+    },
+    {
+      "path": "dist/index.js",
+      "raw": 18563,
+      "gzip9": 6838,
+      "brotli11": 6226,
+      "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
+    },
+    {
+      "path": "dist/full.cjs",
+      "raw": 18380,
+      "gzip9": 6875,
+      "brotli11": 6092,
+      "sha256": "d46d5bf3761ca197f447ff2a2ef7fc62e7e8e115cf393f8c35850bcf2402e3a6"
+    },
+    {
+      "path": "dist/solidlil.global.js",
+      "raw": 18297,
+      "gzip9": 6816,
+      "brotli11": 6076,
+      "sha256": "a78066b93d25c15fd5f5984e4efa753161e9025ba362b6c01a20b4f65f4ac349"
+    },
+    {
+      "path": "dist/web-api.js",
+      "raw": 16347,
+      "gzip9": 4506,
+      "brotli11": 3993,
+      "sha256": "c064cb28fc3180f4872cbe3caef0049aac1c10cba0890057679ce3853e80788e"
+    },
+    {
+      "path": "dist/lil-web.cjs",
+      "raw": 15765,
+      "gzip9": 6044,
+      "brotli11": 5370,
+      "sha256": "e4df80eeb6e2aeb045c1e6593c030a9d301a9dcde6a67755a270555fe24a4009"
+    },
+    {
+      "path": "dist/index.bundle.js",
+      "raw": 18563,
+      "gzip9": 6838,
+      "brotli11": 6226,
+      "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
+    },
+    {
+      "path": "dist/web.cjs",
+      "raw": 47152,
+      "gzip9": 15948,
+      "brotli11": 14214,
+      "sha256": "b83e7a8b4f3c9846f1007e835c2afda4f232ff60264e1628f180ada96974d7c6"
+    },
+    {
+      "path": "dist/solid-api.js",
+      "raw": 19796,
+      "gzip9": 5001,
+      "brotli11": 4454,
+      "sha256": "ae35a43b730ea1f64935ab127413c2a48e1a2395a6017cf63c398fa204a5da74"
+    },
+    {
+      "path": "dist/full.js",
+      "raw": 17758,
+      "gzip9": 6608,
+      "brotli11": 5878,
+      "sha256": "49bb80226ed29ba99665579529203e94d7afdba3b564489c34f7fb996cfecbe3"
+    },
+    {
+      "path": "dist/dom-tables.js",
+      "raw": 3701,
+      "gzip9": 1500,
+      "brotli11": 1290,
+      "sha256": "ddc7791aca8995b0689463a817b5279bb5ef1d78fe03e322e0a40dfb2e6f52ce"
+    },
+    {
+      "path": "dist/core.cjs",
+      "raw": 8790,
+      "gzip9": 3529,
+      "brotli11": 3155,
+      "sha256": "df682b491b8800ed3a1448db9929dab36d08ae9999b4e35727521c2c0ba2e6f7"
+    },
+    {
+      "path": "dist/core.js",
+      "raw": 8221,
+      "gzip9": 3330,
+      "brotli11": 2964,
+      "sha256": "17741ecf00de5d52f6ccec45325be65ff651c73ea275c0dba19ade507e24f805"
+    },
+    {
+      "path": ".page-audit/upstream/official.esbuild.js",
+      "raw": 78163,
+      "gzip9": 28280,
+      "brotli11": 25558,
+      "sha256": "b1eb6541912367c00b39fe7dadebb1bf773a5a0525e9475c9794cba03eacf589"
+    },
+    {
+      "path": ".page-audit/upstream/official.terser-nomangle.js",
+      "raw": 113006,
+      "gzip9": 32884,
+      "brotli11": 29538,
+      "sha256": "927739e07a49621348f5d475aa62079a3e6e62e7cf40e981dcad45f6e1947adc"
+    },
+    {
+      "path": ".page-audit/upstream/official.oxc-mangle.js",
+      "raw": 76314,
+      "gzip9": 27157,
+      "brotli11": 24532,
+      "sha256": "de57df9e974d6065d06913ae63beba2a38a253fe2752f182c38d86ec065612bb"
+    },
+    {
+      "path": ".page-audit/upstream/official.unminified.js",
+      "raw": 178665,
+      "gzip9": 41132,
+      "brotli11": 35625,
+      "sha256": "1f47ca425668e687b7565ed70f9291f865b0311655beecf60c559c1441fea49c"
+    },
+    {
+      "path": ".page-audit/upstream/official.esm.js",
+      "raw": 77519,
+      "gzip9": 27183,
+      "brotli11": 24613,
+      "sha256": "6d5f90252ef7fd1260779b417d1c621234d1727cae28c970d50215023ac90fa7"
+    },
+    {
+      "path": ".page-audit/upstream/official.oxc-nomangle.js",
+      "raw": 118546,
+      "gzip9": 33680,
+      "brotli11": 30146,
+      "sha256": "2ea0363f36f23008ed0886c8da2671030a8b2f8a1aa76ce0c586f202648ee1c7"
+    }
+  ],
+  "timing": {
+    "primaryCompilerSeconds": null,
+    "primaryScope": "One real compiler process, including code generation and codec-guided search; excludes subsequent package wrapping.",
+    "packageSeconds": 14.56288655000003,
+    "packageScope": "node scripts/build.mjs --compile --force; 3 successful compiler invocations plus package generation.",
+    "upstreamSeconds": 0.5252980480000001,
+    "upstreamScope": "solid-js@2.0.0-rc.0 public ESM runtime graph; dependency installation excluded; this is a comparison bundle build, not the upstream vendor release pipeline",
+    "protocol": "Same shared worker for both lanes; one fresh LilScript package build; median of three sequential upstream ESM builds (PlayCanvas records one native reference build). Outside compiler jobs were observed in the pool, so contention is not excluded. Dependencies, tests and compression measurement are outside these build times.",
+    "upstreamSamples": [
+      {
+        "bundleSeconds": 0.013609870000000001,
+        "wallSeconds": 0.697103398
+      },
+      {
+        "bundleSeconds": 0.013351924999999938,
+        "wallSeconds": 0.49024224200000005
+      },
+      {
+        "bundleSeconds": 0.014987413999999944,
+        "wallSeconds": 0.5252980480000001
+      }
+    ]
+  },
+  "behavior": {
+    "command": "node --test test/node.test.mjs test/vite.test.mjs test/coverage.test.mjs test/jfb.test.mjs test/apps-e2e.test.mjs",
+    "summary": "Repository test command passed (exit 0). # tests 50 \u00b7 # pass 50 \u00b7 # fail 0",
+    "before": {
+      "exitCode": 0,
+      "failures": [],
+      "logSha256": "68f073a1f0e2fc69f9dadc3258c1a2e1c3db9dbc95898806818388699b7950c7"
+    },
+    "after": {
+      "exitCode": 0,
+      "failures": [],
+      "tail": "al modal\n  ---\n  duration_ms: 277.52838\n  type: 'test'\n  ...\n# Subtest: every solid-js export exists on @itslil/solidjs\nok 22 - every solid-js export exists on @itslil/solidjs\n  ---\n  duration_ms: 0.956539\n  type: 'test'\n  ...\n# Subtest: every @solidjs/web export exists on @itslil/solidjs/web\nok 23 - every @solidjs/web export exists on @itslil/solidjs/web\n  ---\n  duration_ms: 0.195402\n  type: 'test'\n  ...\n# Subtest: createProjection and reconcile keep keyed identity\nok 24 - createProjection and reconcile keep keyed identity\n  ---\n  duration_ms: 0.77634\n  type: 'test'\n  ...\n# Subtest: mapArray and For map a list\nok 25 - mapArray and For map a list\n  ---\n  duration_ms: 0.461921\n  type: 'test'\n  ...\n# Subtest: Reveal holds later Loading slots until earlier ones settle\nok 26 - Reveal holds later Loading slots until earlier ones settle\n  ---\n  duration_ms: 0.448821\n  type: 'test'\n  ...\n# Subtest: ssr helpers and renderToString produce HTML\nok 27 - ssr helpers and renderToString produce HTML\n  ---\n  duration_ms: 0.291455\n  type: 'test'\n  ...\n# Subtest: hydrate claims existing nodes and does not wipe the root\nok 28 - hydrate claims existing nodes and does not wipe the root\n  ---\n  duration_ms: 0.348161\n  type: 'test'\n  ...\n# Subtest: mapArray reuses mapped nodes by identity\nok 29 - mapArray reuses mapped nodes by identity\n  ---\n  duration_ms: 0.223334\n  type: 'test'\n  ...\n# Subtest: createStore setter can replace by returning a new value\nok 30 - createStore setter can replace by returning a new value\n  ---\n  duration_ms: 0.242332\n  type: 'test'\n  ...\n# Subtest: createMemo lazy waits for the first read\nok 31 - createMemo lazy waits for the first read\n  ---\n  duration_ms: 0.284945\n  type: 'test'\n  ...\n# Subtest: createEffect defer skips the first apply\nok 32 - createEffect defer skips the first apply\n  ---\n  duration_ms: 0.225226\n  type: 'test'\n  ...\n# Subtest: default-less createContext throws outside a provider\nok 33 - default-less createContext throws outside a provider\n  ---\n  duration_ms: 0.28757\n  type: 'test'\n  ...\n# Subtest: the source-aligned keyed bundles have the same observable behavior\nok 34 - the source-aligned keyed bundles have the same observable behavior\n  ---\n  duration_ms: 930.003108\n  type: 'test'\n  ...\n# Subtest: queued writes stay invisible until flush\nok 35 - queued writes stay invisible until flush\n  ---\n  duration_ms: 0.785314\n  type: 'test'\n  ...\n# Subtest: tuple createSignal matches the Solid 2.0 consumer shape\nok 36 - tuple createSignal matches the Solid 2.0 consumer shape\n  ---\n  duration_ms: 0.360388\n  type: 'test'\n  ...\n# Subtest: createMemo is allocated once and tracks the source\nok 37 - createMemo is allocated once and tracks the source\n  ---\n  duration_ms: 0.320419\n  type: 'test'\n  ...\n# Subtest: split createEffect applies after compute\nok 38 - split createEffect applies after compute\n  ---\n  duration_ms: 0.216814\n  type: 'test'\n  ...\n# Subtest: createSelector only notifies matching keys\nok 39 - createSelector only notifies matching keys\n  ---\n  duration_ms: 0.408771\n  type: 'test'\n  ...\n# Subtest: createStore mutates a draft\nok 40 - createStore mutates a draft\n  ---\n  duration_ms: 0.169604\n  type: 'test'\n  ...\n# Subtest: fan-out subscribe notifies every observer and forgets recycled slots\nok 41 - fan-out subscribe notifies every observer and forgets recycled slots\n  ---\n  duration_ms: 1.69967\n  type: 'test'\n  ...\n# Subtest: dropping a dependency stops updates from that signal\nok 42 - dropping a dependency stops updates from that signal\n  ---\n  duration_ms: 0.120139\n  type: 'test'\n  ...\n# Subtest: disposing a root recycles effect slots\nok 43 - disposing a root recycles effect slots\n  ---\n  duration_ms: 0.256384\n  type: 'test'\n  ...\n# Subtest: public entries export createSelector\nok 44 - public entries export createSelector\n  ---\n  duration_ms: 0.215472\n  type: 'test'\n  ...\n# Subtest: NotReady from a nested effect wakes the parent Loading effect\nok 45 - NotReady from a nested effect wakes the parent Loading effect\n  ---\n  duration_ms: 0.367248\n  type: 'test'\n  ...\n# Subtest: createMemo settles a thenable and flips isPending\nok 46 - createMemo settles a thenable and flips isPending\n  ---\n  duration_ms: 0.12769\n  type: 'test'\n  ...\n# Subtest: action reverts createOptimistic writes on failure\nok 47 - action reverts createOptimistic writes on failure\n  ---\n  duration_ms: 0.353999\n  type: 'test'\n  ...\n# Subtest: createUniqueId is stable per call and children flattens\nok 48 - createUniqueId is stable per call and children flattens\n  ---\n  duration_ms: 0.458485\n  type: 'test'\n  ...\n# Subtest: CommonJS entry exposes the same public names\nok 49 - CommonJS entry exposes the same public names\n  ---\n  duration_ms: 2.037155\n  type: 'test'\n  ...\n# Subtest: Vite bundles the public package entry\nok 50 - Vite bundles the public package entry\n  ---\n  duration_ms: 44.805441\n  type: 'test'\n  ...\n1..50\n# tests 50\n# suites 0\n# pass 50\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 10736.22946\n",
+      "logSha256": "d3db0f070f8f24e6c2524fc99b53d145a9c91804535e8512d52456dc5a7ded74"
+    }
+  },
+  "findings": [
+    "1 committed port changes were absent from GitHub at the start of the audit.",
+    "Published-to-fresh Brotli drift: -15 bytes (-0.50%). This includes port source/config changes and compiler changes."
+  ],
+  "primaryArtifact": "dist/core.js",
+  "beforePage": {
+    "url": "https://yeargun.github.io/solidlil/",
+    "status": 200,
+    "sha256": "15f27c128114f3ec1dc9412736b8404a74cb2785ccaecf8085e7a0b0513c17f4",
+    "lastModified": "Wed, 02 Sep 2026 17:13:30 GMT"
+  },
+  "codecSha256": "9257fd055728895c11b9c4b0d882895d7d11bb3dd3495f560123879ca2bc3cd6",
+  "publicationArtifacts": [
+    {
+      "path": "dist/index.cjs",
+      "sha256": "6bfbb5142c5cbe1bce1daf5773bb235ef5a510e6ce4af0d99a571930215c948e"
+    },
+    {
+      "path": "dist/compat.js",
+      "sha256": "8f255cc733d0bcd2be7b06f83dbcf9ed158359eaa0998e8d06e983b36bae573f"
+    },
+    {
+      "path": "dist/lil-web.js",
+      "sha256": "ee7d05b9b6f68f1afee4c070f15c575fc86403c82e596f211eb0436963324ba9"
+    },
+    {
+      "path": "dist/web.js",
+      "sha256": "dccbfd262b65e2c9ef76ede7fbefd4b2680f0a0a07df00c98f72b44e097940ce"
+    },
+    {
+      "path": "dist/index.js",
+      "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
+    },
+    {
+      "path": "dist/full.cjs",
+      "sha256": "d46d5bf3761ca197f447ff2a2ef7fc62e7e8e115cf393f8c35850bcf2402e3a6"
+    },
+    {
+      "path": "dist/solidlil.global.js",
+      "sha256": "a78066b93d25c15fd5f5984e4efa753161e9025ba362b6c01a20b4f65f4ac349"
+    },
+    {
+      "path": "dist/web-api.js",
+      "sha256": "c064cb28fc3180f4872cbe3caef0049aac1c10cba0890057679ce3853e80788e"
+    },
+    {
+      "path": "dist/lil-web.cjs",
+      "sha256": "e4df80eeb6e2aeb045c1e6593c030a9d301a9dcde6a67755a270555fe24a4009"
+    },
+    {
+      "path": "dist/index.bundle.js",
+      "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
+    },
+    {
+      "path": "dist/web.cjs",
+      "sha256": "b83e7a8b4f3c9846f1007e835c2afda4f232ff60264e1628f180ada96974d7c6"
+    },
+    {
+      "path": "dist/solid-api.js",
+      "sha256": "ae35a43b730ea1f64935ab127413c2a48e1a2395a6017cf63c398fa204a5da74"
+    },
+    {
+      "path": "dist/full.js",
+      "sha256": "49bb80226ed29ba99665579529203e94d7afdba3b564489c34f7fb996cfecbe3"
+    },
+    {
+      "path": "dist/dom-tables.js",
+      "sha256": "ddc7791aca8995b0689463a817b5279bb5ef1d78fe03e322e0a40dfb2e6f52ce"
+    },
+    {
+      "path": "dist/core.cjs",
+      "sha256": "df682b491b8800ed3a1448db9929dab36d08ae9999b4e35727521c2c0ba2e6f7"
+    },
+    {
+      "path": "dist/core.js",
+      "sha256": "17741ecf00de5d52f6ccec45325be65ff651c73ea275c0dba19ade507e24f805"
+    }
+  ],
+  "publicationPolicy": "Promote freshly tested distribution",
+  "publicationBase": "ad2a0442c418ea4feecba44074a92f0583970d14",
+  "publicationSourceFingerprint": "e4b45e244c42c894e937810e221cbacd275a0c86d59260f9a3b90ef26026c25e"
+}

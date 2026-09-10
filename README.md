@@ -1,5 +1,9 @@
 # @itslil/solidjs
 
+<!-- current-build-audit -->
+**Build audit, 2026-09-10:** [verified; compiler, machine, build times, version gaps and behavior checks](https://yeargun.github.io/solidlil/#build-audit). The [JSON receipt](site/build-audit.json) records the current comparison; older benchmark prose retains its original scope.
+
+
 Experimental Solid 2.0 runtime work in LilScript. This package is not yet an
 exact or drop-in Solid implementation.
 
