@@ -389,12 +389,38 @@
   "publicationSourceFingerprint": "e4b45e244c42c894e937810e221cbacd275a0c86d59260f9a3b90ef26026c25e",
   "comparisonArtifacts": [
     {
+      "path": "site/esm-comparison/original.js",
+      "sha256": "6d5f90252ef7fd1260779b417d1c621234d1727cae28c970d50215023ac90fa7"
+    },
+    {
       "path": "site/esm-comparison/lilscript.js",
       "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
     },
     {
-      "path": "site/esm-comparison/original.js",
-      "sha256": "6d5f90252ef7fd1260779b417d1c621234d1727cae28c970d50215023ac90fa7"
+      "path": "site/source-build.json",
+      "sha256": "43339775f698fe11e8bb9d9615638da4edf92636ec54f44c481acacebda01877"
+    },
+    {
+      "path": "site/comparison.json",
+      "sha256": "e614650034b0774bceec620f7b7bbf64d53078c6c036b6d2797f3018ddf39456"
     }
-  ]
+  ],
+  "sourceBuildReceipt": "comparison/source-build/result.json",
+  "currentMeasurement": {
+    "compiler": {
+      "commit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
+      "sha256": "0616048498eb9eb2e4bd75b39e8e6a083733ada647e16108edfee30ad183beeb"
+    },
+    "source": {
+      "commit": "ad2a0442c418ea4feecba44074a92f0583970d14"
+    },
+    "upstream": {
+      "repository": "https://github.com/solidjs/solid.git",
+      "commit": "ff4d3c4479163fbdd3327f5b22d0c3ea7bd1a2c5",
+      "package": "solid-js",
+      "version": "2.0.0-rc.0",
+      "directory": "packages/solid"
+    },
+    "compatibility": "Runtime checks: 50/50 pass."
+  }
 }

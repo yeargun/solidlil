@@ -1,0 +1,902 @@
+{
+  "schemaVersion": 1,
+  "name": "solidlil",
+  "startedAt": "2026-09-10T20:40:38Z",
+  "machine": {
+    "provider": "Azure",
+    "instanceClass": "Standard_D16als_v7",
+    "cpu": "AMD EPYC 9V45 96-Core Processor",
+    "logicalCpus": 16,
+    "memoryBytes": 33648427008,
+    "os": "Ubuntu 24.04.4 LTS",
+    "kernel": "6.17.0-1022-azure",
+    "node": "v24.11.1",
+    "rayonThreads": 8,
+    "loadAtStart": [
+      1.37841796875,
+      1.74853515625,
+      1.90625
+    ],
+    "loadAtEnd": [
+      2.71826171875,
+      2.28857421875,
+      2.09521484375
+    ]
+  },
+  "compiler": {
+    "commit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
+    "sha256": "0616048498eb9eb2e4bd75b39e8e6a083733ada647e16108edfee30ad183beeb"
+  },
+  "source": {
+    "repository": "https://github.com/solidjs/solid.git",
+    "commit": "ff4d3c4479163fbdd3327f5b22d0c3ea7bd1a2c5",
+    "package": "solid-js",
+    "version": "2.0.0-rc.0",
+    "directory": "packages/solid"
+  },
+  "portSource": {
+    "commit": "ad2a0442c418ea4feecba44074a92f0583970d14",
+    "snapshot": "/tmp/lilscript-page-refresh-20260910/current/solidlil"
+  },
+  "steps": {
+    "original-install": {
+      "command": [
+        "corepack",
+        "pnpm",
+        "install",
+        "--frozen-lockfile",
+        "--ignore-scripts"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 7.328394775000561,
+      "cpuSeconds": 6.8723540000000005,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-install.log",
+      "logSha256": "cf4b839257703ed602d37e5ee552d0c8dd9f033019848d8bbf3fa56f88c93572",
+      "tail": "Scope: all 18 workspace projects\nLockfile is up to date, resolution step is skipped\nProgress: resolved 1, reused 0, downloaded 0, added 0\nPackages: +621\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\nProgress: resolved 621, reused 0, downloaded 516, added 156\nProgress: resolved 621, reused 0, downloaded 608, added 477\nProgress: resolved 621, reused 0, downloaded 613, added 621, done\n\ndevDependencies:\n+ @babel/cli 7.28.6\n+ @babel/core 7.29.0\n+ @babel/preset-env 7.29.0\n+ @babel/preset-typescript 7.28.5\n+ @changesets/cli 2.29.8\n+ @codspeed/vitest-plugin 5.4.0\n+ @dom-expressions/babel-plugin-jsx 0.50.0-next.42\n+ @dom-expressions/hyperscript 0.50.0-next.42\n+ @dom-expressions/runtime 0.50.0-next.42\n+ @dom-expressions/tagged-jsx 0.50.0-next.42\n+ @rollup/plugin-babel 6.0.3\n+ @rollup/plugin-commonjs 24.0.1\n+ @rollup/plugin-json 6.1.0\n+ @rollup/plugin-node-resolve 15.0.1\n+ @rollup/plugin-replace 5.0.7\n+ @solidjs/vite-plugin 3.0.0-next.27\n+ @solidjs/web 2.0.0-rc.0 <- packages/solid-web\n+ @testing-library/jest-dom 6.9.1\n+ @types/node 25.6.0\n+ @vitest/coverage-v8 4.1.6\n+ babel-plugin-transform-rename-import 2.3.0\n+ coveralls 3.1.1\n+ csstype 3.2.3\n+ esbuild 0.25.12\n+ jsdom 25.0.1\n+ ncp 2.0.0\n+ npm-run-all2 8.0.4\n+ prettier 3.8.1\n+ rimraf 3.0.2\n+ rollup 4.59.0\n+ rollup-plugin-cleanup 3.2.1\n+ rollup-plugin-copy 3.5.0\n+ seroval 1.5.5\n+ simple-git-hooks 2.13.1\n+ symlink-dir 5.2.1\n+ tsconfig-replace-paths 0.0.11\n+ turbo 2.8.10\n+ typescript 6.0.3\n+ vitest 4.1.6\n\nDone in 6.8s using pnpm v11.1.1\n"
+    },
+    "lilscript-install": {
+      "command": [
+        "npm",
+        "ci",
+        "--no-audit",
+        "--no-fund"
+      ],
+      "cwd": "port",
+      "wallSeconds": 1.2160815320003167,
+      "cpuSeconds": 1.4712069999999988,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-install.log",
+      "logSha256": "33c2fac502a76e76ec6e9a51989456a1930920b8f55710d3bc9355b1c8c2b10e",
+      "tail": "\nadded 100 packages in 1s\n"
+    },
+    "original-build-1": {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=solid-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 21.30860497499998,
+      "cpuSeconds": 42.889002000000005,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-1.log",
+      "logSha256": "566294942a16fc1d7d73bff2015c9129f37a32b8d99a020cab6dedc6a03e1804",
+      "tail": " dist/dev.js\u001b[22m in \u001b[1m149ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mstorage/src/index.ts\u001b[22m \u2192 \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/index.ts\u001b[22m \u2192 \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m in \u001b[1m20ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/decode.ts\u001b[22m \u2192 \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m in \u001b[1m14ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/client.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m in \u001b[1m44ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/rich-args.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m in \u001b[1m272ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m in \u001b[1m288ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m in \u001b[1m141ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m in \u001b[1m136ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/server.ts\u001b[22m \u2192 \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m in \u001b[1m374ms\u001b[22m\u001b[39m\n\n Tasks:    7 successful, 7 total\nCached:    0 cached, 7 total\n  Time:    20.616s \n\n"
+    },
+    "lilscript-build-1": {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 15.995656500999758,
+      "cpuSeconds": 67.871252,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-1.log",
+      "logSha256": "72d5a9a6a1ba0096b1be80a054b7773143a8ab4766aadffb03cca365d3b1b92b",
+      "tail": "Built solidlil production entries with /home/lilfarm/source-perf-20260910/tools/compiler-wrapper.py\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/core.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs"
+          ],
+          "startedAt": 1789072868.1705515,
+          "wallSeconds": 2.8287017345428467,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs",
+          "sha256": "695a6fd82eb71109dc0407f3a780f93a72ad16e04359afbde7d058ca3ba3b3e9"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/web.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs"
+          ],
+          "startedAt": 1789072871.0241992,
+          "wallSeconds": 5.3132994174957275,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs",
+          "sha256": "0aa284dcb7995a160d99b84496ebf7a28a1f752989f30c123921f4c8b12e0844"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/full.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs"
+          ],
+          "startedAt": 1789072876.3621905,
+          "wallSeconds": 6.033195972442627,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs",
+          "sha256": "c725338821666bc449c35283fbdb45928cb2ce85a8a661e894dc51908a8dc349"
+        }
+      ]
+    },
+    "lilscript-build-2": {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 15.89595705300053,
+      "cpuSeconds": 67.47020200000001,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-2.log",
+      "logSha256": "72d5a9a6a1ba0096b1be80a054b7773143a8ab4766aadffb03cca365d3b1b92b",
+      "tail": "Built solidlil production entries with /home/lilfarm/source-perf-20260910/tools/compiler-wrapper.py\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/core.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs"
+          ],
+          "startedAt": 1789072884.171089,
+          "wallSeconds": 2.838848114013672,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs",
+          "sha256": "695a6fd82eb71109dc0407f3a780f93a72ad16e04359afbde7d058ca3ba3b3e9"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/web.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs"
+          ],
+          "startedAt": 1789072887.0351522,
+          "wallSeconds": 5.209024906158447,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs",
+          "sha256": "0aa284dcb7995a160d99b84496ebf7a28a1f752989f30c123921f4c8b12e0844"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/full.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs"
+          ],
+          "startedAt": 1789072892.2681909,
+          "wallSeconds": 6.029282331466675,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs",
+          "sha256": "c725338821666bc449c35283fbdb45928cb2ce85a8a661e894dc51908a8dc349"
+        }
+      ]
+    },
+    "original-build-2": {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=solid-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 18.25083973999972,
+      "cpuSeconds": 43.386026,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-2.log",
+      "logSha256": "7a49dd3dcfb0c93aa2efb79211717685ac52bf724c5eead886c372873dd0ab28",
+      "tail": " dist/dev.js\u001b[22m in \u001b[1m153ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mstorage/src/index.ts\u001b[22m \u2192 \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/index.ts\u001b[22m \u2192 \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m in \u001b[1m23ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/decode.ts\u001b[22m \u2192 \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m in \u001b[1m14ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/client.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m in \u001b[1m43ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/rich-args.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m in \u001b[1m256ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m in \u001b[1m264ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m in \u001b[1m150ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m in \u001b[1m141ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/server.ts\u001b[22m \u2192 \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m in \u001b[1m381ms\u001b[22m\u001b[39m\n\n Tasks:    7 successful, 7 total\nCached:    0 cached, 7 total\n  Time:    17.903s \n\n"
+    },
+    "original-build-3": {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=solid-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 18.351541179000378,
+      "cpuSeconds": 43.577323000000014,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-3.log",
+      "logSha256": "f6e198d02954fc829649e95c25cec6444ab833932d2fd9d58c3ffea841a049d1",
+      "tail": " dist/dev.js\u001b[22m in \u001b[1m152ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mstorage/src/index.ts\u001b[22m \u2192 \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/index.ts\u001b[22m \u2192 \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m in \u001b[1m21ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/decode.ts\u001b[22m \u2192 \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m in \u001b[1m14ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/client.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m in \u001b[1m45ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/rich-args.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m in \u001b[1m270ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m in \u001b[1m289ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m in \u001b[1m150ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m in \u001b[1m141ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/server.ts\u001b[22m \u2192 \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m in \u001b[1m368ms\u001b[22m\u001b[39m\n\n Tasks:    7 successful, 7 total\nCached:    0 cached, 7 total\n  Time:    18.002s \n\n"
+    },
+    "lilscript-build-3": {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 15.898754523000207,
+      "cpuSeconds": 67.40566399999997,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-3.log",
+      "logSha256": "72d5a9a6a1ba0096b1be80a054b7773143a8ab4766aadffb03cca365d3b1b92b",
+      "tail": "Built solidlil production entries with /home/lilfarm/source-perf-20260910/tools/compiler-wrapper.py\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/core.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs"
+          ],
+          "startedAt": 1789072936.6822257,
+          "wallSeconds": 2.8273370265960693,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs",
+          "sha256": "695a6fd82eb71109dc0407f3a780f93a72ad16e04359afbde7d058ca3ba3b3e9"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/web.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs"
+          ],
+          "startedAt": 1789072939.534956,
+          "wallSeconds": 5.228415250778198,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs",
+          "sha256": "0aa284dcb7995a160d99b84496ebf7a28a1f752989f30c123921f4c8b12e0844"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/full.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs"
+          ],
+          "startedAt": 1789072944.7878606,
+          "wallSeconds": 6.0217368602752686,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs",
+          "sha256": "c725338821666bc449c35283fbdb45928cb2ce85a8a661e894dc51908a8dc349"
+        }
+      ]
+    },
+    "original-esm": {
+      "command": [
+        "node",
+        "/home/lilfarm/source-perf-20260910/tools/source-esm.mjs",
+        "/home/lilfarm/source-perf-20260910",
+        "solidlil"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 2.568894216999979,
+      "cpuSeconds": 3.9214960000000225,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-esm.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "tail": ""
+    },
+    "lilscript-tests": {
+      "command": [
+        "bash",
+        "-c",
+        "node --test test/node.test.mjs test/vite.test.mjs test/coverage.test.mjs test/jfb.test.mjs test/apps-e2e.test.mjs"
+      ],
+      "cwd": "port",
+      "wallSeconds": 14.688082715999371,
+      "cpuSeconds": 3.618732999999988,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-tests.log",
+      "logSha256": "fb2791819cb68ccb8be5a1eb6a649cfff8260ccc202ae0ec9fd84b0d74e04ee8",
+      "tail": "\u2714 counter: Counter (4446.525116ms)\n\u2714 effects: Split effects (225.548978ms)\n\u2714 form-binding: Form binding (168.167282ms)\n\u2714 context-theme: Context (270.280498ms)\n\u2714 async-profile: Async memo (866.678789ms)\n\u2714 optimistic-save: Optimistic action (1397.710377ms)\n\u2714 reveal-feed: Reveal feed (2232.907761ms)\n\u2714 projection-filter: Projection (164.92927ms)\n\u2714 show-switch: Show / Switch (403.373401ms)\n\u2714 repeat-grid: Repeat grid (271.765173ms)\n\u2714 nested-tree: Nested tree (260.602061ms)\n\u2714 error-reset: Error reset (338.544164ms)\n\u2714 todolist: Todo list (462.020908ms)\n\u2714 store-cart: Store cart (339.069212ms)\n\u2714 kanban: Kanban board (467.590951ms)\n\u2714 inbox: Inbox (399.248894ms)\n\u2714 marketplace: Lil marketplace (394.999694ms)\n\u2714 keyed: Keyed table (552.467554ms)\n\u2714 spreadsheet: Spreadsheet (330.847972ms)\n\u2714 svg-clock: SVG clock (138.911426ms)\n\u2714 portal-modal: Portal modal (275.444552ms)\n\u2714 every solid-js export exists on @itslil/solidjs (1.281629ms)\n\u2714 every @solidjs/web export exists on @itslil/solidjs/web (0.153641ms)\n\u2714 createProjection and reconcile keep keyed identity (0.722097ms)\n\u2714 mapArray and For map a list (0.380954ms)\n\u2714 Reveal holds later Loading slots until earlier ones settle (0.465942ms)\n\u2714 ssr helpers and renderToString produce HTML (0.258299ms)\n\u2714 hydrate claims existing nodes and does not wipe the root (0.340693ms)\n\u2714 mapArray reuses mapped nodes by identity (0.140502ms)\n\u2714 createStore setter can replace by returning a new value (0.185039ms)\n\u2714 createMemo lazy waits for the first read (0.178869ms)\n\u2714 createEffect defer skips the first apply (0.183597ms)\n\u2714 default-less createContext throws outside a provider (0.25864ms)\n\u2714 the source-aligned keyed bundles have the same observable behavior (5047.222437ms)\n\u2714 queued writes stay invisible until flush (0.785352ms)\n\u2714 tuple createSignal matches the Solid 2.0 consumer shape (0.323697ms)\n\u2714 createMemo is allocated once and tracks the source (0.312ms)\n\u2714 split createEffect applies after compute (0.192159ms)\n\u2714 createSelector only notifies matching keys (0.359761ms)\n\u2714 createStore mutates a draft (0.169956ms)\n\u2714 fan-out subscribe notifies every observer and forgets recycled slots (1.702963ms)\n\u2714 dropping a dependency stops updates from that signal (0.179981ms)\n\u2714 disposing a root recycles effect slots (0.128003ms)\n\u2714 public entries export createSelector (0.107342ms)\n\u2714 NotReady from a nested effect wakes the parent Loading effect (0.33238ms)\n\u2714 createMemo settles a thenable and flips isPending (0.140652ms)\n\u2714 action reverts createOptimistic writes on failure (0.372752ms)\n\u2714 createUniqueId is stable per call and children flattens (0.846584ms)\n\u2714 CommonJS entry exposes the same public names (1.876545ms)\n\u2714 Vite bundles the public package entry (39.753382ms)\n\u2139 tests 50\n\u2139 suites 0\n\u2139 pass 50\n\u2139 fail 0\n\u2139 cancelled 0\n\u2139 skipped 0\n\u2139 todo 0\n\u2139 duration_ms 14637.092237\n"
+    }
+  },
+  "nativeBuilds": [
+    {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=solid-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 21.30860497499998,
+      "cpuSeconds": 42.889002000000005,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-1.log",
+      "logSha256": "566294942a16fc1d7d73bff2015c9129f37a32b8d99a020cab6dedc6a03e1804",
+      "tail": " dist/dev.js\u001b[22m in \u001b[1m149ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mstorage/src/index.ts\u001b[22m \u2192 \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/index.ts\u001b[22m \u2192 \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m in \u001b[1m20ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/decode.ts\u001b[22m \u2192 \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m in \u001b[1m14ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/client.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m in \u001b[1m44ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/rich-args.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m in \u001b[1m272ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m in \u001b[1m288ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m in \u001b[1m141ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m in \u001b[1m136ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/server.ts\u001b[22m \u2192 \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m in \u001b[1m374ms\u001b[22m\u001b[39m\n\n Tasks:    7 successful, 7 total\nCached:    0 cached, 7 total\n  Time:    20.616s \n\n"
+    },
+    {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=solid-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 18.25083973999972,
+      "cpuSeconds": 43.386026,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-2.log",
+      "logSha256": "7a49dd3dcfb0c93aa2efb79211717685ac52bf724c5eead886c372873dd0ab28",
+      "tail": " dist/dev.js\u001b[22m in \u001b[1m153ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mstorage/src/index.ts\u001b[22m \u2192 \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/index.ts\u001b[22m \u2192 \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m in \u001b[1m23ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/decode.ts\u001b[22m \u2192 \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m in \u001b[1m14ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/client.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m in \u001b[1m43ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/rich-args.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m in \u001b[1m256ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m in \u001b[1m264ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m in \u001b[1m150ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m in \u001b[1m141ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/server.ts\u001b[22m \u2192 \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m in \u001b[1m381ms\u001b[22m\u001b[39m\n\n Tasks:    7 successful, 7 total\nCached:    0 cached, 7 total\n  Time:    17.903s \n\n"
+    },
+    {
+      "command": [
+        "corepack",
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "build",
+        "--filter=solid-js...",
+        "--force"
+      ],
+      "cwd": "upstream",
+      "wallSeconds": 18.351541179000378,
+      "cpuSeconds": 43.577323000000014,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "original-build-3.log",
+      "logSha256": "f6e198d02954fc829649e95c25cec6444ab833932d2fd9d58c3ffea841a049d1",
+      "tail": " dist/dev.js\u001b[22m in \u001b[1m152ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mstorage/src/index.ts\u001b[22m \u2192 \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mstorage/dist/storage.cjs, storage/dist/storage.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/index.ts\u001b[22m \u2192 \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/serialization.cjs, serialization/dist/serialization.js\u001b[22m in \u001b[1m21ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserialization/src/decode.ts\u001b[22m \u2192 \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserialization/dist/decode.cjs, serialization/dist/decode.js\u001b[22m in \u001b[1m14ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/client.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/client.cjs, server-functions/dist/client.js\u001b[22m in \u001b[1m45ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/rich-args.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js\u001b[22m in \u001b[1m8ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.cjs, server-functions/dist/server.js\u001b[22m in \u001b[1m270ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mserver-functions/src/server.ts\u001b[22m \u2192 \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js\u001b[22m in \u001b[1m289ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.cjs, frames/dist/client.js\u001b[22m in \u001b[1m150ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/client.ts\u001b[22m \u2192 \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/client.dev.cjs, frames/dist/client.dev.js\u001b[22m in \u001b[1m141ms\u001b[22m\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[36m\n@solidjs/web:build: [build:js      ] \u001b[1mframes/src/server.ts\u001b[22m \u2192 \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m...\u001b[39m\n@solidjs/web:build: [build:js      ] \u001b[32mcreated \u001b[1mframes/dist/server.cjs, frames/dist/server.js\u001b[22m in \u001b[1m368ms\u001b[22m\u001b[39m\n\n Tasks:    7 successful, 7 total\nCached:    0 cached, 7 total\n  Time:    18.002s \n\n"
+    }
+  ],
+  "lilscriptBuilds": [
+    {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 15.995656500999758,
+      "cpuSeconds": 67.871252,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-1.log",
+      "logSha256": "72d5a9a6a1ba0096b1be80a054b7773143a8ab4766aadffb03cca365d3b1b92b",
+      "tail": "Built solidlil production entries with /home/lilfarm/source-perf-20260910/tools/compiler-wrapper.py\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/core.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs"
+          ],
+          "startedAt": 1789072868.1705515,
+          "wallSeconds": 2.8287017345428467,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs",
+          "sha256": "695a6fd82eb71109dc0407f3a780f93a72ad16e04359afbde7d058ca3ba3b3e9"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/web.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs"
+          ],
+          "startedAt": 1789072871.0241992,
+          "wallSeconds": 5.3132994174957275,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs",
+          "sha256": "0aa284dcb7995a160d99b84496ebf7a28a1f752989f30c123921f4c8b12e0844"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/full.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs"
+          ],
+          "startedAt": 1789072876.3621905,
+          "wallSeconds": 6.033195972442627,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs",
+          "sha256": "c725338821666bc449c35283fbdb45928cb2ce85a8a661e894dc51908a8dc349"
+        }
+      ]
+    },
+    {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 15.89595705300053,
+      "cpuSeconds": 67.47020200000001,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-2.log",
+      "logSha256": "72d5a9a6a1ba0096b1be80a054b7773143a8ab4766aadffb03cca365d3b1b92b",
+      "tail": "Built solidlil production entries with /home/lilfarm/source-perf-20260910/tools/compiler-wrapper.py\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/core.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs"
+          ],
+          "startedAt": 1789072884.171089,
+          "wallSeconds": 2.838848114013672,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs",
+          "sha256": "695a6fd82eb71109dc0407f3a780f93a72ad16e04359afbde7d058ca3ba3b3e9"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/web.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs"
+          ],
+          "startedAt": 1789072887.0351522,
+          "wallSeconds": 5.209024906158447,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs",
+          "sha256": "0aa284dcb7995a160d99b84496ebf7a28a1f752989f30c123921f4c8b12e0844"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/full.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs"
+          ],
+          "startedAt": 1789072892.2681909,
+          "wallSeconds": 6.029282331466675,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs",
+          "sha256": "c725338821666bc449c35283fbdb45928cb2ce85a8a661e894dc51908a8dc349"
+        }
+      ]
+    },
+    {
+      "command": [
+        "bash",
+        "-c",
+        "node scripts/build.mjs --compile --force"
+      ],
+      "cwd": "port",
+      "wallSeconds": 15.898754523000207,
+      "cpuSeconds": 67.40566399999997,
+      "exitCode": 0,
+      "timedOut": false,
+      "log": "lilscript-build-3.log",
+      "logSha256": "72d5a9a6a1ba0096b1be80a054b7773143a8ab4766aadffb03cca365d3b1b92b",
+      "tail": "Built solidlil production entries with /home/lilfarm/source-perf-20260910/tools/compiler-wrapper.py\n",
+      "invocations": [
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/core.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs"
+          ],
+          "startedAt": 1789072936.6822257,
+          "wallSeconds": 2.8273370265960693,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-core.mjs",
+          "sha256": "695a6fd82eb71109dc0407f3a780f93a72ad16e04359afbde7d058ca3ba3b3e9"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/web.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs"
+          ],
+          "startedAt": 1789072939.534956,
+          "wallSeconds": 5.228415250778198,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-web.mjs",
+          "sha256": "0aa284dcb7995a160d99b84496ebf7a28a1f752989f30c123921f4c8b12e0844"
+        },
+        {
+          "args": [
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/entries/full.lil",
+            "--target",
+            "js-module",
+            "--config",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/lilscript.toml",
+            "--mode",
+            "production",
+            "--output",
+            "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs"
+          ],
+          "startedAt": 1789072944.7878606,
+          "wallSeconds": 6.0217368602752686,
+          "exitCode": 0,
+          "output": "/home/lilfarm/source-perf-20260910/ports/solidlil/src/.__compiled-full.mjs",
+          "sha256": "c725338821666bc449c35283fbdb45928cb2ce85a8a661e894dc51908a8dc349"
+        }
+      ]
+    }
+  ],
+  "protocol": {
+    "repetitions": 3,
+    "cleanOutputs": true,
+    "dependencyInstallationTimedSeparately": true,
+    "sourceArchives": "Pinned Git checkouts; original repository package build commands, followed by production ESM assembly.",
+    "workerUse": "Both implementations use the same machine and Node version. This shared build pool also runs unrelated jobs; timings are contextual wall times, with CPU time recorded separately."
+  },
+  "esm": {
+    "source": {
+      "repository": "https://github.com/solidjs/solid.git",
+      "commit": "ff4d3c4479163fbdd3327f5b22d0c3ea7bd1a2c5",
+      "package": "solid-js",
+      "version": "2.0.0-rc.0",
+      "directory": "packages/solid"
+    },
+    "entry": "packages/solid/dist/solid.js",
+    "scope": "solid-js@2.0.0-rc.0 public ESM runtime graph; dependency installation excluded; this is a comparison bundle build, not the upstream vendor release pipeline",
+    "external": [],
+    "samples": [
+      {
+        "bundleSeconds": 0.019663650000000005,
+        "wallSeconds": 0.5547028919999999
+      },
+      {
+        "bundleSeconds": 0.013202223000000004,
+        "wallSeconds": 0.4845411009999999
+      },
+      {
+        "bundleSeconds": 0.012488601000000018,
+        "wallSeconds": 0.4225959539999999
+      }
+    ],
+    "medianSeconds": 0.4845411009999999,
+    "toolchain": {
+      "esbuild": "0.28.1",
+      "terser": "5.51.2"
+    },
+    "artifacts": [
+      {
+        "path": "original.esm.js",
+        "raw": 77519,
+        "gzip9": 27183,
+        "brotli11": 24613,
+        "sha256": "6d5f90252ef7fd1260779b417d1c621234d1727cae28c970d50215023ac90fa7"
+      },
+      {
+        "path": "original.unminified.js",
+        "raw": 178483,
+        "gzip9": 41124,
+        "brotli11": 35571,
+        "sha256": "909ac2681442f55843ec3f97cd02bd0565f0c06c8222f7b86dbbc3a9de725c1c"
+      },
+      {
+        "path": "original.terser-nomangle.js",
+        "raw": 113006,
+        "gzip9": 32884,
+        "brotli11": 29538,
+        "sha256": "927739e07a49621348f5d475aa62079a3e6e62e7cf40e981dcad45f6e1947adc"
+      },
+      {
+        "path": "original.esbuild.js",
+        "raw": 78163,
+        "gzip9": 28280,
+        "brotli11": 25558,
+        "sha256": "b1eb6541912367c00b39fe7dadebb1bf773a5a0525e9475c9794cba03eacf589"
+      },
+      {
+        "path": "original.oxc-mangle.js",
+        "raw": 76314,
+        "gzip9": 27157,
+        "brotli11": 24532,
+        "sha256": "de57df9e974d6065d06913ae63beba2a38a253fe2752f182c38d86ec065612bb"
+      },
+      {
+        "path": "original.oxc-nomangle.js",
+        "raw": 118546,
+        "gzip9": 33680,
+        "brotli11": 30146,
+        "sha256": "2ea0363f36f23008ed0886c8da2671030a8b2f8a1aa76ce0c586f202648ee1c7"
+      }
+    ],
+    "inputs": [
+      "packages/solid-signals/dist/prod/core/error.js",
+      "packages/solid-signals/dist/prod/core/constants.js",
+      "packages/solid-signals/dist/prod/core/invariants.js",
+      "packages/solid-signals/dist/prod/core/dev.js",
+      "packages/solid-signals/dist/prod/core/lanes.js",
+      "packages/solid-signals/dist/prod/core/scheduler.js",
+      "packages/solid-signals/dist/prod/core/heap.js",
+      "packages/solid-signals/dist/prod/core/owner.js",
+      "packages/solid-signals/dist/prod/core/graph.js",
+      "packages/solid-signals/dist/prod/core/async.js",
+      "packages/solid-signals/dist/prod/core/core.js",
+      "packages/solid-signals/dist/prod/core/external.js",
+      "packages/solid-signals/dist/prod/core/context.js",
+      "packages/solid-signals/dist/prod/core/optimistic.js",
+      "packages/solid-signals/dist/prod/core/verdict.js",
+      "packages/solid-signals/dist/prod/core/effect.js",
+      "packages/solid-signals/dist/prod/core/action.js",
+      "packages/solid-signals/dist/prod/signals.js",
+      "packages/solid-signals/dist/prod/store/reconcile.js",
+      "packages/solid-signals/dist/prod/store/projection.js",
+      "packages/solid-signals/dist/prod/store/store.js",
+      "packages/solid-signals/dist/prod/affects.js",
+      "packages/solid-signals/dist/prod/map.js",
+      "packages/solid-signals/dist/prod/store/optimistic.js",
+      "packages/solid-signals/dist/prod/store/storePath.js",
+      "packages/solid-signals/dist/prod/store/utils.js",
+      "packages/solid-signals/dist/prod/boundaries.js",
+      "packages/solid-signals/dist/prod/index.js",
+      "packages/solid/dist/solid.js",
+      "public-esm-entry.mjs"
+    ]
+  },
+  "lilscriptArtifacts": [
+    {
+      "path": "dist/index.cjs",
+      "raw": 20135,
+      "gzip9": 7378,
+      "brotli11": 6673,
+      "sha256": "6bfbb5142c5cbe1bce1daf5773bb235ef5a510e6ce4af0d99a571930215c948e"
+    },
+    {
+      "path": "dist/compat.js",
+      "raw": 7818,
+      "gzip9": 1887,
+      "brotli11": 1681,
+      "sha256": "8f255cc733d0bcd2be7b06f83dbcf9ed158359eaa0998e8d06e983b36bae573f"
+    },
+    {
+      "path": "dist/lil-web.js",
+      "raw": 15143,
+      "gzip9": 5754,
+      "brotli11": 5128,
+      "sha256": "ee7d05b9b6f68f1afee4c070f15c575fc86403c82e596f211eb0436963324ba9"
+    },
+    {
+      "path": "dist/web.js",
+      "raw": 38029,
+      "gzip9": 13261,
+      "brotli11": 11862,
+      "sha256": "dccbfd262b65e2c9ef76ede7fbefd4b2680f0a0a07df00c98f72b44e097940ce"
+    },
+    {
+      "path": "dist/index.js",
+      "raw": 18563,
+      "gzip9": 6838,
+      "brotli11": 6226,
+      "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
+    },
+    {
+      "path": "dist/full.cjs",
+      "raw": 18380,
+      "gzip9": 6875,
+      "brotli11": 6092,
+      "sha256": "d46d5bf3761ca197f447ff2a2ef7fc62e7e8e115cf393f8c35850bcf2402e3a6"
+    },
+    {
+      "path": "dist/solidlil.global.js",
+      "raw": 18297,
+      "gzip9": 6816,
+      "brotli11": 6076,
+      "sha256": "a78066b93d25c15fd5f5984e4efa753161e9025ba362b6c01a20b4f65f4ac349"
+    },
+    {
+      "path": "dist/web-api.js",
+      "raw": 16347,
+      "gzip9": 4506,
+      "brotli11": 3993,
+      "sha256": "c064cb28fc3180f4872cbe3caef0049aac1c10cba0890057679ce3853e80788e"
+    },
+    {
+      "path": "dist/lil-web.cjs",
+      "raw": 15765,
+      "gzip9": 6044,
+      "brotli11": 5370,
+      "sha256": "e4df80eeb6e2aeb045c1e6593c030a9d301a9dcde6a67755a270555fe24a4009"
+    },
+    {
+      "path": "dist/index.bundle.js",
+      "raw": 18563,
+      "gzip9": 6838,
+      "brotli11": 6226,
+      "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
+    },
+    {
+      "path": "dist/web.cjs",
+      "raw": 47152,
+      "gzip9": 15948,
+      "brotli11": 14214,
+      "sha256": "b83e7a8b4f3c9846f1007e835c2afda4f232ff60264e1628f180ada96974d7c6"
+    },
+    {
+      "path": "dist/solid-api.js",
+      "raw": 19796,
+      "gzip9": 5001,
+      "brotli11": 4454,
+      "sha256": "ae35a43b730ea1f64935ab127413c2a48e1a2395a6017cf63c398fa204a5da74"
+    },
+    {
+      "path": "dist/full.js",
+      "raw": 17758,
+      "gzip9": 6608,
+      "brotli11": 5878,
+      "sha256": "49bb80226ed29ba99665579529203e94d7afdba3b564489c34f7fb996cfecbe3"
+    },
+    {
+      "path": "dist/dom-tables.js",
+      "raw": 3701,
+      "gzip9": 1500,
+      "brotli11": 1290,
+      "sha256": "ddc7791aca8995b0689463a817b5279bb5ef1d78fe03e322e0a40dfb2e6f52ce"
+    },
+    {
+      "path": "dist/core.cjs",
+      "raw": 8790,
+      "gzip9": 3529,
+      "brotli11": 3155,
+      "sha256": "df682b491b8800ed3a1448db9929dab36d08ae9999b4e35727521c2c0ba2e6f7"
+    },
+    {
+      "path": "dist/core.js",
+      "raw": 8221,
+      "gzip9": 3330,
+      "brotli11": 2964,
+      "sha256": "17741ecf00de5d52f6ccec45325be65ff651c73ea275c0dba19ade507e24f805"
+    }
+  ],
+  "nativeBuildsSummary": {
+    "samples": 3,
+    "successful": 3,
+    "medianSeconds": 18.351541179000378,
+    "minimumSeconds": 18.25083973999972,
+    "maximumSeconds": 21.30860497499998
+  },
+  "lilscriptBuildsSummary": {
+    "samples": 3,
+    "successful": 3,
+    "medianSeconds": 15.898754523000207,
+    "minimumSeconds": 15.89595705300053,
+    "maximumSeconds": 15.995656500999758
+  },
+  "status": "complete",
+  "finishedAt": "2026-09-10T20:42:49Z",
+  "workerIp": "10.1.0.21"
+}

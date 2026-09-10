@@ -1,0 +1,107 @@
+{
+  "source": {
+    "repository": "https://github.com/solidjs/solid.git",
+    "commit": "ff4d3c4479163fbdd3327f5b22d0c3ea7bd1a2c5",
+    "package": "solid-js",
+    "version": "2.0.0-rc.0",
+    "directory": "packages/solid"
+  },
+  "entry": "packages/solid/dist/solid.js",
+  "scope": "solid-js@2.0.0-rc.0 public ESM runtime graph; dependency installation excluded; this is a comparison bundle build, not the upstream vendor release pipeline",
+  "external": [],
+  "samples": [
+    {
+      "bundleSeconds": 0.019663650000000005,
+      "wallSeconds": 0.5547028919999999
+    },
+    {
+      "bundleSeconds": 0.013202223000000004,
+      "wallSeconds": 0.4845411009999999
+    },
+    {
+      "bundleSeconds": 0.012488601000000018,
+      "wallSeconds": 0.4225959539999999
+    }
+  ],
+  "medianSeconds": 0.4845411009999999,
+  "toolchain": {
+    "esbuild": "0.28.1",
+    "terser": "5.51.2"
+  },
+  "artifacts": [
+    {
+      "path": "original.esm.js",
+      "raw": 77519,
+      "gzip9": 27183,
+      "brotli11": 24613,
+      "sha256": "6d5f90252ef7fd1260779b417d1c621234d1727cae28c970d50215023ac90fa7"
+    },
+    {
+      "path": "original.unminified.js",
+      "raw": 178483,
+      "gzip9": 41124,
+      "brotli11": 35571,
+      "sha256": "909ac2681442f55843ec3f97cd02bd0565f0c06c8222f7b86dbbc3a9de725c1c"
+    },
+    {
+      "path": "original.terser-nomangle.js",
+      "raw": 113006,
+      "gzip9": 32884,
+      "brotli11": 29538,
+      "sha256": "927739e07a49621348f5d475aa62079a3e6e62e7cf40e981dcad45f6e1947adc"
+    },
+    {
+      "path": "original.esbuild.js",
+      "raw": 78163,
+      "gzip9": 28280,
+      "brotli11": 25558,
+      "sha256": "b1eb6541912367c00b39fe7dadebb1bf773a5a0525e9475c9794cba03eacf589"
+    },
+    {
+      "path": "original.oxc-mangle.js",
+      "raw": 76314,
+      "gzip9": 27157,
+      "brotli11": 24532,
+      "sha256": "de57df9e974d6065d06913ae63beba2a38a253fe2752f182c38d86ec065612bb"
+    },
+    {
+      "path": "original.oxc-nomangle.js",
+      "raw": 118546,
+      "gzip9": 33680,
+      "brotli11": 30146,
+      "sha256": "2ea0363f36f23008ed0886c8da2671030a8b2f8a1aa76ce0c586f202648ee1c7"
+    }
+  ],
+  "inputs": [
+    "packages/solid-signals/dist/prod/core/error.js",
+    "packages/solid-signals/dist/prod/core/constants.js",
+    "packages/solid-signals/dist/prod/core/invariants.js",
+    "packages/solid-signals/dist/prod/core/dev.js",
+    "packages/solid-signals/dist/prod/core/lanes.js",
+    "packages/solid-signals/dist/prod/core/scheduler.js",
+    "packages/solid-signals/dist/prod/core/heap.js",
+    "packages/solid-signals/dist/prod/core/owner.js",
+    "packages/solid-signals/dist/prod/core/graph.js",
+    "packages/solid-signals/dist/prod/core/async.js",
+    "packages/solid-signals/dist/prod/core/core.js",
+    "packages/solid-signals/dist/prod/core/external.js",
+    "packages/solid-signals/dist/prod/core/context.js",
+    "packages/solid-signals/dist/prod/core/optimistic.js",
+    "packages/solid-signals/dist/prod/core/verdict.js",
+    "packages/solid-signals/dist/prod/core/effect.js",
+    "packages/solid-signals/dist/prod/core/action.js",
+    "packages/solid-signals/dist/prod/signals.js",
+    "packages/solid-signals/dist/prod/store/reconcile.js",
+    "packages/solid-signals/dist/prod/store/projection.js",
+    "packages/solid-signals/dist/prod/store/store.js",
+    "packages/solid-signals/dist/prod/affects.js",
+    "packages/solid-signals/dist/prod/map.js",
+    "packages/solid-signals/dist/prod/store/optimistic.js",
+    "packages/solid-signals/dist/prod/store/storePath.js",
+    "packages/solid-signals/dist/prod/store/utils.js",
+    "packages/solid-signals/dist/prod/boundaries.js",
+    "packages/solid-signals/dist/prod/index.js",
+    "packages/solid/dist/solid.js",
+    "public-esm-entry.mjs"
+  ]
+}

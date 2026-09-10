@@ -1,0 +1,248 @@
+• Packages in scope: @solidjs/web, solid-js
+• Running build in 2 packages
+• Remote caching disabled
+@solidjs/signals:types: cache bypass, force executing f60b41cae8f13888
+@solidjs/signals:build: cache bypass, force executing a6b5e4aad6ae0823
+@solidjs/signals:build: $ npm-run-all -nl build:* && pnpm types
+@solidjs/signals:types: $ tsc -p tsconfig.build.json && node ../../scripts/sync-dual-types.mjs ./dist/types ./dist/types-cjs
+@solidjs/signals:build: [build:clean] 
+@solidjs/signals:build: [build:clean] > @solidjs/signals@2.0.0-rc.0 build:clean /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/package.json
+@solidjs/signals:build: [build:clean] > rimraf dist/dev dist/prod dist/node dist/dev.js dist/prod.js dist/node.cjs 
+@solidjs/signals:build: [build:clean] 
+@solidjs/signals:build: [build:clean] $ rimraf dist/dev dist/prod dist/node dist/dev.js dist/prod.js dist/node.cjs
+@solidjs/signals:build: [build:js   ] 
+@solidjs/signals:build: [build:js   ] > @solidjs/signals@2.0.0-rc.0 build:js /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/package.json
+@solidjs/signals:build: [build:js   ] > rollup -c && node ./scripts/mangle-props.mjs dist/prod dist/node.cjs && node ./scripts/check-pure.mjs dist/prod 
+@solidjs/signals:build: [build:js   ] 
+@solidjs/signals:build: [build:js   ] $ rollup -c && node ./scripts/mangle-props.mjs dist/prod dist/node.cjs && node ./scripts/check-pure.mjs dist/prod
+@solidjs/signals:build: [build:js   ] [36m
+@solidjs/signals:build: [build:js   ] [1msrc/index.ts[22m → [1mdist/dev.js[22m...[39m
+solid-js:types: cache bypass, force executing 6d4dbc32fed5320d
+solid-js:types: $ npm-run-all -nl types:clean types:src types:cjs
+solid-js:types: [types:clean] 
+solid-js:types: [types:clean] > solid-js@2.0.0-rc.0 types:clean /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid/package.json
+solid-js:types: [types:clean] > rimraf types/ types-cjs/ 
+solid-js:types: [types:clean] 
+solid-js:types: [types:clean] $ rimraf types/ types-cjs/
+solid-js:types: [types:src  ] 
+solid-js:types: [types:src  ] > solid-js@2.0.0-rc.0 types:src /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid/package.json
+solid-js:types: [types:src  ] > tsc --project ./tsconfig.build.json 
+solid-js:types: [types:src  ] 
+solid-js:types: [types:src  ] $ tsc --project ./tsconfig.build.json
+solid-js:types: [types:cjs  ] 
+solid-js:types: [types:cjs  ] > solid-js@2.0.0-rc.0 types:cjs /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid/package.json
+solid-js:types: [types:cjs  ] > node ../../scripts/sync-dual-types.mjs ./types ./types-cjs 
+solid-js:types: [types:cjs  ] 
+solid-js:types: [types:cjs  ] $ node ../../scripts/sync-dual-types.mjs ./types ./types-cjs
+@solidjs/web:types: cache bypass, force executing d603dbd870343690
+@solidjs/web:types: $ npm-run-all -nl types:clean types:copy-jsx types:web types:copy-web types:web-storage types:copy-server-functions types:copy-serialization types:web-frames types:copy-frames types:cjs
+@solidjs/web:types: [types:clean                ] 
+@solidjs/web:types: [types:clean                ] > @solidjs/web@2.0.0-rc.0 types:clean /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:clean                ] > rimraf types/ types-cjs/ storage/types/ storage/types-cjs/ serialization/types/ serialization/types-cjs/ frames/types/ 
+@solidjs/web:types: [types:clean                ] 
+@solidjs/web:types: [types:clean                ] $ rimraf types/ types-cjs/ storage/types/ storage/types-cjs/ serialization/types/ serialization/types-cjs/ frames/types/
+@solidjs/web:types: [types:copy-jsx             ] 
+@solidjs/web:types: [types:copy-jsx             ] > @solidjs/web@2.0.0-rc.0 types:copy-jsx /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:copy-jsx             ] > ncp ../../node_modules/@dom-expressions/runtime/src/jsx.d.ts ./src/jsx.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/jsx-properties.d.ts ./src/jsx-properties.d.ts && dom-expressions-jsx-types --input ./src/jsx.d.ts --element "SolidElement | Node | ArrayElement" --import 'import type { Element as SolidElement } from "solid-js";' 
+@solidjs/web:types: [types:copy-jsx             ] 
+@solidjs/web:types: [types:copy-jsx             ] $ ncp ../../node_modules/@dom-expressions/runtime/src/jsx.d.ts ./src/jsx.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/jsx-properties.d.ts ./src/jsx-properties.d.ts && dom-expressions-jsx-types --input ./src/jsx.d.ts --element "SolidElement | Node | ArrayElement" --import 'import type { Element as SolidElement } from "solid-js";'
+@solidjs/web:types: [types:web                  ] 
+@solidjs/web:types: [types:web                  ] > @solidjs/web@2.0.0-rc.0 types:web /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:web                  ] > tsc --project ./tsconfig.build.json 
+@solidjs/web:types: [types:web                  ] 
+@solidjs/web:types: [types:web                  ] $ tsc --project ./tsconfig.build.json
+@solidjs/signals:build: [build:js   ] [1m[33m(!) Circular dependencies[39m[22m
+@solidjs/signals:build: [build:js   ] src/core/core.ts -> src/core/async.ts -> src/core/core.ts
+@solidjs/signals:build: [build:js   ] src/core/core.ts -> src/core/async.ts -> src/core/graph.ts -> src/core/heap.ts -> src/core/scheduler.ts -> src/core/core.ts
+@solidjs/signals:build: [build:js   ] src/core/heap.ts -> src/core/scheduler.ts -> src/core/heap.ts
+@solidjs/signals:build: [build:js   ] ...and 5 more
+@solidjs/signals:build: [build:js   ] [1m[33m(!) [plugin typescript] tests/createRoot.test.ts (63:11): @rollup/plugin-typescript TS2345: Argument of type 'Accessor<number>' is not assignable to parameter of type 'Refreshable<Accessor<number>>'.
+@solidjs/signals:build: [build:js   ]   Type 'Accessor<number>' is not assignable to type '{ readonly [$REFRESH]: any; }'.[39m[22m
+@solidjs/signals:build: [build:js   ] [1m/home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/tests/createRoot.test.ts:63:11[22m
+@solidjs/signals:build: [build:js   ] [90m
+@solidjs/signals:build: [build:js   ] [7m63[0m   refresh(read); // queue the dependency-free memo
+@solidjs/signals:build: [build:js   ] [7m  [0m [91m          ~~~~[0m
+@solidjs/signals:build: [build:js   ] [39m
+@solidjs/signals:build: [build:js   ] [1m[33m(!) [plugin typescript] tests/untracked-async-read.test.ts (28:32): @rollup/plugin-typescript TS2558: Expected 1 type arguments, but got 2.[39m[22m
+@solidjs/signals:build: [build:js   ] [1m/home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/tests/untracked-async-read.test.ts:28:32[22m
+@solidjs/signals:build: [build:js   ] [90m
+@solidjs/signals:build: [build:js   ] [7m28[0m       const [s] = createSignal<Promise<number>, number>(async () => {
+@solidjs/signals:build: [build:js   ] [7m  [0m [91m                               ~~~~~~~~~~~~~~~~~~~~~~~[0m
+@solidjs/signals:build: [build:js   ] [39m
+@solidjs/signals:build: [build:js   ] [32mcreated [1mdist/dev.js[22m in [1m3.6s[22m[39m
+@solidjs/signals:build: [build:js   ] [36m
+@solidjs/signals:build: [build:js   ] [1msrc/index.ts[22m → [1mdist/prod[22m...[39m
+@solidjs/web:types: [types:copy-web             ] 
+@solidjs/web:types: [types:copy-web             ] > @solidjs/web@2.0.0-rc.0 types:copy-web /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:copy-web             ] > node -e "const src = fs.readFileSync('../../node_modules/@dom-expressions/runtime/src/client.d.ts', 'utf8'); const marker = 'export type { RequestEventLocals } from'; if (!src.includes(marker)) throw new Error('client.d.ts drift: the type-only RequestEventLocals re-export was not found — revisit the augmentation-identity rewrite'); fs.writeFileSync('./types/client.d.ts', src.replace(marker, 'export { RequestEventLocals } from'));" && ncp ../../node_modules/@dom-expressions/runtime/src/server.d.ts ./types/server.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/serializer.d.ts ./types/serializer.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/serializer-decode.d.ts ./types/serializer-decode.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/response.d.ts ./types/response.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/cookies.d.ts ./types/cookies.d.ts && ncp ./src/jsx.d.ts ./types/jsx.d.ts && ncp ./src/jsx-properties.d.ts ./types/jsx-properties.d.ts 
+@solidjs/web:types: [types:copy-web             ] 
+@solidjs/web:types: [types:copy-web             ] $ node -e "const src = fs.readFileSync('../../node_modules/@dom-expressions/runtime/src/client.d.ts', 'utf8'); const marker = 'export type { RequestEventLocals } from'; if (!src.includes(marker)) throw new Error('client.d.ts drift: the type-only RequestEventLocals re-export was not found — revisit the augmentation-identity rewrite'); fs.writeFileSync('./types/client.d.ts', src.replace(marker, 'export { RequestEventLocals } from'));" && ncp ../../node_modules/@dom-expressions/runtime/src/server.d.ts ./types/server.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/serializer.d.ts ./types/serializer.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/serializer-decode.d.ts ./types/serializer-decode.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/response.d.ts ./types/response.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/cookies.d.ts ./types/cookies.d.ts && ncp ./src/jsx.d.ts ./types/jsx.d.ts && ncp ./src/jsx-properties.d.ts ./types/jsx-properties.d.ts
+@solidjs/web:types: [types:web-storage          ] 
+@solidjs/web:types: [types:web-storage          ] > @solidjs/web@2.0.0-rc.0 types:web-storage /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:web-storage          ] > tsc --project ./storage/tsconfig.build.json 
+@solidjs/web:types: [types:web-storage          ] 
+@solidjs/web:types: [types:web-storage          ] $ tsc --project ./storage/tsconfig.build.json
+@solidjs/web:types: [types:copy-server-functions] 
+@solidjs/web:types: [types:copy-server-functions] > @solidjs/web@2.0.0-rc.0 types:copy-server-functions /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:copy-server-functions] > node -e "fs.mkdirSync('./types/server-functions', { recursive: true }); for (const f of ['shared', 'flash', 'client', 'server', 'rich-args']) fs.copyFileSync('../../node_modules/@dom-expressions/runtime/src/server-functions/' + f + '.d.ts', './types/server-functions/' + f + '.d.ts');" 
+@solidjs/web:types: [types:copy-server-functions] 
+@solidjs/web:types: [types:copy-server-functions] $ node -e "fs.mkdirSync('./types/server-functions', { recursive: true }); for (const f of ['shared', 'flash', 'client', 'server', 'rich-args']) fs.copyFileSync('../../node_modules/@dom-expressions/runtime/src/server-functions/' + f + '.d.ts', './types/server-functions/' + f + '.d.ts');"
+@solidjs/web:types: [types:copy-serialization   ] 
+@solidjs/web:types: [types:copy-serialization   ] > @solidjs/web@2.0.0-rc.0 types:copy-serialization /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:copy-serialization   ] > node -e "fs.mkdirSync('./serialization/types', { recursive: true }); fs.copyFileSync('../../node_modules/@dom-expressions/runtime/src/serializer.d.ts', './serialization/types/index.d.ts'); fs.copyFileSync('../../node_modules/@dom-expressions/runtime/src/serializer-decode.d.ts', './serialization/types/serializer-decode.d.ts');" 
+@solidjs/web:types: [types:copy-serialization   ] 
+@solidjs/web:types: [types:copy-serialization   ] $ node -e "fs.mkdirSync('./serialization/types', { recursive: true }); fs.copyFileSync('../../node_modules/@dom-expressions/runtime/src/serializer.d.ts', './serialization/types/index.d.ts'); fs.copyFileSync('../../node_modules/@dom-expressions/runtime/src/serializer-decode.d.ts', './serialization/types/serializer-decode.d.ts');"
+@solidjs/web:types: [types:web-frames           ] 
+@solidjs/web:types: [types:web-frames           ] > @solidjs/web@2.0.0-rc.0 types:web-frames /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:web-frames           ] > tsc --project ./frames/tsconfig.build.json 
+@solidjs/web:types: [types:web-frames           ] 
+@solidjs/web:types: [types:web-frames           ] $ tsc --project ./frames/tsconfig.build.json
+@solidjs/signals:build: [build:js   ] [1m[33m(!) Export "assignOrMergeLane" of module "src/core/lanes.ts" was reexported through module "src/core/scheduler.ts" while both modules are dependencies of each other and will end up in different chunks by current Rollup settings. This scenario is not well supported at the moment as it will produce a circular dependency between chunks and will likely lead to broken execution order.
+@solidjs/signals:build: [build:js   ] Either change the import in "src/core/async.ts" to point directly to the exporting module or do not use "output.preserveModules" to ensure these modules end up in the same chunk.[39m[22m
+@solidjs/signals:build: [build:js   ] [1m/home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/src/core/async.ts[22m
+@solidjs/signals:build: [build:js   ] [1m[33m(!) Circular dependencies[39m[22m
+@solidjs/signals:build: [build:js   ] src/core/core.ts -> src/core/async.ts -> src/core/core.ts
+@solidjs/signals:build: [build:js   ] src/core/core.ts -> src/core/async.ts -> src/core/graph.ts -> src/core/heap.ts -> src/core/scheduler.ts -> src/core/core.ts
+@solidjs/signals:build: [build:js   ] src/core/heap.ts -> src/core/scheduler.ts -> src/core/heap.ts
+@solidjs/signals:build: [build:js   ] ...and 5 more
+@solidjs/signals:build: [build:js   ] [1m[33m(!) [plugin typescript] tests/createRoot.test.ts (63:11): @rollup/plugin-typescript TS2345: Argument of type 'Accessor<number>' is not assignable to parameter of type 'Refreshable<Accessor<number>>'.
+@solidjs/signals:build: [build:js   ]   Type 'Accessor<number>' is not assignable to type '{ readonly [$REFRESH]: any; }'.[39m[22m
+@solidjs/signals:build: [build:js   ] [1m/home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/tests/createRoot.test.ts:63:11[22m
+@solidjs/signals:build: [build:js   ] [90m
+@solidjs/signals:build: [build:js   ] [7m63[0m   refresh(read); // queue the dependency-free memo
+@solidjs/signals:build: [build:js   ] [7m  [0m [91m          ~~~~[0m
+@solidjs/signals:build: [build:js   ] [39m
+@solidjs/signals:build: [build:js   ] [1m[33m(!) [plugin typescript] tests/untracked-async-read.test.ts (28:32): @rollup/plugin-typescript TS2558: Expected 1 type arguments, but got 2.[39m[22m
+@solidjs/signals:build: [build:js   ] [1m/home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/tests/untracked-async-read.test.ts:28:32[22m
+@solidjs/signals:build: [build:js   ] [90m
+@solidjs/signals:build: [build:js   ] [7m28[0m       const [s] = createSignal<Promise<number>, number>(async () => {
+@solidjs/signals:build: [build:js   ] [7m  [0m [91m                               ~~~~~~~~~~~~~~~~~~~~~~~[0m
+@solidjs/signals:build: [build:js   ] [39m
+@solidjs/signals:build: [build:js   ] [32mcreated [1mdist/prod[22m in [1m2.8s[22m[39m
+@solidjs/signals:build: [build:js   ] [36m
+@solidjs/signals:build: [build:js   ] [1msrc/index.ts[22m → [1mdist/node.cjs[22m...[39m
+@solidjs/web:types: [types:copy-frames          ] 
+@solidjs/web:types: [types:copy-frames          ] > @solidjs/web@2.0.0-rc.0 types:copy-frames /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:copy-frames          ] > node -e "fs.mkdirSync('./types/frames', { recursive: true }); for (const f of ['frame-client', 'frame-transport', 'frame-sink', 'serializer']) fs.copyFileSync('../../node_modules/@dom-expressions/runtime/src/' + f + '.d.ts', './types/frames/' + f + '.d.ts'); for (const f of ['client', 'server']) fs.writeFileSync('./types/frames/' + f + '.d.ts', fs.readFileSync('./frames/types/' + f + '.d.ts', 'utf8').replaceAll('@dom-expressions/runtime/src/', './'));" 
+@solidjs/web:types: [types:copy-frames          ] 
+@solidjs/web:types: [types:copy-frames          ] $ node -e "fs.mkdirSync('./types/frames', { recursive: true }); for (const f of ['frame-client', 'frame-transport', 'frame-sink', 'serializer']) fs.copyFileSync('../../node_modules/@dom-expressions/runtime/src/' + f + '.d.ts', './types/frames/' + f + '.d.ts'); for (const f of ['client', 'server']) fs.writeFileSync('./types/frames/' + f + '.d.ts', fs.readFileSync('./frames/types/' + f + '.d.ts', 'utf8').replaceAll('@dom-expressions/runtime/src/', './'));"
+@solidjs/web:types: [types:cjs                  ] 
+@solidjs/web:types: [types:cjs                  ] > @solidjs/web@2.0.0-rc.0 types:cjs /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:types: [types:cjs                  ] > node ../../scripts/sync-dual-types.mjs ./types ./types-cjs ./storage/types ./storage/types-cjs ./serialization/types ./serialization/types-cjs 
+@solidjs/web:types: [types:cjs                  ] 
+@solidjs/web:types: [types:cjs                  ] $ node ../../scripts/sync-dual-types.mjs ./types ./types-cjs ./storage/types ./storage/types-cjs ./serialization/types ./serialization/types-cjs
+@solidjs/signals:build: [build:js   ] [1m[33m(!) Circular dependencies[39m[22m
+@solidjs/signals:build: [build:js   ] src/core/core.ts -> src/core/async.ts -> src/core/core.ts
+@solidjs/signals:build: [build:js   ] src/core/core.ts -> src/core/async.ts -> src/core/graph.ts -> src/core/heap.ts -> src/core/scheduler.ts -> src/core/core.ts
+@solidjs/signals:build: [build:js   ] src/core/heap.ts -> src/core/scheduler.ts -> src/core/heap.ts
+@solidjs/signals:build: [build:js   ] ...and 5 more
+@solidjs/signals:build: [build:js   ] [1m[33m(!) [plugin typescript] tests/createRoot.test.ts (63:11): @rollup/plugin-typescript TS2345: Argument of type 'Accessor<number>' is not assignable to parameter of type 'Refreshable<Accessor<number>>'.
+@solidjs/signals:build: [build:js   ]   Type 'Accessor<number>' is not assignable to type '{ readonly [$REFRESH]: any; }'.[39m[22m
+@solidjs/signals:build: [build:js   ] [1m/home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/tests/createRoot.test.ts:63:11[22m
+@solidjs/signals:build: [build:js   ] [90m
+@solidjs/signals:build: [build:js   ] [7m63[0m   refresh(read); // queue the dependency-free memo
+@solidjs/signals:build: [build:js   ] [7m  [0m [91m          ~~~~[0m
+@solidjs/signals:build: [build:js   ] [39m
+@solidjs/signals:build: [build:js   ] [1m[33m(!) [plugin typescript] tests/untracked-async-read.test.ts (28:32): @rollup/plugin-typescript TS2558: Expected 1 type arguments, but got 2.[39m[22m
+@solidjs/signals:build: [build:js   ] [1m/home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-signals/tests/untracked-async-read.test.ts:28:32[22m
+@solidjs/signals:build: [build:js   ] [90m
+@solidjs/signals:build: [build:js   ] [7m28[0m       const [s] = createSignal<Promise<number>, number>(async () => {
+@solidjs/signals:build: [build:js   ] [7m  [0m [91m                               ~~~~~~~~~~~~~~~~~~~~~~~[0m
+@solidjs/signals:build: [build:js   ] [39m
+@solidjs/signals:build: [build:js   ] [32mcreated [1mdist/node.cjs[22m in [1m2.9s[22m[39m
+@solidjs/signals:build: [build:js   ] mangled _-props across 28 files in dist/prod
+@solidjs/signals:build: [build:js   ] mangled _-props across 1 files in dist/node.cjs
+@solidjs/signals:build: [build:js   ] check-pure: 2 annotation(s) present in dist/prod (src has 2)
+@solidjs/signals:build: $ tsc -p tsconfig.build.json && node ../../scripts/sync-dual-types.mjs ./dist/types ./dist/types-cjs
+solid-js:build: cache bypass, force executing 89bb136e00d73651
+solid-js:build: $ npm-run-all -nl build:*
+solid-js:build: [build:clean] 
+solid-js:build: [build:clean] > solid-js@2.0.0-rc.0 build:clean /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid/package.json
+solid-js:build: [build:clean] > rimraf dist/ coverage/ 
+solid-js:build: [build:clean] 
+solid-js:build: [build:clean] $ rimraf dist/ coverage/
+solid-js:build: [build:js   ] 
+solid-js:build: [build:js   ] > solid-js@2.0.0-rc.0 build:js /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid/package.json
+solid-js:build: [build:js   ] > rollup -c 
+solid-js:build: [build:js   ] 
+solid-js:build: [build:js   ] $ rollup -c
+solid-js:build: [build:js   ] [36m
+solid-js:build: [build:js   ] [1msrc/index.ts[22m → [1mdist/solid.cjs, dist/solid.js[22m...[39m
+solid-js:build: [build:js   ] [32mcreated [1mdist/solid.cjs, dist/solid.js[22m in [1m238ms[22m[39m
+solid-js:build: [build:js   ] [36m
+solid-js:build: [build:js   ] [1msrc/server/index.ts[22m → [1mdist/server.cjs, dist/server.js[22m...[39m
+solid-js:build: [build:js   ] [1m[33m(!) Circular dependency[39m[22m
+solid-js:build: [build:js   ] src/server/signals.ts -> src/server/shared.ts -> src/server/signals.ts
+solid-js:build: [build:js   ] [32mcreated [1mdist/server.cjs, dist/server.js[22m in [1m165ms[22m[39m
+solid-js:build: [build:js   ] [36m
+solid-js:build: [build:js   ] [1msrc/index.ts[22m → [1mdist/dev.cjs, dist/dev.js[22m...[39m
+solid-js:build: [build:js   ] [32mcreated [1mdist/dev.cjs, dist/dev.js[22m in [1m113ms[22m[39m
+solid-js:build: [build:js   ] [36m
+solid-js:build: [build:js   ] [1msrc/refresh/index.ts[22m → [1mdist/refresh.cjs, dist/refresh.js[22m...[39m
+solid-js:build: [build:js   ] [32mcreated [1mdist/refresh.cjs, dist/refresh.js[22m in [1m27ms[22m[39m
+solid-js:build: [build:js   ] [36m
+solid-js:build: [build:js   ] [1msrc/refresh/index.ts[22m → [1mdist/refresh.dev.cjs, dist/refresh.dev.js[22m...[39m
+solid-js:build: [build:js   ] [32mcreated [1mdist/refresh.dev.cjs, dist/refresh.dev.js[22m in [1m20ms[22m[39m
+@solidjs/web:link: cache bypass, force executing 5009b55939c60c1d
+@solidjs/web:link: $ symlink-dir . node_modules/@solidjs/web
+@solidjs/web:build: cache bypass, force executing 62cd137053146109
+@solidjs/web:build: $ npm-run-all -nl build:clean types:copy-jsx build:js
+@solidjs/web:build: [build:clean   ] 
+@solidjs/web:build: [build:clean   ] > @solidjs/web@2.0.0-rc.0 build:clean /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:build: [build:clean   ] > rimraf dist/ 
+@solidjs/web:build: [build:clean   ] 
+@solidjs/web:build: [build:clean   ] $ rimraf dist/
+@solidjs/web:build: [types:copy-jsx] 
+@solidjs/web:build: [types:copy-jsx] > @solidjs/web@2.0.0-rc.0 types:copy-jsx /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:build: [types:copy-jsx] > ncp ../../node_modules/@dom-expressions/runtime/src/jsx.d.ts ./src/jsx.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/jsx-properties.d.ts ./src/jsx-properties.d.ts && dom-expressions-jsx-types --input ./src/jsx.d.ts --element "SolidElement | Node | ArrayElement" --import 'import type { Element as SolidElement } from "solid-js";' 
+@solidjs/web:build: [types:copy-jsx] 
+@solidjs/web:build: [types:copy-jsx] $ ncp ../../node_modules/@dom-expressions/runtime/src/jsx.d.ts ./src/jsx.d.ts && ncp ../../node_modules/@dom-expressions/runtime/src/jsx-properties.d.ts ./src/jsx-properties.d.ts && dom-expressions-jsx-types --input ./src/jsx.d.ts --element "SolidElement | Node | ArrayElement" --import 'import type { Element as SolidElement } from "solid-js";'
+@solidjs/web:build: [build:js      ] 
+@solidjs/web:build: [build:js      ] > @solidjs/web@2.0.0-rc.0 build:js /home/lilfarm/source-perf-20260910/upstream/solidlil/packages/solid-web/package.json
+@solidjs/web:build: [build:js      ] > rollup -c 
+@solidjs/web:build: [build:js      ] 
+@solidjs/web:build: [build:js      ] $ rollup -c
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1msrc/index.ts[22m → [1mdist/web.cjs, dist/web.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mdist/web.cjs, dist/web.js[22m in [1m326ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mserver/index.ts[22m → [1mdist/server.cjs, dist/server.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mdist/server.cjs, dist/server.js[22m in [1m334ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1msrc/index.ts[22m → [1mdist/dev.cjs, dist/dev.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mdist/dev.cjs, dist/dev.js[22m in [1m153ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mstorage/src/index.ts[22m → [1mstorage/dist/storage.cjs, storage/dist/storage.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mstorage/dist/storage.cjs, storage/dist/storage.js[22m in [1m8ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mserialization/src/index.ts[22m → [1mserialization/dist/serialization.cjs, serialization/dist/serialization.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mserialization/dist/serialization.cjs, serialization/dist/serialization.js[22m in [1m23ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mserialization/src/decode.ts[22m → [1mserialization/dist/decode.cjs, serialization/dist/decode.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mserialization/dist/decode.cjs, serialization/dist/decode.js[22m in [1m14ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mserver-functions/src/client.ts[22m → [1mserver-functions/dist/client.cjs, server-functions/dist/client.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mserver-functions/dist/client.cjs, server-functions/dist/client.js[22m in [1m43ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mserver-functions/src/rich-args.ts[22m → [1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mserver-functions/dist/rich-args.cjs, server-functions/dist/rich-args.js[22m in [1m8ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mserver-functions/src/server.ts[22m → [1mserver-functions/dist/server.cjs, server-functions/dist/server.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mserver-functions/dist/server.cjs, server-functions/dist/server.js[22m in [1m256ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mserver-functions/src/server.ts[22m → [1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mserver-functions/dist/server.dev.cjs, server-functions/dist/server.dev.js[22m in [1m264ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mframes/src/client.ts[22m → [1mframes/dist/client.cjs, frames/dist/client.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mframes/dist/client.cjs, frames/dist/client.js[22m in [1m150ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mframes/src/client.ts[22m → [1mframes/dist/client.dev.cjs, frames/dist/client.dev.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mframes/dist/client.dev.cjs, frames/dist/client.dev.js[22m in [1m141ms[22m[39m
+@solidjs/web:build: [build:js      ] [36m
+@solidjs/web:build: [build:js      ] [1mframes/src/server.ts[22m → [1mframes/dist/server.cjs, frames/dist/server.js[22m...[39m
+@solidjs/web:build: [build:js      ] [32mcreated [1mframes/dist/server.cjs, frames/dist/server.js[22m in [1m381ms[22m[39m
+
+ Tasks:    7 successful, 7 total
+Cached:    0 cached, 7 total
+  Time:    17.903s 
+

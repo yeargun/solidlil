@@ -1,0 +1,40 @@
+{
+  "source": {
+    "repository": "https://github.com/solidjs/solid.git",
+    "commit": "ff4d3c4479163fbdd3327f5b22d0c3ea7bd1a2c5",
+    "package": "solid-js",
+    "version": "2.0.0-rc.0",
+    "directory": "packages/solid"
+  },
+  "portSource": {
+    "commit": "ad2a0442c418ea4feecba44074a92f0583970d14"
+  },
+  "compilerCommit": "4dc4e3337d9ffd758d65e3852682d6e13d9331c1",
+  "install": [
+    "corepack",
+    "pnpm",
+    "install",
+    "--frozen-lockfile",
+    "--ignore-scripts"
+  ],
+  "setup": [],
+  "build": [
+    "corepack",
+    "pnpm",
+    "exec",
+    "turbo",
+    "run",
+    "build",
+    "--filter=solid-js...",
+    "--force"
+  ],
+  "clean": [
+    "packages/solid/dist"
+  ],
+  "entry": "packages/solid/dist/solid.js",
+  "defaultExport": false,
+  "external": [],
+  "esmScope": "solid-js@2.0.0-rc.0 public ESM runtime graph; dependency installation excluded; this is a comparison bundle build, not the upstream vendor release pipeline",
+  "lilscriptBuild": "node scripts/build.mjs --compile --force",
+  "test": "node --test test/node.test.mjs test/vite.test.mjs test/coverage.test.mjs test/jfb.test.mjs test/apps-e2e.test.mjs"
+}
