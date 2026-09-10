@@ -44,24 +44,28 @@
   },
   "artifacts": {
     "core": {
-      "raw": 8267,
-      "gzip": 3309,
-      "brotli": 2979
+      "raw": 8221,
+      "gzip": 3330,
+      "brotli": 2964,
+      "sha256": "17741ecf00de5d52f6ccec45325be65ff651c73ea275c0dba19ade507e24f805"
     },
     "web": {
-      "raw": 38226,
-      "gzip": 13400,
-      "brotli": 11993
+      "raw": 38029,
+      "gzip": 13261,
+      "brotli": 11862,
+      "sha256": "dccbfd262b65e2c9ef76ede7fbefd4b2680f0a0a07df00c98f72b44e097940ce"
     },
     "full": {
-      "raw": 17909,
-      "gzip": 6653,
-      "brotli": 5945
+      "raw": 17758,
+      "gzip": 6608,
+      "brotli": 5878,
+      "sha256": "49bb80226ed29ba99665579529203e94d7afdba3b564489c34f7fb996cfecbe3"
     },
     "index.bundle": {
-      "raw": 18588,
-      "gzip": 6858,
-      "brotli": 6268
+      "raw": 18563,
+      "gzip": 6838,
+      "brotli": 6226,
+      "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
     }
   },
   "examples": [
@@ -733,7 +737,7 @@
       {
         "id": "current-1b9e04fc9880",
         "role": "current",
-        "label": "Current compiler · rebuilt packaged core",
+        "label": "Current compiler \u00b7 rebuilt packaged core",
         "recordedAt": "2026-09-02T14:59:35.928Z",
         "source": {
           "revision": "448ada097a0d5814299aac12a2814e823d588c9a",
@@ -825,5 +829,8 @@
         "clear": 1.0161290318994909
       }
     }
-  }
+  },
+  "artifactMeasuredAt": "2026-09-10T14:01:05Z",
+  "buildAudit": "./build-audit.json",
+  "applicationEvidenceStatus": "Historical application bundles; see generatedAt. Only the direct runtime artifacts were remeasured for this compiler."
 }
