@@ -4,13 +4,13 @@ import { copyFile, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 import { brotliCompressSync, constants, gzipSync } from "node:zlib"
-import { minify } from "terser"
 import { build as viteBuild } from "vite"
 import { apps } from "./apps.mjs"
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const compilerCandidates = [
   process.env.SOLIDLIL_LILSCRIPT_BIN,
+  process.env.LILSCRIPT_COMPILER,
   resolve(root, "../lilscript/target/release/lilscript"),
   "lilscript",
 ].filter(Boolean)
@@ -54,34 +54,15 @@ async function compileLil(id) {
   await mkdir(join(distApps, id), { recursive: true })
   const result = spawnSync(
     compiler,
-    [generated, "--target", "js-module", "--config", join(root, "src", "lilscript.closed.toml"), "--mode", "production", "--output", out],
+    [generated, "--target", "js-module", "--config", join(root, "src", "lilscript.closed.toml"), "--mode", "production", "--logical-work", "8000000000", "--cache", "off", "--output", out],
     { cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
   )
   if (result.status !== 0) {
     throw new Error(`${id} lil compile failed\n${result.stderr || result.stdout}\n(generated ${generated})`)
   }
   await rm(generated, { force: true })
-  const minified = await minify(await readFile(out, "utf8"), {
-    module: true,
-    compress: { passes: 3 },
-    mangle: { toplevel: true, properties: { regex: /^_/, keep_quoted: true } },
-    format: { comments: false },
-  })
-  const code = inlineAsyncHost(minified.code)
-  await writeFile(out, `${code}\n`)
+  const code = await readFile(out, "utf8")
   return bytesOf(code)
-}
-
-function inlineAsyncHost(code) {
-  return code.replace(
-    /import\s*\{([^}]+)\}\s*from\s*["'][^"']*async-host\.js["'];?/,
-    (_, specifiers) => {
-      const local = specifiers.includes(" as ")
-        ? specifiers.split(" as ").pop().trim()
-        : specifiers.trim()
-      return `function ${local}(value,ms){return new Promise((resolve)=>setTimeout(()=>resolve(value),ms))}`
-    },
-  )
 }
 
 async function compileKeyedPerformance() {
@@ -98,7 +79,7 @@ async function compileKeyedPerformance() {
   const out = join(distApps, "keyed", "solidlil.performance.js")
   const result = spawnSync(
     compiler,
-    [generated, "--target", "js-module", "--config", join(root, "src", "lilscript.closed.toml"), "--mode", "production", "--output", out],
+    [generated, "--target", "js-module", "--config", join(root, "src", "lilscript.closed.toml"), "--mode", "production", "--logical-work", "8000000000", "--cache", "off", "--output", out],
     { cwd: root, encoding: "utf8", maxBuffer: 32 * 1024 * 1024 },
   )
   if (result.status !== 0) {
@@ -108,14 +89,7 @@ async function compileKeyedPerformance() {
   if (result.status !== 0) {
     throw new Error(`keyed performance compile failed\n${result.stderr || result.stdout}`)
   }
-  const minified = await minify(await readFile(out, "utf8"), {
-    module: true,
-    compress: { passes: 3 },
-    mangle: { toplevel: true },
-    format: { comments: false },
-  })
-  await writeFile(out, `${minified.code}\n`)
-  return bytesOf(minified.code)
+  return bytesOf(await readFile(out, "utf8"))
 }
 
 function html(src) {
@@ -273,7 +247,7 @@ const summary = {
   artifacts,
   examples: results,
   ...(previous?.jsFrameworkBenchmark ? { jsFrameworkBenchmark: previous.jsFrameworkBenchmark } : {}),
-  ...(previous?.compilerComparison ? { compilerComparison: previous.compilerComparison } : {}),
+
 }
 
 await writeFile(join(root, "site", "results.json"), JSON.stringify(summary, null, 2) + "\n")

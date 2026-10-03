@@ -1,73 +1,4 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-09-02T14:59:19.089Z",
-  "compression": {
-    "gzip": 9,
-    "brotli": 11
-  },
-  "solid": "solid-js@2.0.0-rc.0 + @solidjs/web@2.0.0-rc.0",
-  "solidlil": "compatibility-prototype demos; exact runtime comparison is ineligible",
-  "cases": 21,
-  "metrics": {
-    "raw": {
-      "solid": 660807,
-      "solidlil": 158398,
-      "weightedReduction": 76.02961227710966,
-      "medianReduction": 78.24846820198606,
-      "minimumReduction": 62.26511732129709,
-      "maximumReduction": 84.16802316977781,
-      "wins": 21
-    },
-    "gzip": {
-      "solid": 253383,
-      "solidlil": 67145,
-      "weightedReduction": 73.50059001590478,
-      "medianReduction": 75.59284932506385,
-      "minimumReduction": 60.63198458574182,
-      "maximumReduction": 81.51726503544478,
-      "wins": 21
-    },
-    "brotli": {
-      "solid": 229901,
-      "solidlil": 59362,
-      "weightedReduction": 74.17932066411194,
-      "medianReduction": 76.52069345625814,
-      "minimumReduction": 61.80767923887189,
-      "maximumReduction": 81.8946436476317,
-      "wins": 21
-    }
-  },
-  "keyedPerformance": {
-    "raw": 10871,
-    "gzip": 4439,
-    "brotli": 3996
-  },
-  "artifacts": {
-    "core": {
-      "raw": 8221,
-      "gzip": 3330,
-      "brotli": 2964,
-      "sha256": "17741ecf00de5d52f6ccec45325be65ff651c73ea275c0dba19ade507e24f805"
-    },
-    "web": {
-      "raw": 38029,
-      "gzip": 13261,
-      "brotli": 11862,
-      "sha256": "dccbfd262b65e2c9ef76ede7fbefd4b2680f0a0a07df00c98f72b44e097940ce"
-    },
-    "full": {
-      "raw": 17758,
-      "gzip": 6608,
-      "brotli": 5878,
-      "sha256": "49bb80226ed29ba99665579529203e94d7afdba3b564489c34f7fb996cfecbe3"
-    },
-    "index.bundle": {
-      "raw": 18563,
-      "gzip": 6838,
-      "brotli": 6226,
-      "sha256": "c1101b727964ef6b1aa043b886987bb04abfc8f445beb440ca7068c9062a816d"
-    }
-  },
   "examples": [
     {
       "id": "counter",
@@ -79,14 +10,14 @@
         "brotli": 9434
       },
       "solidlil": {
-        "raw": 4805,
-        "gzip": 2226,
-        "brotli": 1952
+        "raw": 5031,
+        "gzip": 2171,
+        "brotli": 1868
       },
       "reduction": {
-        "raw": 82.0956142638894,
-        "gzip": 78.54457831325301,
-        "brotli": 79.30888276446895
+        "raw": 81.25349331147297,
+        "gzip": 79.07469879518072,
+        "brotli": 80.19927920288319
       }
     },
     {
@@ -99,14 +30,14 @@
         "brotli": 9534
       },
       "solidlil": {
-        "raw": 5107,
-        "gzip": 2367,
-        "brotli": 2058
+        "raw": 5326,
+        "gzip": 2286,
+        "brotli": 1968
       },
       "reduction": {
-        "raw": 81.1549815498155,
-        "gzip": 77.49144161278052,
-        "brotli": 78.41409691629956
+        "raw": 80.3468634686347,
+        "gzip": 78.26169646253328,
+        "brotli": 79.35808684707362
       }
     },
     {
@@ -119,14 +50,14 @@
         "brotli": 9477
       },
       "solidlil": {
-        "raw": 4972,
-        "gzip": 2261,
-        "brotli": 1982
+        "raw": 5423,
+        "gzip": 2330,
+        "brotli": 2012
       },
       "reduction": {
-        "raw": 81.5462272204283,
-        "gzip": 78.32422586520947,
-        "brotli": 79.08620871583835
+        "raw": 79.87232305236982,
+        "gzip": 77.66273607516058,
+        "brotli": 78.76965284372692
       }
     },
     {
@@ -139,14 +70,14 @@
         "brotli": 9759
       },
       "solidlil": {
-        "raw": 5576,
-        "gzip": 2523,
-        "brotli": 2221
+        "raw": 6161,
+        "gzip": 2571,
+        "brotli": 2230
       },
       "reduction": {
-        "raw": 79.97557997557998,
-        "gzip": 76.48867766284596,
-        "brotli": 77.24152064760735
+        "raw": 77.87473963944552,
+        "gzip": 76.0413754542913,
+        "brotli": 77.14929808382006
       }
     },
     {
@@ -159,14 +90,14 @@
         "brotli": 11854
       },
       "solidlil": {
-        "raw": 7470,
-        "gzip": 3206,
-        "brotli": 2817
+        "raw": 7716,
+        "gzip": 3204,
+        "brotli": 2796
       },
       "reduction": {
-        "raw": 78.18914420859004,
-        "gzip": 75.51176290864649,
-        "brotli": 76.23586974860807
+        "raw": 77.47087506204561,
+        "gzip": 75.52703941338221,
+        "brotli": 76.41302513919352
       }
     },
     {
@@ -179,14 +110,14 @@
         "brotli": 10658
       },
       "solidlil": {
-        "raw": 5994,
-        "gzip": 2690,
-        "brotli": 2374
+        "raw": 6474,
+        "gzip": 2718,
+        "brotli": 2366
       },
       "reduction": {
-        "raw": 80.5244175845599,
-        "gzip": 77.1569293478261,
-        "brotli": 77.72565209232502
+        "raw": 78.96481138512526,
+        "gzip": 76.91915760869566,
+        "brotli": 77.80071307937699
       }
     },
     {
@@ -199,14 +130,14 @@
         "brotli": 11029
       },
       "solidlil": {
-        "raw": 7760,
-        "gzip": 3229,
-        "brotli": 2877
+        "raw": 7852,
+        "gzip": 3188,
+        "brotli": 2801
       },
       "reduction": {
-        "raw": 75.4095763222106,
-        "gzip": 73.41511608760085,
-        "brotli": 73.91422613110889
+        "raw": 75.11804037139144,
+        "gzip": 73.75267577803393,
+        "brotli": 74.60331852389156
       }
     },
     {
@@ -219,14 +150,14 @@
         "brotli": 15918
       },
       "solidlil": {
-        "raw": 9139,
+        "raw": 9692,
         "gzip": 3762,
-        "brotli": 3336
+        "brotli": 3312
       },
       "reduction": {
-        "raw": 80.80042016806723,
+        "raw": 79.63865546218487,
         "gzip": 78.60068259385665,
-        "brotli": 79.0425932906144
+        "brotli": 79.19336600075385
       }
     },
     {
@@ -239,14 +170,14 @@
         "brotli": 10076
       },
       "solidlil": {
-        "raw": 6925,
-        "gzip": 3003,
-        "brotli": 2628
+        "raw": 6954,
+        "gzip": 2894,
+        "brotli": 2497
       },
       "reduction": {
-        "raw": 75.9898758754594,
-        "gzip": 72.95812696983342,
-        "brotli": 73.91822151647479
+        "raw": 75.88932806324111,
+        "gzip": 73.93966681674922,
+        "brotli": 75.21834061135371
       }
     },
     {
@@ -259,14 +190,14 @@
         "brotli": 9910
       },
       "solidlil": {
-        "raw": 5640,
-        "gzip": 2526,
-        "brotli": 2226
+        "raw": 5815,
+        "gzip": 2471,
+        "brotli": 2137
       },
       "reduction": {
-        "raw": 80.00354547066124,
-        "gzip": 76.84692942254811,
-        "brotli": 77.53784056508577
+        "raw": 79.38308810494593,
+        "gzip": 77.35105407882676,
+        "brotli": 78.4359233097881
       }
     },
     {
@@ -279,14 +210,14 @@
         "brotli": 10648
       },
       "solidlil": {
-        "raw": 8250,
-        "gzip": 3488,
-        "brotli": 3114
+        "raw": 9000,
+        "gzip": 3578,
+        "brotli": 3165
       },
       "reduction": {
-        "raw": 72.94461023841538,
-        "gzip": 70.28454591923668,
-        "brotli": 70.75507137490608
+        "raw": 70.48502935099859,
+        "gzip": 69.51780541829955,
+        "brotli": 70.27610818933134
       }
     },
     {
@@ -299,14 +230,14 @@
         "brotli": 10222
       },
       "solidlil": {
-        "raw": 5952,
-        "gzip": 2615,
-        "brotli": 2304
+        "raw": 6112,
+        "gzip": 2566,
+        "brotli": 2230
       },
       "reduction": {
-        "raw": 79.5400639373002,
-        "gzip": 76.71830484330484,
-        "brotli": 77.46037957346898
+        "raw": 78.99006565604483,
+        "gzip": 77.1545584045584,
+        "brotli": 78.18430835452945
       }
     },
     {
@@ -319,14 +250,14 @@
         "brotli": 10627
       },
       "solidlil": {
-        "raw": 8271,
-        "gzip": 3522,
-        "brotli": 3136
+        "raw": 8921,
+        "gzip": 3580,
+        "brotli": 3128
       },
       "reduction": {
-        "raw": 72.85615831446293,
-        "gzip": 69.99488839666041,
-        "brotli": 70.49026065681754
+        "raw": 70.72298250795839,
+        "gzip": 69.50076674050094,
+        "brotli": 70.56554060412158
       }
     },
     {
@@ -339,14 +270,14 @@
         "brotli": 15813
       },
       "solidlil": {
-        "raw": 7489,
-        "gzip": 3233,
-        "brotli": 2863
+        "raw": 8112,
+        "gzip": 3299,
+        "brotli": 2902
       },
       "reduction": {
-        "raw": 84.16802316977781,
-        "gzip": 81.51726503544478,
-        "brotli": 81.8946436476317
+        "raw": 82.85098196731708,
+        "gzip": 81.13994969128746,
+        "brotli": 81.64801113008284
       }
     },
     {
@@ -359,14 +290,14 @@
         "brotli": 10797
       },
       "solidlil": {
-        "raw": 11788,
-        "gzip": 4318,
-        "brotli": 3842
+        "raw": 11471,
+        "gzip": 4238,
+        "brotli": 3733
       },
       "reduction": {
-        "raw": 62.26511732129709,
-        "gzip": 63.74779615481487,
-        "brotli": 64.41604149300731
+        "raw": 63.27987451582957,
+        "gzip": 64.41944421123331,
+        "brotli": 65.4255811799574
       }
     },
     {
@@ -379,14 +310,14 @@
         "brotli": 11370
       },
       "solidlil": {
-        "raw": 11267,
-        "gzip": 4483,
-        "brotli": 3991
+        "raw": 11967,
+        "gzip": 4575,
+        "brotli": 4012
       },
       "reduction": {
-        "raw": 65.07872551450534,
-        "gzip": 64.27603793130928,
-        "brotli": 64.89885664028144
+        "raw": 62.90912472105133,
+        "gzip": 63.542911785799674,
+        "brotli": 64.71416007036059
       }
     },
     {
@@ -399,14 +330,14 @@
         "brotli": 11772
       },
       "solidlil": {
-        "raw": 12654,
-        "gzip": 5108,
-        "brotli": 4496
+        "raw": 13630,
+        "gzip": 5213,
+        "brotli": 4560
       },
       "reduction": {
-        "raw": 62.320221540660455,
-        "gzip": 60.63198458574182,
-        "brotli": 61.80767923887189
+        "raw": 59.41398922073668,
+        "gzip": 59.822736030828516,
+        "brotli": 61.26401630988787
       }
     },
     {
@@ -419,14 +350,14 @@
         "brotli": 10916
       },
       "solidlil": {
-        "raw": 10871,
-        "gzip": 4443,
-        "brotli": 3997
+        "raw": 11185,
+        "gzip": 4367,
+        "brotli": 3861
       },
       "reduction": {
-        "raw": 64.96390357096816,
-        "gzip": 63.03353024378069,
-        "brotli": 63.38402345181385
+        "raw": 63.95191439989687,
+        "gzip": 63.665862384557784,
+        "brotli": 64.62990106266031
       }
     },
     {
@@ -439,14 +370,14 @@
         "brotli": 10281
       },
       "solidlil": {
-        "raw": 7327,
-        "gzip": 3139,
-        "brotli": 2767
+        "raw": 7467,
+        "gzip": 3093,
+        "brotli": 2672
       },
       "reduction": {
-        "raw": 74.91784198274682,
-        "gzip": 72.29723766657841,
-        "brotli": 73.08627565411925
+        "raw": 74.43858688210325,
+        "gzip": 72.70320360074133,
+        "brotli": 74.01031028110106
       }
     },
     {
@@ -459,14 +390,14 @@
         "brotli": 9827
       },
       "solidlil": {
-        "raw": 4964,
-        "gzip": 2327,
-        "brotli": 2038
+        "raw": 5168,
+        "gzip": 2298,
+        "brotli": 1977
       },
       "reduction": {
-        "raw": 82.12395116856926,
-        "gzip": 78.39769773486817,
-        "brotli": 79.26121909026152
+        "raw": 81.38931902481184,
+        "gzip": 78.66691422205719,
+        "brotli": 79.88195787117127
       }
     },
     {
@@ -479,255 +410,363 @@
         "brotli": 9979
       },
       "solidlil": {
-        "raw": 6177,
-        "gzip": 2676,
-        "brotli": 2343
+        "raw": 6371,
+        "gzip": 2631,
+        "brotli": 2290
       },
       "reduction": {
-        "raw": 78.24846820198606,
-        "gzip": 75.59284932506385,
-        "brotli": 76.52069345625814
+        "raw": 77.56532150151419,
+        "gzip": 76.00328347318496,
+        "brotli": 77.0518087984768
       }
     }
   ],
-  "jsFrameworkBenchmark": {
-    "status": {
-      "size": "diagnostic-only",
-      "cpu": "not-measured-for-current-artifacts",
-      "memory": "not-measured-for-current-artifacts"
+  "package": "@itslil/solidjs",
+  "pin": "solid-js@2.0.0-rc.0",
+  "objectiveComparison": {
+    "schemaVersion": 4,
+    "name": "solidlil",
+    "package": "@itslil/solidjs",
+    "measuredAt": "2026-10-03T18:02:15.920336+03:00",
+    "compiler": {
+      "baseRevision": "f7d29bd9",
+      "binarySha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+      "hasLocalSourceChanges": true
     },
-    "eligibility": {
-      "comparison": false,
-      "exactSourcePort": false,
-      "reason": "The current SolidLil runtime is a compatibility implementation, not the required file-for-file port of the pinned Solid browser runtime."
+    "upstream": {
+      "package": "solid-js",
+      "version": "2.0.0-rc.0",
+      "external": [],
+      "sharedExports": [
+        "$DEVCOMP",
+        "$PROXY",
+        "$REFRESH",
+        "$TRACK",
+        "DEV",
+        "Errored",
+        "For",
+        "Hydration",
+        "Loading",
+        "Match",
+        "NoHydrateContext",
+        "NoHydration",
+        "NotReadyError",
+        "Repeat",
+        "Reveal",
+        "Show",
+        "Switch",
+        "action",
+        "affects",
+        "children",
+        "createComponent",
+        "createContext",
+        "createEffect",
+        "createErrorBoundary",
+        "createLoadingBoundary",
+        "createMemo",
+        "createOptimistic",
+        "createOptimisticStore",
+        "createOwner",
+        "createProjection",
+        "createReaction",
+        "createRenderEffect",
+        "createRevealOrder",
+        "createRoot",
+        "createSignal",
+        "createStore",
+        "createTrackedEffect",
+        "createUniqueId",
+        "creationStamp",
+        "deep",
+        "enableExternalSource",
+        "enableHydration",
+        "enforceLoadingBoundary",
+        "flatten",
+        "flush",
+        "getNextChildId",
+        "getObserver",
+        "getOwner",
+        "getProjectionTrace",
+        "inServerComponentScope",
+        "isDisposed",
+        "isEqual",
+        "isPending",
+        "isWrappable",
+        "latest",
+        "lazy",
+        "mapArray",
+        "materializeContainerTrace",
+        "merge",
+        "omit",
+        "onCleanup",
+        "onSettled",
+        "reconcile",
+        "refresh",
+        "repeat",
+        "resolve",
+        "runInServerComponentScope",
+        "runWithOwner",
+        "sharedConfig",
+        "snapshot",
+        "ssrHandleError",
+        "ssrScope",
+        "storePath",
+        "untrack",
+        "useContext"
+      ],
+      "excludedExports": [],
+      "additionalExports": [
+        "createDeepProxy",
+        "createSelector",
+        "finishHydration",
+        "registerRevealSlot",
+        "selectorMatch"
+      ],
+      "resolution": {
+        "platform": "neutral",
+        "conditions": [
+          "production"
+        ],
+        "mainFields": [
+          "module",
+          "main"
+        ],
+        "target": "es2020",
+        "defines": {
+          "process.env.NODE_ENV": "production"
+        },
+        "css": "excluded; measured JavaScript only"
+      }
     },
-    "generatedAt": "2026-09-02T14:59:35.921Z",
-    "source": "https://github.com/krausest/js-framework-benchmark",
-    "workloadContract": "jfb-keyed-v2-object-identity",
-    "methodology": {
-      "claim": "equivalent keyed application output, not isolated library size",
-      "source": "Both implementations use object-identity keyed rows, identical random data generation, selection reset, Array.filter removal, and matching visible text.",
-      "treeShaking": "Enabled in both production lanes. Solid uses Vite module tree shaking; SolidLil uses LilScript whole-program dead-code elimination.",
-      "finalMinifier": "Both canonical artifacts use Terser 5.43.1, three compression passes, top-level identifier mangling, and no property mangling.",
-      "limitation": "This compares complete application toolchains and runtime implementations. It does not attribute the full delta to the LilScript compressor alone."
+    "scope": "Experimental Solid 2 compatibility runtime including embedded JavaScript providers, compared with the original shared main-entry API. Important scheduling, hydration, DOM and server semantics remain incomplete; these bytes do not establish equivalent features or compiler-only savings.",
+    "machine": {
+      "cpu": "AMD EPYC 7763 64-Core Processor",
+      "logicalCpus": 8,
+      "memoryGiB": 15.6,
+      "os": "Linux-7.0.0-1014-azure-x86_64-with-glibc2.39",
+      "node": "v20.19.0"
     },
-    "provenance": {
-      "solid": {
-        "schemaVersion": 1,
-        "implementation": "solid-v2",
-        "workloadContract": "jfb-keyed-v2-object-identity",
-        "target": "es2022",
-        "moduleFormat": "esm",
-        "frontend": {
-          "name": "@solidjs/vite-plugin",
-          "version": "3.0.0-next.30"
+    "objectives": [
+      {
+        "objective": "raw",
+        "metric": "raw",
+        "lilscript": {
+          "artifact": "./comparison-artifacts/lilscript-raw.mjs",
+          "sizes": {
+            "raw": 33732,
+            "gzip9": 9682,
+            "brotli11": 8694
+          },
+          "sha256": "f84a13a40377cb1c0626b47f35800b01ea097667040a00fae0e524beacc7c8a9",
+          "buildSeconds": 16.353342400005204,
+          "config": "./comparison-artifacts/lilscript-raw.toml",
+          "configSha256": "45caab1771c1727f4b419c5f0359273d923a2f7d7cfba8862e40c65ef75c9df9"
         },
-        "bundler": {
-          "name": "vite",
-          "version": "8.2.1"
+        "original": {
+          "tool": "Oxc",
+          "version": "via Vite 8.2.1",
+          "artifact": "./comparison-artifacts/original-oxc.mjs",
+          "sizes": {
+            "raw": 76862,
+            "gzip9": 27284,
+            "brotli11": 24671
+          },
+          "sha256": "6cff15bb8a242e6f46f0e66e8c2b6f020f5cc3800b566d3be581ed9d23cc2f07",
+          "buildSeconds": 0.2305897260000056
         },
-        "postMinifier": {
-          "name": "terser",
-          "version": "5.43.1",
-          "compressPasses": 3,
-          "toplevelMangling": true,
-          "propertyMangling": false
-        },
-        "treeShaking": true,
-        "retainedModules": {
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/error.js": 1619,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/constants.js": 1521,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1674,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11971,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/heap.js": 2606,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/owner.js": 4402,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/graph.js": 1375,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/async.js": 8062,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/core.js": 12895,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/effect.js": 1671,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/signals.js": 1624,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/store/store.js": 266,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/map.js": 4108,
-          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/boundaries.js": 2052,
-          "/home/azureuser/solidlil/node_modules/solid-js/dist/solid.js": 667,
-          "/home/azureuser/solidlil/node_modules/@solidjs/web/dist/web.js": 15289,
-          "src/main.jsx": 4559
-        },
-        "sourceSha256": "3eca46cf7881f1184507fac0b5d475b9a718bd2b7da810bc995a195a30740d75",
-        "artifactSha256": "8a7e084437435fa86ca3e06c43b5761aa0aba489eb91c5444417ac36583b1e39"
+        "ratio": 0.4388644583799537
       },
-      "solidlil": {
-        "schemaVersion": 1,
-        "implementation": "solidlil-v2",
-        "workloadContract": "jfb-keyed-v2-object-identity",
-        "target": "es2022",
-        "moduleFormat": "esm",
-        "frontend": {
-          "name": "lilscript",
-          "version": "lilscript 0.1.0",
-          "binarySha256": "1b9e04fc98805de3c12a8c371ececabb87dd3cb26a303408ac23d0c23017caa0",
-          "revision": "87da2deec0e3caf2aa2c212b8a5fb5bf4e2e86f8",
-          "dirty": true
+      {
+        "objective": "gzip",
+        "metric": "gzip9",
+        "lilscript": {
+          "artifact": "./comparison-artifacts/lilscript-gzip.mjs",
+          "sizes": {
+            "raw": 33805,
+            "gzip9": 9591,
+            "brotli11": 8653
+          },
+          "sha256": "8c539ba04ec532549739509f8a7afe30e2c9bf15a3491426053ae44d8878a611",
+          "buildSeconds": 41.961197541997535,
+          "config": "./comparison-artifacts/lilscript-gzip.toml",
+          "configSha256": "a1f450022b5ce73667e25f3672daa1baf4428f1363438c219f02f462baa6802b"
         },
-        "source": {
-          "revision": "448ada097a0d5814299aac12a2814e823d588c9a",
-          "dirty": true
+        "original": {
+          "tool": "Oxc",
+          "version": "via Vite 8.2.1",
+          "artifact": "./comparison-artifacts/original-oxc.mjs",
+          "sizes": {
+            "raw": 76862,
+            "gzip9": 27284,
+            "brotli11": 24671
+          },
+          "sha256": "6cff15bb8a242e6f46f0e66e8c2b6f020f5cc3800b566d3be581ed9d23cc2f07",
+          "buildSeconds": 0.2305897260000056
         },
-        "bundler": {
-          "name": "lilscript",
-          "mode": "single"
-        },
-        "postMinifier": {
-          "name": "terser",
-          "version": "5.43.1",
-          "compressPasses": 3,
-          "toplevelMangling": true,
-          "propertyMangling": false
-        },
-        "treeShaking": true,
-        "sourceSha256": "d009b0079149105e01d2e3d269378f72e0a174b84780776a4330363b9c72e2c3",
-        "artifactSha256": "9aed5d82980ffc45b0f78e48bfebd0bfa0ed8b3b9a9fe3915e2c045c5dedcd49"
+        "ratio": 0.3515247031227093
       },
-      "codec": {
-        "path": "../lilscript/target/release/lilscript-codec",
-        "sha256": "9dfcc9671ca5ee21d36407f35e9b5a31e32860a92acd1e9309899d4423d3e59c",
-        "gzip9": {
-          "encoder": "upstream-stock-zlib-c",
-          "libraryVersion": "1.3.1",
-          "cargoPackage": "libz-sys",
-          "cargoPackageVersion": "1.1.24",
-          "level": 9,
-          "mtime": 0
+      {
+        "objective": "brotli",
+        "metric": "brotli11",
+        "lilscript": {
+          "artifact": "./comparison-artifacts/lilscript-brotli.mjs",
+          "sizes": {
+            "raw": 33857,
+            "gzip9": 9666,
+            "brotli11": 8629
+          },
+          "sha256": "077beab58d7c9035c4f1efe1a437be345bb7c666bf0c3b6f1eda3083c83600d1",
+          "buildSeconds": 124.56157236800937,
+          "config": "./comparison-artifacts/lilscript-brotli.toml",
+          "configSha256": "df66bd328155340c5924f562202a9be8d6daaf26d4e7079c32e41e9639285fad"
         },
-        "brotli11": {
-          "encoder": "official-google-brotli-c",
-          "libraryVersion": "1.1.0",
-          "cargoPackage": "compu-brotli-sys",
-          "cargoPackageVersion": "1.1.0",
-          "quality": 11,
-          "lgwin": 22,
-          "mode": "generic"
+        "original": {
+          "tool": "Terser",
+          "version": "5.51.2",
+          "artifact": "./comparison-artifacts/original-terser.mjs",
+          "sizes": {
+            "raw": 78094,
+            "gzip9": 27309,
+            "brotli11": 24632
+          },
+          "sha256": "36a5e41a55880f4c10b703aa4c063fcb0dcf462c555ba686b9ff04e019d51ad7",
+          "buildSeconds": 1.4097428720000025
+        },
+        "ratio": 0.3503166612536538
+      }
+    ],
+    "minifiers": [
+      {
+        "tool": "Terser",
+        "version": "5.51.2",
+        "artifact": "./comparison-artifacts/original-terser.mjs",
+        "sizes": {
+          "raw": 78094,
+          "gzip9": 27309,
+          "brotli11": 24632
+        },
+        "sha256": "36a5e41a55880f4c10b703aa4c063fcb0dcf462c555ba686b9ff04e019d51ad7",
+        "buildSeconds": 1.4097428720000025
+      },
+      {
+        "tool": "esbuild",
+        "version": "0.28.1",
+        "artifact": "./comparison-artifacts/original-esbuild.mjs",
+        "sizes": {
+          "raw": 78763,
+          "gzip9": 28487,
+          "brotli11": 25661
+        },
+        "sha256": "5363034d2145cd740f2e9615b6ba029f46146713c01d4da2fcb513986ea7f9e4",
+        "buildSeconds": 0.10223324200000207
+      },
+      {
+        "tool": "Oxc",
+        "version": "via Vite 8.2.1",
+        "artifact": "./comparison-artifacts/original-oxc.mjs",
+        "sizes": {
+          "raw": 76862,
+          "gzip9": 27284,
+          "brotli11": 24671
+        },
+        "sha256": "6cff15bb8a242e6f46f0e66e8c2b6f020f5cc3800b566d3be581ed9d23cc2f07",
+        "buildSeconds": 0.2305897260000056
+      }
+    ],
+    "validation": {
+      "checks": 45,
+      "runs": [
+        {
+          "objective": "raw",
+          "suite": "compat",
+          "checks": 15,
+          "command": [
+            "node",
+            "--no-warnings",
+            "--experimental-loader",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/redirect-loader.mjs",
+            "--test",
+            "test/node.test.mjs"
+          ],
+          "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/raw/solidlil/dist/index.mjs",
+          "ok": true
+        },
+        {
+          "objective": "gzip",
+          "suite": "compat",
+          "checks": 15,
+          "command": [
+            "node",
+            "--no-warnings",
+            "--experimental-loader",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/redirect-loader.mjs",
+            "--test",
+            "test/node.test.mjs"
+          ],
+          "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/gzip/solidlil/dist/index.mjs",
+          "ok": true
+        },
+        {
+          "objective": "brotli",
+          "suite": "compat",
+          "checks": 15,
+          "command": [
+            "node",
+            "--no-warnings",
+            "--experimental-loader",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/redirect-loader.mjs",
+            "--test",
+            "test/node.test.mjs"
+          ],
+          "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/brotli/solidlil/dist/index.mjs",
+          "ok": true
         }
-      }
+      ],
+      "ok": true,
+      "scope": "Current independent main-entry builds; package-format tests are recorded separately."
     },
-    "sizes": {
-      "solid": {
-        "raw": 32401,
-        "gzip": 12319,
-        "brotli": 11255
-      },
-      "solidlil": {
-        "raw": 9305,
-        "gzip": 3789,
-        "brotli": 3414
-      }
-    },
-    "diagnostics": {
-      "nativeProduction": {
-        "description": "Each frontend's native production output: Vite/Oxc for Solid and LilScript without the shared Terser pass.",
-        "solid": {
-          "raw": 32177,
-          "gzip": 12288,
-          "brotli": 11182
+    "originalValidation": {
+      "checks": 18,
+      "runs": [
+        {
+          "minifier": "terser",
+          "checks": 6,
+          "ok": true,
+          "command": [
+            "node",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream-smoke.mjs",
+            "solidlil",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/original-terser/solidlil/dist/index.mjs"
+          ]
         },
-        "solidlil": {
-          "raw": 10415,
-          "gzip": 3949,
-          "brotli": 3515
-        }
-      },
-      "sharedPrivatePropertyMangle": {
-        "description": "The canonical input on both sides with the same additional /^_/ property-mangle rule.",
-        "solid": {
-          "raw": 32345,
-          "gzip": 12346,
-          "brotli": 11222
+        {
+          "minifier": "esbuild",
+          "checks": 6,
+          "ok": true,
+          "command": [
+            "node",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream-smoke.mjs",
+            "solidlil",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/original-esbuild/solidlil/dist/index.mjs"
+          ]
         },
-        "solidlil": {
-          "raw": 9305,
-          "gzip": 3796,
-          "brotli": 3409
+        {
+          "minifier": "oxc",
+          "checks": 6,
+          "ok": true,
+          "command": [
+            "node",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream-smoke.mjs",
+            "solidlil",
+            "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/original-oxc/solidlil/dist/index.mjs"
+          ]
         }
-      },
-      "solidWithoutTreeShaking": {
-        "description": "Solid-only diagnostic built from the same entry with Vite tree shaking disabled, then the canonical Terser pass.",
-        "solid": {
-          "raw": 37073,
-          "gzip": 13873,
-          "brotli": 12705
-        }
-      },
-      "solidRetainedModules": {
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/error.js": 1619,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/constants.js": 1521,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1674,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11971,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/heap.js": 2606,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/owner.js": 4402,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/graph.js": 1375,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/async.js": 8062,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/core.js": 12895,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/effect.js": 1671,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/signals.js": 1624,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/store/store.js": 266,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/map.js": 4108,
-        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/boundaries.js": 2052,
-        "/home/azureuser/solidlil/node_modules/solid-js/dist/solid.js": 667,
-        "/home/azureuser/solidlil/node_modules/@solidjs/web/dist/web.js": 15289,
-        "src/main.jsx": 4559
-      }
-    },
-    "geomean": {
-      "cpu": null
-    },
-    "cpu": [],
-    "memory": []
-  },
-  "performance": {
-    "generatedAt": "2026-09-02T15:04:32.686Z",
-    "node": "v20.19.0",
-    "iterations": {
-      "signal": 50000,
-      "memo": 50000,
-      "effect": 10000
-    },
-    "nodeMs": {
-      "solidlil": {
-        "signal50k": 35.131865,
-        "memo50k": 54.229303,
-        "effect10k": 13.711972
-      },
-      "solid": {
-        "signal50k": 21.135503,
-        "memo50k": 40.919882,
-        "effect10k": 25.796506
-      },
-      "ratio": {
-        "signal50k": 1.662220435444569,
-        "memo50k": 1.3252556055757931,
-        "effect10k": 0.5315437679816019
-      }
-    },
-    "browserMs": {
-      "solid": {
-        "create1k": 76.90000000596046,
-        "updateEvery10th": 58,
-        "swap": 41.20000001788139,
-        "clear": 49.599999994039536
-      },
-      "solidlil": {
-        "create1k": 82.40000000596046,
-        "updateEvery10th": 60.900000005960464,
-        "swap": 32.5,
-        "clear": 50.39999997615814
-      },
-      "ratio": {
-        "create1k": 1.0715214564313875,
-        "updateEvery10th": 1.0500000001027667,
-        "swap": 0.788834951113945,
-        "clear": 1.0161290318994909
-      }
+      ]
     }
   },
-  "artifactMeasuredAt": "2026-09-10T14:01:05Z"
+  "spec": {
+    "pass": 45,
+    "total": 45,
+    "label": "current main-entry checks"
+  }
 }

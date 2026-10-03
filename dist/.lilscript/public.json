@@ -1,0 +1,1442 @@
+{
+  "version": 5,
+  "source_sha256": "5f72325b234049bea14e1353796202bed1bed45696f5c633189f0a00c3693374",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "compat",
+        "module": 0
+      },
+      {
+        "name": "core",
+        "module": 1
+      },
+      {
+        "name": "dom-tables",
+        "module": 4
+      },
+      {
+        "name": "full",
+        "module": 5
+      },
+      {
+        "name": "index",
+        "module": 8
+      },
+      {
+        "name": "lil-web",
+        "module": 6
+      },
+      {
+        "name": "web",
+        "module": 9
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/package/compat.lil",
+        "bytes": 3952,
+        "sha256": "7bd36b6bac3d774e5c3679282433e5cb8de5d3ff2c19271d1e5ebc5cfd1a52d6",
+        "dependencies": [
+          1
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/entries/core.lil",
+        "bytes": 2159,
+        "sha256": "a836c4e2150fb699c51e16e98b6522f97037f3c28af5df66a67f9a0f169cc7b7",
+        "dependencies": [
+          2,
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/reactive.lil",
+        "bytes": 27164,
+        "sha256": "696c7579f520d23ca3b3cc98bebfd8579c054ed746c4696fb6181d3d9f3a4ae5",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/store.lil",
+        "bytes": 1372,
+        "sha256": "85ac1689143ea8507c3d51ef3ace5a9c35c2d756eec71de9b08c53867e9fd89b",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/package/dom-tables.lil",
+        "bytes": 505,
+        "sha256": "d9e7245778f96eb49f346b7e3da39043d5687afcd361ef5fb44770abad108fc0",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/entries/full.lil",
+        "bytes": 3492,
+        "sha256": "bc3ecd6ba41d39eba1c56c741877001aed098da0e5fdb921261acc62cd469f8e",
+        "dependencies": [
+          2,
+          3,
+          6
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/web.lil",
+        "bytes": 29292,
+        "sha256": "01875893dc491e02b23482f00a9817f48220adf255031a622315346030a62967",
+        "dependencies": [
+          2,
+          7
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/host.lil",
+        "bytes": 1979,
+        "sha256": "cf221b230e36aad64df3524904d21311e902a102187915c1deb992c77239e9d8",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/package/index.lil",
+        "bytes": 5564,
+        "sha256": "46dd2780f9209d187e774fc84d4b4be27c7bfd415fc82fb8091f5ecc93bc12b0",
+        "dependencies": [
+          1,
+          0
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/package/web.lil",
+        "bytes": 7146,
+        "sha256": "55422897cfad8f68160f05ec1c2780923a05c3e49c4d4c4b19fbc744f25ed7a7",
+        "dependencies": [
+          8,
+          6
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [
+      {
+        "specifier": "../compat-factory.mjs",
+        "stem": "compat-factory",
+        "delivered_bytes": 6191,
+        "sha256": "1d99e797a76160a4e6fb86ec6f9d26f97a62ac435ba8bae329c8cee51d53530e",
+        "exports": [
+          [
+            "createCompat",
+            "createCompat"
+          ]
+        ],
+        "imports": []
+      },
+      {
+        "specifier": "../dom-tables.mjs",
+        "stem": "dom-tables",
+        "delivered_bytes": 3475,
+        "sha256": "4d8dfefe65b79fd74a6f01e8ba9a0c8c550ab4aeadb15516c519ebdd81a8ee5d",
+        "exports": [
+          [
+            "ChildProperties",
+            "ChildProperties"
+          ],
+          [
+            "DOMElements",
+            "DOMElements"
+          ],
+          [
+            "DelegatedEvents",
+            "DelegatedEvents"
+          ],
+          [
+            "SVGElements",
+            "SVGElements"
+          ],
+          [
+            "MathMLElements",
+            "MathMLElements"
+          ],
+          [
+            "VoidElements",
+            "VoidElements"
+          ],
+          [
+            "RawTextElements",
+            "RawTextElements"
+          ],
+          [
+            "Namespaces",
+            "Namespaces"
+          ],
+          [
+            "DOMWithState",
+            "DOMWithState"
+          ]
+        ],
+        "imports": []
+      },
+      {
+        "specifier": "../solid-api-factory.mjs",
+        "stem": "solid-api-factory",
+        "delivered_bytes": 16129,
+        "sha256": "2124cb9fd4c9664666f2ca5555b0a472df61ba8623996bc290a786a83ca9db45",
+        "exports": [
+          [
+            "createSolidApi",
+            "createSolidApi"
+          ]
+        ],
+        "imports": []
+      },
+      {
+        "specifier": "../web-api-factory.mjs",
+        "stem": "web-api-factory",
+        "delivered_bytes": 14324,
+        "sha256": "8b3d56c4710517be1ec0d1c3d6d2fcf54f0bbaae689e870985d26c882ce109ff",
+        "exports": [
+          [
+            "createWebApi",
+            "createWebApi"
+          ]
+        ],
+        "imports": [
+          [
+            1,
+            [
+              [
+                "ChildProperties",
+                "ChildProperties"
+              ],
+              [
+                "DOMElements",
+                "DOMElements"
+              ],
+              [
+                "DOMWithState",
+                "DOMWithState"
+              ],
+              [
+                "DelegatedEvents",
+                "DelegatedEvents"
+              ],
+              [
+                "MathMLElements",
+                "MathMLElements"
+              ],
+              [
+                "Namespaces",
+                "Namespaces"
+              ],
+              [
+                "RawTextElements",
+                "RawTextElements"
+              ],
+              [
+                "SVGElements",
+                "SVGElements"
+              ],
+              [
+                "VoidElements",
+                "VoidElements"
+              ]
+            ]
+          ]
+        ]
+      }
+    ],
+    "host_reserved": [
+      "Array",
+      "Boolean",
+      "Error",
+      "Headers",
+      "Infinity",
+      "Map",
+      "Math",
+      "Node",
+      "Number",
+      "Object",
+      "Promise",
+      "Proxy",
+      "ReadableStream",
+      "Reflect",
+      "Request",
+      "Response",
+      "Set",
+      "String",
+      "Symbol",
+      "WeakMap",
+      "decodeURIComponent",
+      "document",
+      "encodeURIComponent",
+      "location",
+      "queueMicrotask",
+      "structuredClone",
+      "undefined"
+    ]
+  },
+  "outputs": [
+    {
+      "mode": "preserve-modules",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "compat",
+          "file": "compat.js",
+          "dynamic": false,
+          "closure": [
+            "internal/esm/extern0-12.js",
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js",
+            "internal/esm/chunk-1.js",
+            "compat.js"
+          ],
+          "row": 5773,
+          "raw_row": 19119
+        },
+        {
+          "name": "core",
+          "file": "core.js",
+          "dynamic": false,
+          "closure": [
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js",
+            "core.js"
+          ],
+          "row": 3819,
+          "raw_row": 12154
+        },
+        {
+          "name": "dom-tables",
+          "file": "dom-tables.js",
+          "dynamic": false,
+          "closure": [
+            "internal/esm/extern1-13.js",
+            "dom-tables.js"
+          ],
+          "row": 1569,
+          "raw_row": 4495
+        },
+        {
+          "name": "full",
+          "file": "full.js",
+          "dynamic": false,
+          "closure": [
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js",
+            "internal/esm/chunk-0.js",
+            "full.js"
+          ],
+          "row": 7336,
+          "raw_row": 23887
+        },
+        {
+          "name": "index",
+          "file": "index.js",
+          "dynamic": false,
+          "closure": [
+            "internal/esm/extern0-12.js",
+            "internal/esm/extern2-14.js",
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js",
+            "internal/esm/chunk-1.js",
+            "internal/esm/chunk-2.js",
+            "index.js"
+          ],
+          "row": 11348,
+          "raw_row": 38521
+        },
+        {
+          "name": "lil-web",
+          "file": "lil-web.js",
+          "dynamic": false,
+          "closure": [
+            "internal/esm/reactive-7.js",
+            "internal/esm/chunk-0.js",
+            "lil-web.js"
+          ],
+          "row": 6757,
+          "raw_row": 22266
+        },
+        {
+          "name": "web",
+          "file": "web.js",
+          "dynamic": false,
+          "closure": [
+            "internal/esm/extern1-13.js",
+            "internal/esm/extern3-15.js",
+            "internal/esm/extern0-12.js",
+            "internal/esm/extern2-14.js",
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js",
+            "internal/esm/chunk-1.js",
+            "internal/esm/chunk-2.js",
+            "internal/esm/chunk-0.js",
+            "web.js"
+          ],
+          "row": 20649,
+          "raw_row": 71584
+        }
+      ],
+      "files": [
+        {
+          "file": "dom-tables.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "dom-tables"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/esm/extern1-13.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 220,
+          "codec_bytes": 128,
+          "sha256": "fc7d5593969ba57458b980f3d257fb91b400044c1de922ee9a05d5f1936119b7"
+        },
+        {
+          "file": "full.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "full"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js",
+            "internal/esm/chunk-0.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 2041,
+          "codec_bytes": 769,
+          "sha256": "8ecf8058ebd2f69b946d2d42b11471b24a2d28d84c4d713c85329dde45207284"
+        },
+        {
+          "file": "web.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "web"
+          ],
+          "modules": [
+            "web.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/esm/extern3-15.js",
+            "internal/esm/chunk-2.js",
+            "internal/esm/chunk-0.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 4631,
+          "codec_bytes": 1180,
+          "sha256": "dde73e31dade537447d542ec5aee23dc0dcd0fbb97fb5a117e2fad042aade349"
+        },
+        {
+          "file": "compat.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "compat"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/esm/chunk-1.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 542,
+          "codec_bytes": 252,
+          "sha256": "6f4e05bd61235e6174605b4266f0852b254e5075ef360ab9673abcc10f1a6984"
+        },
+        {
+          "file": "core.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "core"
+          ],
+          "modules": [],
+          "anchored": false,
+          "imports": [
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 1201,
+          "codec_bytes": 464,
+          "sha256": "e271fb7bcdcabeda812c734c4c61c8584bba71887f8a01a5e2b5e71ceffcb1d3"
+        },
+        {
+          "file": "index.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/esm/chunk-2.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 1488,
+          "codec_bytes": 626,
+          "sha256": "4e22c53c8f8ba1efe60cdb09f2cc4daad676540e0633bf3d07ab39bc66d3116e"
+        },
+        {
+          "file": "lil-web.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "lil-web"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/esm/chunk-0.js",
+            "internal/esm/reactive-7.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 1146,
+          "codec_bytes": 485,
+          "sha256": "1f1b4db472341a7b1cf03a6c279a4fb9559da4030995470603679ff1251f228e"
+        },
+        {
+          "file": "internal/esm/reactive-7.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "compat",
+            "core",
+            "full",
+            "index",
+            "lil-web",
+            "web"
+          ],
+          "modules": [
+            "../reactive.lil"
+          ],
+          "anchored": false,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 10227,
+          "codec_bytes": 3060,
+          "sha256": "428e4f3893bb75e45cf08e76f8a217bcd56ed7a39bebdf387d4e308883b4643e"
+        },
+        {
+          "file": "internal/esm/store-8.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "compat",
+            "core",
+            "full",
+            "index",
+            "web"
+          ],
+          "modules": [
+            "../store.lil"
+          ],
+          "anchored": false,
+          "imports": [
+            "internal/esm/reactive-7.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 726,
+          "codec_bytes": 295,
+          "sha256": "d20430a9813a4d516f5f22aae8c356f6dbac7cb70b6e4360ba64800c8a780416"
+        },
+        {
+          "file": "internal/esm/chunk-0.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "full",
+            "lil-web",
+            "web"
+          ],
+          "modules": [
+            "../web.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/esm/reactive-7.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 10893,
+          "codec_bytes": 3212,
+          "sha256": "8122d5481be5af1d2a9430dc88f8608d26491e9dae4e6c5237858f81abf499e1"
+        },
+        {
+          "file": "internal/esm/chunk-1.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "compat",
+            "index",
+            "web"
+          ],
+          "modules": [
+            "compat.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/esm/extern0-12.js",
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 1294,
+          "codec_bytes": 551,
+          "sha256": "e39f77807384220f3824de86ffdac755fbc2963e92d8e38fd8d23dca37e81f53"
+        },
+        {
+          "file": "internal/esm/chunk-2.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "index",
+            "web"
+          ],
+          "modules": [
+            "index.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/esm/extern0-12.js",
+            "internal/esm/extern2-14.js",
+            "internal/esm/reactive-7.js",
+            "internal/esm/store-8.js",
+            "internal/esm/chunk-1.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 2182,
+          "codec_bytes": 908,
+          "sha256": "7ee0cc07ede3236c25c403dedc471bb05703f1b13ddd40f80989a5060ec4bb34"
+        },
+        {
+          "file": "internal/esm/extern0-12.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "compat",
+            "index",
+            "web"
+          ],
+          "modules": [
+            "module-10"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 6330,
+          "codec_bytes": 1615,
+          "sha256": "4c526e388accd3e11e2b624375b194d3cdc7103e5b2b5b5c928606019f30dd54"
+        },
+        {
+          "file": "internal/esm/extern1-13.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "dom-tables",
+            "web"
+          ],
+          "modules": [
+            "module-11"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 4275,
+          "codec_bytes": 1441,
+          "sha256": "7c80fec701efe7d22d2d75f7f36a01299c064cd169ed64446da40ee981a69cf4"
+        },
+        {
+          "file": "internal/esm/extern2-14.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "index",
+            "web"
+          ],
+          "modules": [
+            "module-12"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 16274,
+          "codec_bytes": 4293,
+          "sha256": "734bf3991e93f140ee37bf1d7f41d29bd03a8bc7a6e89ee8f5fd79f35e319084"
+        },
+        {
+          "file": "internal/esm/extern3-15.js",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "web"
+          ],
+          "modules": [
+            "module-13"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/esm/extern1-13.js"
+          ],
+          "dynamic_imports": [],
+          "bytes": 14752,
+          "codec_bytes": 4094,
+          "sha256": "63a9e78175fb2a4c5a476f926ce0a6099e02b430dd09b256188519ac241c9795"
+        }
+      ],
+      "side_effects": [
+        "dom-tables.js",
+        "full.js",
+        "web.js",
+        "compat.js",
+        "index.js",
+        "lil-web.js",
+        "internal/esm/chunk-0.js",
+        "internal/esm/chunk-1.js",
+        "internal/esm/chunk-2.js",
+        "internal/esm/extern0-12.js",
+        "internal/esm/extern1-13.js",
+        "internal/esm/extern2-14.js",
+        "internal/esm/extern3-15.js"
+      ],
+      "codec_total": 23373,
+      "rows_total": 57251,
+      "setters": 0,
+      "output": "primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        171,
+        186,
+        248,
+        114,
+        16,
+        42,
+        192,
+        191,
+        74,
+        64,
+        202,
+        246,
+        12,
+        158,
+        135,
+        21,
+        1,
+        235,
+        227,
+        122,
+        157,
+        126,
+        228,
+        68,
+        29,
+        168,
+        169,
+        110,
+        231,
+        64,
+        4,
+        158
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "iife",
+      "entries": [
+        {
+          "name": "full",
+          "file": "solidlil.global.js",
+          "dynamic": false,
+          "closure": [
+            "solidlil.global.js"
+          ],
+          "row": 6410,
+          "raw_row": 28119
+        }
+      ],
+      "files": [
+        {
+          "file": "solidlil.global.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "full"
+          ],
+          "modules": [
+            "../reactive.lil",
+            "../store.lil",
+            "../web.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 28119,
+          "codec_bytes": 6410,
+          "sha256": "5c6aea7162f6c938333d662b985fa411d7795e6bf32557816fc7fdcde35ccf73"
+        }
+      ],
+      "side_effects": [
+        "solidlil.global.js"
+      ],
+      "codec_total": 6410,
+      "rows_total": 6410,
+      "setters": 0,
+      "output": "browser",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        141,
+        179,
+        2,
+        30,
+        125,
+        194,
+        21,
+        245,
+        246,
+        194,
+        27,
+        228,
+        96,
+        74,
+        124,
+        46,
+        51,
+        84,
+        137,
+        195,
+        239,
+        34,
+        24,
+        47,
+        56,
+        120,
+        198,
+        99,
+        208,
+        92,
+        5,
+        82
+      ]
+    },
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": "index",
+          "file": "index.bundle.js",
+          "dynamic": false,
+          "closure": [
+            "index.bundle.js"
+          ],
+          "row": 8606,
+          "raw_row": 34458
+        }
+      ],
+      "files": [
+        {
+          "file": "index.bundle.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [
+            "compat.lil",
+            "../reactive.lil",
+            "../store.lil",
+            "index.lil",
+            "module-10",
+            "module-12"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 34458,
+          "codec_bytes": 8606,
+          "sha256": "7e9b1a1aec51e077cc02093428ac487e9a24bdddc33ef613ea95ad2e06e1b948"
+        }
+      ],
+      "side_effects": [
+        "index.bundle.js"
+      ],
+      "codec_total": 8606,
+      "rows_total": 8606,
+      "setters": 0,
+      "output": "bundle",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        61,
+        195,
+        5,
+        6,
+        133,
+        234,
+        156,
+        243,
+        5,
+        237,
+        165,
+        120,
+        208,
+        62,
+        43,
+        241,
+        203,
+        55,
+        180,
+        118,
+        168,
+        202,
+        188,
+        127,
+        29,
+        100,
+        84,
+        78,
+        66,
+        0,
+        79,
+        202
+      ]
+    },
+    {
+      "mode": "preserve-modules",
+      "format": "cjs",
+      "entries": [
+        {
+          "name": "compat",
+          "file": "compat.cjs",
+          "dynamic": false,
+          "closure": [
+            "internal/cjs/extern0-12.cjs",
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs",
+            "internal/cjs/chunk-1.cjs",
+            "compat.cjs"
+          ],
+          "row": 6289,
+          "raw_row": 26113
+        },
+        {
+          "name": "core",
+          "file": "core.cjs",
+          "dynamic": false,
+          "closure": [
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs",
+            "core.cjs"
+          ],
+          "row": 4201,
+          "raw_row": 18802
+        },
+        {
+          "name": "dom-tables",
+          "file": "dom-tables.cjs",
+          "dynamic": false,
+          "closure": [
+            "internal/cjs/extern1-13.cjs",
+            "dom-tables.cjs"
+          ],
+          "row": 1695,
+          "raw_row": 5499
+        },
+        {
+          "name": "full",
+          "file": "full.cjs",
+          "dynamic": false,
+          "closure": [
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs",
+            "internal/cjs/chunk-0.cjs",
+            "full.cjs"
+          ],
+          "row": 7953,
+          "raw_row": 36709
+        },
+        {
+          "name": "index",
+          "file": "index.cjs",
+          "dynamic": false,
+          "closure": [
+            "internal/cjs/extern0-12.cjs",
+            "internal/cjs/extern2-14.cjs",
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs",
+            "internal/cjs/chunk-1.cjs",
+            "internal/cjs/chunk-2.cjs",
+            "index.cjs"
+          ],
+          "row": 12212,
+          "raw_row": 53033
+        },
+        {
+          "name": "lil-web",
+          "file": "lil-web.cjs",
+          "dynamic": false,
+          "closure": [
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/chunk-0.cjs",
+            "lil-web.cjs"
+          ],
+          "row": 7258,
+          "raw_row": 32196
+        },
+        {
+          "name": "web",
+          "file": "web.cjs",
+          "dynamic": false,
+          "closure": [
+            "internal/cjs/extern1-13.cjs",
+            "internal/cjs/extern3-15.cjs",
+            "internal/cjs/extern0-12.cjs",
+            "internal/cjs/extern2-14.cjs",
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs",
+            "internal/cjs/chunk-1.cjs",
+            "internal/cjs/chunk-2.cjs",
+            "internal/cjs/chunk-0.cjs",
+            "web.cjs"
+          ],
+          "row": 22121,
+          "raw_row": 91006
+        }
+      ],
+      "files": [
+        {
+          "file": "dom-tables.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "dom-tables"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/extern1-13.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 794,
+          "codec_bytes": 219,
+          "sha256": "33bc0eac22ff9729e7fcc92abb85dc4912112d0e2d23e77660417bf07d714de1"
+        },
+        {
+          "file": "full.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "full"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs",
+            "internal/cjs/chunk-0.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 8053,
+          "codec_bytes": 969,
+          "sha256": "58580b9a50893c129de8c9b44613d5392f43eb7360188be4fd8ef2ee9fcda9e8"
+        },
+        {
+          "file": "web.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "web"
+          ],
+          "modules": [
+            "web.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/extern3-15.cjs",
+            "internal/cjs/chunk-2.cjs",
+            "internal/cjs/chunk-0.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 10144,
+          "codec_bytes": 1743,
+          "sha256": "ab9b386e3f678613fced1658308cd04d623550f97812208a42e84bb3a8b14813"
+        },
+        {
+          "file": "compat.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "compat"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/chunk-1.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 2236,
+          "codec_bytes": 354,
+          "sha256": "be83892e751ffbc66846f49f3453f8afd9f24d97ec478f3f660cb401845a914a"
+        },
+        {
+          "file": "core.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "core"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 4466,
+          "codec_bytes": 596,
+          "sha256": "dc6875fbea9df5f65ad2107d83f4020d36e8c5b1ff88c83ec88ff347f7124cfb"
+        },
+        {
+          "file": "index.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "index"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/chunk-2.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 6038,
+          "codec_bytes": 811,
+          "sha256": "801979dc5f9cc6a80bd0c440d123497c59a418b32bcc94ee474d5cc534e19928"
+        },
+        {
+          "file": "lil-web.cjs",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            "lil-web"
+          ],
+          "modules": [],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/chunk-0.cjs",
+            "internal/cjs/reactive-7.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 4803,
+          "codec_bytes": 652,
+          "sha256": "a3d273c3766f38324c201f704f87538b1aeb2d89a1563d863518985a470b3efb"
+        },
+        {
+          "file": "internal/cjs/reactive-7.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "compat",
+            "core",
+            "full",
+            "index",
+            "lil-web",
+            "web"
+          ],
+          "modules": [
+            "../reactive.lil"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 13073,
+          "codec_bytes": 3227,
+          "sha256": "431905fb4a5bcf021b9a477cdf294b681395e0a5470de674d28eba916b7c84eb"
+        },
+        {
+          "file": "internal/cjs/store-8.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "compat",
+            "core",
+            "full",
+            "index",
+            "web"
+          ],
+          "modules": [
+            "../store.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/reactive-7.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 1263,
+          "codec_bytes": 378,
+          "sha256": "9171f81ff826257c5b0fe9b6428d062782930f289c329e811d3e90b94e65295e"
+        },
+        {
+          "file": "internal/cjs/chunk-0.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "full",
+            "lil-web",
+            "web"
+          ],
+          "modules": [
+            "../web.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/reactive-7.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 14320,
+          "codec_bytes": 3379,
+          "sha256": "5df08738770fe8fff6740d8e2ee82bc1ab12f1224d3858f91781a9a53ad53f1b"
+        },
+        {
+          "file": "internal/cjs/chunk-1.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "compat",
+            "index",
+            "web"
+          ],
+          "modules": [
+            "compat.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/extern0-12.cjs",
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 3133,
+          "codec_bytes": 683,
+          "sha256": "39a60b2a3d355181c9b707b5b9c2812686734fb2fa4fb52d90112e715203db1e"
+        },
+        {
+          "file": "internal/cjs/chunk-2.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "index",
+            "web"
+          ],
+          "modules": [
+            "index.lil"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/extern0-12.cjs",
+            "internal/cjs/extern2-14.cjs",
+            "internal/cjs/reactive-7.cjs",
+            "internal/cjs/store-8.cjs",
+            "internal/cjs/chunk-1.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 6766,
+          "codec_bytes": 1150,
+          "sha256": "e6b83d9cf4288d381ef6f8088444b18ed5b271adffb02ce83985301dd1cea949"
+        },
+        {
+          "file": "internal/cjs/extern0-12.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "compat",
+            "index",
+            "web"
+          ],
+          "modules": [
+            "module-10"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 6408,
+          "codec_bytes": 1647,
+          "sha256": "40f688648fc55989ebd353ec8093a59b57db027841003b24c5ab45a12b38cb5a"
+        },
+        {
+          "file": "internal/cjs/extern1-13.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "dom-tables",
+            "web"
+          ],
+          "modules": [
+            "module-11"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 4705,
+          "codec_bytes": 1476,
+          "sha256": "3f514f148641489bb290ca482be1dc50fbb91036186487cb1ee28ee7de6034d7"
+        },
+        {
+          "file": "internal/cjs/extern2-14.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "index",
+            "web"
+          ],
+          "modules": [
+            "module-12"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 16352,
+          "codec_bytes": 4316,
+          "sha256": "0a858d507e51aff082411f5a59b28defbb4ea604f457fbbe63c708a3c1936f89"
+        },
+        {
+          "file": "internal/cjs/extern3-15.cjs",
+          "role": "module",
+          "source_map_for": null,
+          "label": [
+            "web"
+          ],
+          "modules": [
+            "module-13"
+          ],
+          "anchored": true,
+          "imports": [
+            "internal/cjs/extern1-13.cjs"
+          ],
+          "dynamic_imports": [],
+          "bytes": 14842,
+          "codec_bytes": 4122,
+          "sha256": "23c126d389aeacb862a4d9f42693520eebfa4d5f45a5d2892e882116d0816f79"
+        }
+      ],
+      "side_effects": [
+        "dom-tables.cjs",
+        "full.cjs",
+        "web.cjs",
+        "compat.cjs",
+        "core.cjs",
+        "index.cjs",
+        "lil-web.cjs",
+        "internal/cjs/reactive-7.cjs",
+        "internal/cjs/store-8.cjs",
+        "internal/cjs/chunk-0.cjs",
+        "internal/cjs/chunk-1.cjs",
+        "internal/cjs/chunk-2.cjs",
+        "internal/cjs/extern0-12.cjs",
+        "internal/cjs/extern1-13.cjs",
+        "internal/cjs/extern2-14.cjs",
+        "internal/cjs/extern3-15.cjs"
+      ],
+      "codec_total": 25722,
+      "rows_total": 61729,
+      "setters": 0,
+      "output": "cjs",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        222,
+        86,
+        146,
+        42,
+        69,
+        110,
+        24,
+        88,
+        119,
+        89,
+        40,
+        110,
+        213,
+        66,
+        101,
+        164,
+        19,
+        10,
+        27,
+        46,
+        220,
+        77,
+        226,
+        174,
+        156,
+        252,
+        243,
+        100,
+        219,
+        235,
+        3,
+        51
+      ]
+    }
+  ]
+}

@@ -1,0 +1,424 @@
+{
+  "compiler": {
+    "baseRevision": "f7d29bd9",
+    "binarySha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+    "hasLocalSourceChanges": true
+  },
+  "machine": {
+    "cpu": "AMD EPYC 7763 64-Core Processor",
+    "logicalCpus": 8,
+    "memoryGiB": 15.6,
+    "os": "Linux-7.0.0-1014-azure-x86_64-with-glibc2.39",
+    "node": "v20.19.0"
+  },
+  "lilscript": [
+    {
+      "library": "solidlil",
+      "objective": "raw",
+      "command": [
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/bin/lilscript",
+        "--config",
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/configs/solidlil-raw.toml",
+        "--target",
+        "js-module",
+        "--mode",
+        "production",
+        "--jobs",
+        "1",
+        "--out-dir",
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/artifacts/solidlil/raw",
+        "--explain",
+        "json",
+        "--cache",
+        "off",
+        "--logical-work",
+        "8000000000"
+      ],
+      "wallSeconds": 16.353342400005204,
+      "returncode": 0,
+      "compilerSha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+      "configSha256": "45caab1771c1727f4b419c5f0359273d923a2f7d7cfba8862e40c65ef75c9df9",
+      "measuredAt": "2026-10-03T14:24:34.490840+00:00",
+      "outputSha256": "f84a13a40377cb1c0626b47f35800b01ea097667040a00fae0e524beacc7c8a9",
+      "raw": 33732
+    },
+    {
+      "library": "solidlil",
+      "objective": "gzip",
+      "command": [
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/bin/lilscript",
+        "--config",
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/configs/solidlil-gzip.toml",
+        "--target",
+        "js-module",
+        "--mode",
+        "production",
+        "--jobs",
+        "1",
+        "--out-dir",
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/artifacts/solidlil/gzip",
+        "--explain",
+        "json",
+        "--cache",
+        "off",
+        "--logical-work",
+        "8000000000"
+      ],
+      "wallSeconds": 41.961197541997535,
+      "returncode": 0,
+      "compilerSha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+      "configSha256": "a1f450022b5ce73667e25f3672daa1baf4428f1363438c219f02f462baa6802b",
+      "measuredAt": "2026-10-03T14:25:16.485358+00:00",
+      "outputSha256": "8c539ba04ec532549739509f8a7afe30e2c9bf15a3491426053ae44d8878a611",
+      "raw": 33805
+    },
+    {
+      "library": "solidlil",
+      "objective": "brotli",
+      "command": [
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/bin/lilscript",
+        "--config",
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/configs/solidlil-brotli.toml",
+        "--target",
+        "js-module",
+        "--mode",
+        "production",
+        "--jobs",
+        "1",
+        "--out-dir",
+        "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/artifacts/solidlil/brotli",
+        "--explain",
+        "json",
+        "--cache",
+        "off",
+        "--logical-work",
+        "8000000000"
+      ],
+      "wallSeconds": 124.56157236800937,
+      "returncode": 0,
+      "compilerSha256": "8ff44fabb92c949e68240ce6541038fd52e2f3c04d1a9ac470031e4238541c3a",
+      "configSha256": "df66bd328155340c5924f562202a9be8d6daaf26d4e7079c32e41e9639285fad",
+      "measuredAt": "2026-10-03T14:27:21.070473+00:00",
+      "outputSha256": "077beab58d7c9035c4f1efe1a437be345bb7c666bf0c3b6f1eda3083c83600d1",
+      "raw": 33857
+    }
+  ],
+  "upstream": {
+    "name": "solidlil",
+    "package": "solid-js",
+    "version": "2.0.0-rc.0",
+    "resolveDir": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil",
+    "output": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream/solidlil",
+    "entry": "export {$DEVCOMP,$PROXY,$REFRESH,$TRACK,DEV,Errored,For,Hydration,Loading,Match,NoHydrateContext,NoHydration,NotReadyError,Repeat,Reveal,Show,Switch,action,affects,children,createComponent,createContext,createEffect,createErrorBoundary,createLoadingBoundary,createMemo,createOptimistic,createOptimisticStore,createOwner,createProjection,createReaction,createRenderEffect,createRevealOrder,createRoot,createSignal,createStore,createTrackedEffect,createUniqueId,creationStamp,deep,enableExternalSource,enableHydration,enforceLoadingBoundary,flatten,flush,getNextChildId,getObserver,getOwner,getProjectionTrace,inServerComponentScope,isDisposed,isEqual,isPending,isWrappable,latest,lazy,mapArray,materializeContainerTrace,merge,omit,onCleanup,onSettled,reconcile,refresh,repeat,resolve,runInServerComponentScope,runWithOwner,sharedConfig,snapshot,ssrHandleError,ssrScope,storePath,untrack,useContext} from \"solid-js\";",
+    "external": [],
+    "sharedExports": [
+      "$DEVCOMP",
+      "$PROXY",
+      "$REFRESH",
+      "$TRACK",
+      "DEV",
+      "Errored",
+      "For",
+      "Hydration",
+      "Loading",
+      "Match",
+      "NoHydrateContext",
+      "NoHydration",
+      "NotReadyError",
+      "Repeat",
+      "Reveal",
+      "Show",
+      "Switch",
+      "action",
+      "affects",
+      "children",
+      "createComponent",
+      "createContext",
+      "createEffect",
+      "createErrorBoundary",
+      "createLoadingBoundary",
+      "createMemo",
+      "createOptimistic",
+      "createOptimisticStore",
+      "createOwner",
+      "createProjection",
+      "createReaction",
+      "createRenderEffect",
+      "createRevealOrder",
+      "createRoot",
+      "createSignal",
+      "createStore",
+      "createTrackedEffect",
+      "createUniqueId",
+      "creationStamp",
+      "deep",
+      "enableExternalSource",
+      "enableHydration",
+      "enforceLoadingBoundary",
+      "flatten",
+      "flush",
+      "getNextChildId",
+      "getObserver",
+      "getOwner",
+      "getProjectionTrace",
+      "inServerComponentScope",
+      "isDisposed",
+      "isEqual",
+      "isPending",
+      "isWrappable",
+      "latest",
+      "lazy",
+      "mapArray",
+      "materializeContainerTrace",
+      "merge",
+      "omit",
+      "onCleanup",
+      "onSettled",
+      "reconcile",
+      "refresh",
+      "repeat",
+      "resolve",
+      "runInServerComponentScope",
+      "runWithOwner",
+      "sharedConfig",
+      "snapshot",
+      "ssrHandleError",
+      "ssrScope",
+      "storePath",
+      "untrack",
+      "useContext"
+    ],
+    "excludedExports": [],
+    "additionalExports": [
+      "createDeepProxy",
+      "createSelector",
+      "finishHydration",
+      "registerRevealSlot",
+      "selectorMatch"
+    ],
+    "resolution": {
+      "platform": "neutral",
+      "conditions": [
+        "production"
+      ],
+      "mainFields": [
+        "module",
+        "main"
+      ],
+      "target": "es2020",
+      "defines": {
+        "process.env.NODE_ENV": "production"
+      },
+      "css": "excluded; measured JavaScript only"
+    },
+    "minifiers": [
+      {
+        "tool": "Terser",
+        "version": "5.51.2",
+        "esbuild": "0.28.1",
+        "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream/solidlil/terser.mjs",
+        "sha256": "36a5e41a55880f4c10b703aa4c063fcb0dcf462c555ba686b9ff04e019d51ad7",
+        "raw": 78094,
+        "imports": [],
+        "wallSeconds": 1.4097428720000025,
+        "command": [
+          "/home/azureuser/.nvm/versions/node/v20.19.0/bin/node",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream.mjs",
+          "child",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream/solidlil/job.json",
+          "Terser"
+        ]
+      },
+      {
+        "tool": "esbuild",
+        "version": "0.28.1",
+        "esbuild": "0.28.1",
+        "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream/solidlil/esbuild.mjs",
+        "sha256": "5363034d2145cd740f2e9615b6ba029f46146713c01d4da2fcb513986ea7f9e4",
+        "raw": 78763,
+        "imports": [],
+        "wallSeconds": 0.10223324200000207,
+        "command": [
+          "/home/azureuser/.nvm/versions/node/v20.19.0/bin/node",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream.mjs",
+          "child",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream/solidlil/job.json",
+          "esbuild"
+        ]
+      },
+      {
+        "tool": "Oxc",
+        "version": "via Vite 8.2.1",
+        "esbuild": "0.28.1",
+        "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream/solidlil/oxc.mjs",
+        "sha256": "6cff15bb8a242e6f46f0e66e8c2b6f020f5cc3800b566d3be581ed9d23cc2f07",
+        "raw": 76862,
+        "imports": [],
+        "wallSeconds": 0.2305897260000056,
+        "command": [
+          "/home/azureuser/.nvm/versions/node/v20.19.0/bin/node",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream.mjs",
+          "child",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/upstream/solidlil/job.json",
+          "Oxc"
+        ]
+      }
+    ]
+  },
+  "sourceInputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": "index",
+        "module": 0
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/package/index.lil",
+        "bytes": 5564,
+        "sha256": "46dd2780f9209d187e774fc84d4b4be27c7bfd415fc82fb8091f5ecc93bc12b0",
+        "dependencies": [
+          1,
+          4
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/entries/core.lil",
+        "bytes": 2159,
+        "sha256": "a836c4e2150fb699c51e16e98b6522f97037f3c28af5df66a67f9a0f169cc7b7",
+        "dependencies": [
+          2,
+          3
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/reactive.lil",
+        "bytes": 27164,
+        "sha256": "696c7579f520d23ca3b3cc98bebfd8579c054ed746c4696fb6181d3d9f3a4ae5",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/store.lil",
+        "bytes": 1372,
+        "sha256": "85ac1689143ea8507c3d51ef3ace5a9c35c2d756eec71de9b08c53867e9fd89b",
+        "dependencies": [
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/package/compat.lil",
+        "bytes": 3952,
+        "sha256": "7bd36b6bac3d774e5c3679282433e5cb8de5d3ff2c19271d1e5ebc5cfd1a52d6",
+        "dependencies": [
+          1
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [
+      {
+        "specifier": "../compat-factory.mjs",
+        "stem": "compat-factory",
+        "delivered_bytes": 6191,
+        "sha256": "1d99e797a76160a4e6fb86ec6f9d26f97a62ac435ba8bae329c8cee51d53530e",
+        "exports": [
+          [
+            "createCompat",
+            "createCompat"
+          ]
+        ],
+        "imports": []
+      },
+      {
+        "specifier": "../solid-api-factory.mjs",
+        "stem": "solid-api-factory",
+        "delivered_bytes": 16129,
+        "sha256": "2124cb9fd4c9664666f2ca5555b0a472df61ba8623996bc290a786a83ca9db45",
+        "exports": [
+          [
+            "createSolidApi",
+            "createSolidApi"
+          ]
+        ],
+        "imports": []
+      }
+    ],
+    "host_reserved": [
+      "Array",
+      "Error",
+      "Infinity",
+      "Map",
+      "Number",
+      "Object",
+      "Promise",
+      "Proxy",
+      "Reflect",
+      "Set",
+      "String",
+      "Symbol",
+      "WeakMap",
+      "queueMicrotask",
+      "structuredClone",
+      "undefined"
+    ]
+  },
+  "validation": {
+    "checks": 45,
+    "runs": [
+      {
+        "objective": "raw",
+        "suite": "compat",
+        "checks": 15,
+        "command": [
+          "node",
+          "--no-warnings",
+          "--experimental-loader",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/redirect-loader.mjs",
+          "--test",
+          "test/node.test.mjs"
+        ],
+        "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/raw/solidlil/dist/index.mjs",
+        "ok": true
+      },
+      {
+        "objective": "gzip",
+        "suite": "compat",
+        "checks": 15,
+        "command": [
+          "node",
+          "--no-warnings",
+          "--experimental-loader",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/redirect-loader.mjs",
+          "--test",
+          "test/node.test.mjs"
+        ],
+        "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/gzip/solidlil/dist/index.mjs",
+        "ok": true
+      },
+      {
+        "objective": "brotli",
+        "suite": "compat",
+        "checks": 15,
+        "command": [
+          "node",
+          "--no-warnings",
+          "--experimental-loader",
+          "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/redirect-loader.mjs",
+          "--test",
+          "test/node.test.mjs"
+        ],
+        "artifact": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/validation/brotli/solidlil/dist/index.mjs",
+        "ok": true
+      }
+    ],
+    "ok": true,
+    "scope": "Current independent main-entry builds; package-format tests are recorded separately."
+  },
+  "workLimit": 8000000000,
+  "timingScope": "One sequential fresh-output build per objective/minifier. Upstream timing is ESM bundling and minification, not original-repository source compilation."
+}

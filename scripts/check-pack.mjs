@@ -27,5 +27,14 @@ if ([...files].some((path) => path.startsWith("dist/apps/") || path.startsWith("
 }
 const manifest = JSON.parse(readFileSync("package.json", "utf8"))
 if (manifest.name !== "@itslil/solidjs") throw new Error("unexpected package name")
-if (manifest.sideEffects !== false) throw new Error("package must remain tree-shakeable")
+// Retain the compiler's effect metadata: marking every initializer pure can
+// remove shared reactive state or compatibility setup during application builds.
+const delivery = JSON.parse(readFileSync("dist/lilscript.manifest.json", "utf8"))
+const expected = new Set(delivery.outputs.flatMap(output => output.side_effects.map(file => `./dist/${file}`)))
+for (const [alias, source] of Object.entries(delivery.aliases)) {
+  if (expected.has(`./dist/${source}`)) expected.add(`./dist/${alias}`)
+}
+if (JSON.stringify(manifest.sideEffects) !== JSON.stringify([...expected].sort())) {
+  throw new Error("package sideEffects must match the compiler delivery manifest")
+}
 console.log(`npm pack: ${result.entryCount} files, ${result.size} bytes packed, ${result.unpackedSize} bytes unpacked`)

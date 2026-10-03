@@ -1,43 +1,67 @@
+# Compiler-owned delivery; no JavaScript post-minifier or export rewriting.
+[policy]
+version = 3
 [optimization]
 preset = "maximum"
-
 [javascript]
 priority = "size-first"
-optimization_level = 15
-cost_model = "brotli"
-function_spelling = "arrow"
-local_name_reserve = 48
-public_aggregate_abi = "positional"
-pool_numeric_literals = true
-optimizations = [
-  "ir-inlining-variants",
-  "ir-closure-factory-variants",
-  "ir-function-subsumption-variants",
-  "ir-specialization-variants",
-  "structural-control-flow-variants",
-  "ssa-destruction-variants",
-  "comma-expression-variants",
-  "structural-loop-variants",
-  "do-loop-variants",
-  "update-loop-variants",
-  "switch-lowering-variants",
-  "compound-mutation-variants",
-  "entropy-cross-scope-reuse",
-  "entropy-property-assignment",
-  "performance-shape-model",
-  "profile-guided-optimization",
-  "call-site-specialization",
-  "capture-signature-cloning",
-  "identical-function-folding",
-  "function-layout-variants",
-  "startup-cost-guard",
-]
+optimizations = ["entropy-cross-scope-reuse", "call-site-specialization"]
 
+# Preserved effort setting. 13 favors size; 14/15 allow more expensive marginal searches.
+[effort]
+level = 15
+
+# Optimize the delivered files for this codec, independently of raw/gzip objectives.
+[objective]
+codecs = "brotli"
 [mangle]
 identifiers = true
 properties = true
-exports = false
 pool_strings = true
 
-[bundle]
+# Named public records preserve the JavaScript compatibility API. Shared ESM/CJS
+# graphs each initialize the reactive owner and compatibility state once.
+[delivery]
+mode = "preserve-modules"
+directory = "."
+host_modules = "embed"
+entry_names = "[name].js"
+module_names = "internal/esm/[path]-[index].js"
+chunk_names = "internal/esm/chunk-[index].js"
+[delivery.entries]
+index = "package/index.lil"
+web = "package/web.lil"
+core = "entries/core.lil"
+lil-web = "web.lil"
+full = "entries/full.lil"
+compat = "package/compat.lil"
+dom-tables = "package/dom-tables.lil"
+
+[[delivery.also]]
+name = "cjs"
+format = "cjs"
+entry_names = "[name].cjs"
+module_names = "internal/cjs/[path]-[index].cjs"
+chunk_names = "internal/cjs/chunk-[index].cjs"
+
+[[delivery.also]]
+name = "browser"
+format = "iife"
 mode = "single"
+entries = ["full"]
+global = "solidlil"
+global_binding = "property"
+entry_names = "solidlil.global.js"
+
+[[delivery.also]]
+name = "bundle"
+format = "esm"
+mode = "single"
+entries = ["index"]
+entry_names = "index.bundle.js"
+
+[policy.resources]
+logical_work = 2000000000
+
+[execution]
+jobs = 1

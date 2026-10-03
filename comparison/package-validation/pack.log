@@ -1,0 +1,5 @@
+
+> @itslil/solidjs@0.1.1 check:pack
+> node scripts/check-pack.mjs
+
+npm pack: 44 files, 75092 bytes packed, 314570 bytes unpacked

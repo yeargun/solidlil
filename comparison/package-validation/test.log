@@ -1,0 +1,260 @@
+TAP version 13
+# Subtest: counter: Counter
+ok 1 - counter: Counter
+  ---
+  duration_ms: 634.942989
+  ...
+# Subtest: effects: Split effects
+ok 2 - effects: Split effects
+  ---
+  duration_ms: 308.040654
+  ...
+# Subtest: form-binding: Form binding
+ok 3 - form-binding: Form binding
+  ---
+  duration_ms: 300.100498
+  ...
+# Subtest: context-theme: Context
+ok 4 - context-theme: Context
+  ---
+  duration_ms: 389.341075
+  ...
+# Subtest: async-profile: Async memo
+ok 5 - async-profile: Async memo
+  ---
+  duration_ms: 964.853329
+  ...
+# Subtest: optimistic-save: Optimistic action
+ok 6 - optimistic-save: Optimistic action
+  ---
+  duration_ms: 1527.014775
+  ...
+# Subtest: reveal-feed: Reveal feed
+ok 7 - reveal-feed: Reveal feed
+  ---
+  duration_ms: 2298.788927
+  ...
+# Subtest: projection-filter: Projection
+ok 8 - projection-filter: Projection
+  ---
+  duration_ms: 269.073012
+  ...
+# Subtest: show-switch: Show / Switch
+ok 9 - show-switch: Show / Switch
+  ---
+  duration_ms: 553.69407
+  ...
+# Subtest: repeat-grid: Repeat grid
+ok 10 - repeat-grid: Repeat grid
+  ---
+  duration_ms: 383.006829
+  ...
+# Subtest: nested-tree: Nested tree
+ok 11 - nested-tree: Nested tree
+  ---
+  duration_ms: 407.913578
+  ...
+# Subtest: error-reset: Error reset
+ok 12 - error-reset: Error reset
+  ---
+  duration_ms: 469.624578
+  ...
+# Subtest: todolist: Todo list
+ok 13 - todolist: Todo list
+  ---
+  duration_ms: 618.583486
+  ...
+# Subtest: store-cart: Store cart
+ok 14 - store-cart: Store cart
+  ---
+  duration_ms: 502.32511
+  ...
+# Subtest: kanban: Kanban board
+ok 15 - kanban: Kanban board
+  ---
+  duration_ms: 826.648681
+  ...
+# Subtest: inbox: Inbox
+ok 16 - inbox: Inbox
+  ---
+  duration_ms: 771.719081
+  ...
+# Subtest: marketplace: Lil marketplace
+ok 17 - marketplace: Lil marketplace
+  ---
+  duration_ms: 752.097615
+  ...
+# Subtest: keyed: Keyed table
+ok 18 - keyed: Keyed table
+  ---
+  duration_ms: 1353.71369
+  ...
+# Subtest: spreadsheet: Spreadsheet
+ok 19 - spreadsheet: Spreadsheet
+  ---
+  duration_ms: 523.218271
+  ...
+# Subtest: svg-clock: SVG clock
+ok 20 - svg-clock: SVG clock
+  ---
+  duration_ms: 275.344918
+  ...
+# Subtest: portal-modal: Portal modal
+ok 21 - portal-modal: Portal modal
+  ---
+  duration_ms: 377.269973
+  ...
+# Subtest: every solid-js export exists on @itslil/solidjs
+ok 22 - every solid-js export exists on @itslil/solidjs
+  ---
+  duration_ms: 1.87867
+  ...
+# Subtest: every @solidjs/web export exists on @itslil/solidjs/web
+ok 23 - every @solidjs/web export exists on @itslil/solidjs/web
+  ---
+  duration_ms: 0.223188
+  ...
+# Subtest: createProjection and reconcile keep keyed identity
+ok 24 - createProjection and reconcile keep keyed identity
+  ---
+  duration_ms: 1.450738
+  ...
+# Subtest: mapArray and For map a list
+ok 25 - mapArray and For map a list
+  ---
+  duration_ms: 0.784089
+  ...
+# Subtest: Reveal holds later Loading slots until earlier ones settle
+ok 26 - Reveal holds later Loading slots until earlier ones settle
+  ---
+  duration_ms: 0.764382
+  ...
+# Subtest: ssr helpers and renderToString produce HTML
+ok 27 - ssr helpers and renderToString produce HTML
+  ---
+  duration_ms: 0.405119
+  ...
+# Subtest: hydrate claims existing nodes and does not wipe the root
+ok 28 - hydrate claims existing nodes and does not wipe the root
+  ---
+  duration_ms: 0.467265
+  ...
+# Subtest: mapArray reuses mapped nodes by identity
+ok 29 - mapArray reuses mapped nodes by identity
+  ---
+  duration_ms: 0.268062
+  ...
+# Subtest: createStore setter can replace by returning a new value
+ok 30 - createStore setter can replace by returning a new value
+  ---
+  duration_ms: 0.358251
+  ...
+# Subtest: createMemo lazy waits for the first read
+ok 31 - createMemo lazy waits for the first read
+  ---
+  duration_ms: 0.383098
+  ...
+# Subtest: createEffect defer skips the first apply
+ok 32 - createEffect defer skips the first apply
+  ---
+  duration_ms: 0.433001
+  ...
+# Subtest: default-less createContext throws outside a provider
+ok 33 - default-less createContext throws outside a provider
+  ---
+  duration_ms: 0.577572
+  ...
+# Subtest: the source-aligned keyed bundles have the same observable behavior
+ok 34 - the source-aligned keyed bundles have the same observable behavior
+  ---
+  duration_ms: 1346.385668
+  ...
+# Subtest: queued writes stay invisible until flush
+ok 35 - queued writes stay invisible until flush
+  ---
+  duration_ms: 1.651675
+  ...
+# Subtest: tuple createSignal matches the Solid 2.0 consumer shape
+ok 36 - tuple createSignal matches the Solid 2.0 consumer shape
+  ---
+  duration_ms: 0.346339
+  ...
+# Subtest: createMemo is allocated once and tracks the source
+ok 37 - createMemo is allocated once and tracks the source
+  ---
+  duration_ms: 0.679554
+  ...
+# Subtest: split createEffect applies after compute
+ok 38 - split createEffect applies after compute
+  ---
+  duration_ms: 0.366086
+  ...
+# Subtest: createSelector only notifies matching keys
+ok 39 - createSelector only notifies matching keys
+  ---
+  duration_ms: 0.617206
+  ...
+# Subtest: createStore mutates a draft
+ok 40 - createStore mutates a draft
+  ---
+  duration_ms: 0.35749
+  ...
+# Subtest: fan-out subscribe notifies every observer and forgets recycled slots
+ok 41 - fan-out subscribe notifies every observer and forgets recycled slots
+  ---
+  duration_ms: 1.872619
+  ...
+# Subtest: dropping a dependency stops updates from that signal
+ok 42 - dropping a dependency stops updates from that signal
+  ---
+  duration_ms: 0.338535
+  ...
+# Subtest: disposing a root recycles effect slots
+ok 43 - disposing a root recycles effect slots
+  ---
+  duration_ms: 0.37916
+  ...
+# Subtest: public entries export createSelector
+ok 44 - public entries export createSelector
+  ---
+  duration_ms: 0.233758
+  ...
+# Subtest: NotReady from a nested effect wakes the parent Loading effect
+ok 45 - NotReady from a nested effect wakes the parent Loading effect
+  ---
+  duration_ms: 0.552876
+  ...
+# Subtest: createMemo settles a thenable and flips isPending
+ok 46 - createMemo settles a thenable and flips isPending
+  ---
+  duration_ms: 0.289742
+  ...
+# Subtest: action reverts createOptimistic writes on failure
+ok 47 - action reverts createOptimistic writes on failure
+  ---
+  duration_ms: 0.824996
+  ...
+# Subtest: createUniqueId is stable per call and children flattens
+ok 48 - createUniqueId is stable per call and children flattens
+  ---
+  duration_ms: 0.856666
+  ...
+# Subtest: CommonJS entry exposes the same public names
+ok 49 - CommonJS entry exposes the same public names
+  ---
+  duration_ms: 9.956947
+  ...
+# Subtest: Vite bundles the public package entry
+ok 50 - Vite bundles the public package entry
+  ---
+  duration_ms: 255.319207
+  ...
+1..50
+# tests 50
+# suites 0
+# pass 50
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 17533.843401

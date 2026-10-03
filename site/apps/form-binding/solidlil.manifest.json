@@ -1,0 +1,179 @@
+{
+  "version": 3,
+  "codec": "brotli",
+  "outputs": [
+    {
+      "mode": "single",
+      "format": "esm",
+      "entries": [
+        {
+          "name": ".generated",
+          "file": "solidlil.js",
+          "dynamic": false,
+          "closure": [
+            "solidlil.js"
+          ],
+          "row": 2012,
+          "raw_row": 5423
+        }
+      ],
+      "files": [
+        {
+          "file": "solidlil.js",
+          "role": "entry",
+          "source_map_for": null,
+          "label": [
+            ".generated"
+          ],
+          "modules": [
+            ".generated.lil",
+            "../../../src/reactive.lil",
+            "../../../src/lsx.lil",
+            "../../../src/web.lil",
+            "module-5"
+          ],
+          "anchored": true,
+          "imports": [],
+          "dynamic_imports": [],
+          "bytes": 5423,
+          "codec_bytes": 2012,
+          "sha256": "4d899be32c5b6eba6afcb00fbe358bfce18cbeecb80eb93ab1c5f52b736999b9"
+        }
+      ],
+      "side_effects": [
+        "solidlil.js"
+      ],
+      "codec_total": 2012,
+      "rows_total": 2012,
+      "setters": 0,
+      "output": "primary",
+      "codec": "brotli",
+      "codec_settings": {
+        "brotli": {
+          "quality": 11,
+          "window": 22,
+          "mode": "generic"
+        },
+        "gzip": {
+          "level": 9,
+          "window": 15
+        }
+      },
+      "policy_fingerprint": [
+        95,
+        126,
+        213,
+        44,
+        152,
+        195,
+        252,
+        197,
+        76,
+        179,
+        37,
+        69,
+        3,
+        119,
+        120,
+        239,
+        128,
+        67,
+        88,
+        159,
+        70,
+        39,
+        81,
+        42,
+        113,
+        109,
+        51,
+        153,
+        169,
+        46,
+        100,
+        31
+      ]
+    }
+  ],
+  "source_sha256": "f5b477ed525536a4e5df48cc5a74d40f9aff3cc9dc80f6dbeae64bccfeaaba88",
+  "inputs": {
+    "root": 0,
+    "entries": [
+      {
+        "name": ".generated",
+        "module": 0
+      }
+    ],
+    "modules": [
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/apps/form-binding/solidlil/.generated.lil",
+        "bytes": 1257,
+        "sha256": "1ae7648ab3f433525b0104485c1177bd0bc89957bf46f004d01e410b6d5a8bbc",
+        "dependencies": [
+          1,
+          2
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/reactive.lil",
+        "bytes": 27164,
+        "sha256": "696c7579f520d23ca3b3cc98bebfd8579c054ed746c4696fb6181d3d9f3a4ae5",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/lsx.lil",
+        "bytes": 14456,
+        "sha256": "6b299f6caff405df361b8895f629a84ba3d3815a6c1e7e1897f6a8ee2033219c",
+        "dependencies": [
+          1,
+          3,
+          4
+        ],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/host.lil",
+        "bytes": 1979,
+        "sha256": "cf221b230e36aad64df3524904d21311e902a102187915c1deb992c77239e9d8",
+        "dependencies": [],
+        "dynamic_dependencies": []
+      },
+      {
+        "path": "/home/azureuser/lilscript-rebuild-reports/2026-10-03-site-refresh/ports/solidlil/src/web.lil",
+        "bytes": 29292,
+        "sha256": "01875893dc491e02b23482f00a9817f48220adf255031a622315346030a62967",
+        "dependencies": [
+          1,
+          3
+        ],
+        "dynamic_dependencies": []
+      }
+    ],
+    "host_modules": [
+      {
+        "specifier": "../../../src/dom-host.js",
+        "stem": "dom-host",
+        "delivered_bytes": 138,
+        "sha256": "3be0aa0b723fa4de7dce9ff17f83436d7c6afc4f67a1600e891ec4e95ae051ed",
+        "exports": [
+          [
+            "domFirstChild",
+            "domFirstChild"
+          ],
+          [
+            "domNextSibling",
+            "domNextSibling"
+          ],
+          [
+            "domSetText",
+            "domSetText"
+          ]
+        ],
+        "imports": []
+      }
+    ],
+    "host_reserved": []
+  }
+}

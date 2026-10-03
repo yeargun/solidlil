@@ -1,0 +1,682 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-10-03T14:52:06.026Z",
+  "compression": {
+    "gzip": 9,
+    "brotli": 11
+  },
+  "solid": "solid-js@2.0.0-rc.0 + @solidjs/web@2.0.0-rc.0",
+  "solidlil": "compatibility-prototype demos; exact runtime comparison is ineligible",
+  "cases": 21,
+  "metrics": {
+    "raw": {
+      "solid": 660807,
+      "solidlil": 165848,
+      "weightedReduction": 74.90220291249942,
+      "medianReduction": 77.56532150151419,
+      "minimumReduction": 59.41398922073668,
+      "maximumReduction": 82.85098196731708,
+      "wins": 21
+    },
+    "gzip": {
+      "solid": 253383,
+      "solidlil": 67033,
+      "weightedReduction": 73.54479187632951,
+      "medianReduction": 76.00328347318496,
+      "minimumReduction": 59.822736030828516,
+      "maximumReduction": 81.13994969128746,
+      "wins": 21
+    },
+    "brotli": {
+      "solid": 229901,
+      "solidlil": 58517,
+      "weightedReduction": 74.54687017455339,
+      "medianReduction": 77.0518087984768,
+      "minimumReduction": 61.26401630988787,
+      "maximumReduction": 81.64801113008284,
+      "wins": 21
+    }
+  },
+  "keyedPerformance": {
+    "raw": 11185,
+    "gzip": 4367,
+    "brotli": 3861
+  },
+  "artifacts": {
+    "core": {
+      "raw": 1201,
+      "gzip": 508,
+      "brotli": 464
+    },
+    "web": {
+      "raw": 4631,
+      "gzip": 1596,
+      "brotli": 1180
+    },
+    "full": {
+      "raw": 2041,
+      "gzip": 863,
+      "brotli": 769
+    },
+    "index.bundle": {
+      "raw": 34458,
+      "gzip": 9606,
+      "brotli": 8606
+    }
+  },
+  "examples": [
+    {
+      "id": "counter",
+      "title": "Counter",
+      "group": "reactive",
+      "solid": {
+        "raw": 26837,
+        "gzip": 10375,
+        "brotli": 9434
+      },
+      "solidlil": {
+        "raw": 5031,
+        "gzip": 2171,
+        "brotli": 1868
+      },
+      "reduction": {
+        "raw": 81.25349331147297,
+        "gzip": 79.07469879518072,
+        "brotli": 80.19927920288319
+      }
+    },
+    {
+      "id": "effects",
+      "title": "Split effects",
+      "group": "reactive",
+      "solid": {
+        "raw": 27100,
+        "gzip": 10516,
+        "brotli": 9534
+      },
+      "solidlil": {
+        "raw": 5326,
+        "gzip": 2286,
+        "brotli": 1968
+      },
+      "reduction": {
+        "raw": 80.3468634686347,
+        "gzip": 78.26169646253328,
+        "brotli": 79.35808684707362
+      }
+    },
+    {
+      "id": "form-binding",
+      "title": "Form binding",
+      "group": "reactive",
+      "solid": {
+        "raw": 26943,
+        "gzip": 10431,
+        "brotli": 9477
+      },
+      "solidlil": {
+        "raw": 5423,
+        "gzip": 2330,
+        "brotli": 2012
+      },
+      "reduction": {
+        "raw": 79.87232305236982,
+        "gzip": 77.66273607516058,
+        "brotli": 78.76965284372692
+      }
+    },
+    {
+      "id": "context-theme",
+      "title": "Context",
+      "group": "reactive",
+      "solid": {
+        "raw": 27846,
+        "gzip": 10731,
+        "brotli": 9759
+      },
+      "solidlil": {
+        "raw": 6161,
+        "gzip": 2571,
+        "brotli": 2230
+      },
+      "reduction": {
+        "raw": 77.87473963944552,
+        "gzip": 76.0413754542913,
+        "brotli": 77.14929808382006
+      }
+    },
+    {
+      "id": "async-profile",
+      "title": "Async memo",
+      "group": "async",
+      "solid": {
+        "raw": 34249,
+        "gzip": 13092,
+        "brotli": 11854
+      },
+      "solidlil": {
+        "raw": 7716,
+        "gzip": 3204,
+        "brotli": 2796
+      },
+      "reduction": {
+        "raw": 77.47087506204561,
+        "gzip": 75.52703941338221,
+        "brotli": 76.41302513919352
+      }
+    },
+    {
+      "id": "optimistic-save",
+      "title": "Optimistic action",
+      "group": "async",
+      "solid": {
+        "raw": 30777,
+        "gzip": 11776,
+        "brotli": 10658
+      },
+      "solidlil": {
+        "raw": 6474,
+        "gzip": 2718,
+        "brotli": 2366
+      },
+      "reduction": {
+        "raw": 78.96481138512526,
+        "gzip": 76.91915760869566,
+        "brotli": 77.80071307937699
+      }
+    },
+    {
+      "id": "reveal-feed",
+      "title": "Reveal feed",
+      "group": "async",
+      "solid": {
+        "raw": 31557,
+        "gzip": 12146,
+        "brotli": 11029
+      },
+      "solidlil": {
+        "raw": 7852,
+        "gzip": 3188,
+        "brotli": 2801
+      },
+      "reduction": {
+        "raw": 75.11804037139144,
+        "gzip": 73.75267577803393,
+        "brotli": 74.60331852389156
+      }
+    },
+    {
+      "id": "projection-filter",
+      "title": "Projection",
+      "group": "async",
+      "solid": {
+        "raw": 47600,
+        "gzip": 17580,
+        "brotli": 15918
+      },
+      "solidlil": {
+        "raw": 9692,
+        "gzip": 3762,
+        "brotli": 3312
+      },
+      "reduction": {
+        "raw": 79.63865546218487,
+        "gzip": 78.60068259385665,
+        "brotli": 79.19336600075385
+      }
+    },
+    {
+      "id": "show-switch",
+      "title": "Show / Switch",
+      "group": "control",
+      "solid": {
+        "raw": 28842,
+        "gzip": 11105,
+        "brotli": 10076
+      },
+      "solidlil": {
+        "raw": 6954,
+        "gzip": 2894,
+        "brotli": 2497
+      },
+      "reduction": {
+        "raw": 75.88932806324111,
+        "gzip": 73.93966681674922,
+        "brotli": 75.21834061135371
+      }
+    },
+    {
+      "id": "repeat-grid",
+      "title": "Repeat grid",
+      "group": "control",
+      "solid": {
+        "raw": 28205,
+        "gzip": 10910,
+        "brotli": 9910
+      },
+      "solidlil": {
+        "raw": 5815,
+        "gzip": 2471,
+        "brotli": 2137
+      },
+      "reduction": {
+        "raw": 79.38308810494593,
+        "gzip": 77.35105407882676,
+        "brotli": 78.4359233097881
+      }
+    },
+    {
+      "id": "nested-tree",
+      "title": "Nested tree",
+      "group": "control",
+      "solid": {
+        "raw": 30493,
+        "gzip": 11738,
+        "brotli": 10648
+      },
+      "solidlil": {
+        "raw": 9000,
+        "gzip": 3578,
+        "brotli": 3165
+      },
+      "reduction": {
+        "raw": 70.48502935099859,
+        "gzip": 69.51780541829955,
+        "brotli": 70.27610818933134
+      }
+    },
+    {
+      "id": "error-reset",
+      "title": "Error reset",
+      "group": "control",
+      "solid": {
+        "raw": 29091,
+        "gzip": 11232,
+        "brotli": 10222
+      },
+      "solidlil": {
+        "raw": 6112,
+        "gzip": 2566,
+        "brotli": 2230
+      },
+      "reduction": {
+        "raw": 78.99006565604483,
+        "gzip": 77.1545584045584,
+        "brotli": 78.18430835452945
+      }
+    },
+    {
+      "id": "todolist",
+      "title": "Todo list",
+      "group": "apps",
+      "solid": {
+        "raw": 30471,
+        "gzip": 11738,
+        "brotli": 10627
+      },
+      "solidlil": {
+        "raw": 8921,
+        "gzip": 3580,
+        "brotli": 3128
+      },
+      "reduction": {
+        "raw": 70.72298250795839,
+        "gzip": 69.50076674050094,
+        "brotli": 70.56554060412158
+      }
+    },
+    {
+      "id": "store-cart",
+      "title": "Store cart",
+      "group": "apps",
+      "solid": {
+        "raw": 47303,
+        "gzip": 17492,
+        "brotli": 15813
+      },
+      "solidlil": {
+        "raw": 8112,
+        "gzip": 3299,
+        "brotli": 2902
+      },
+      "reduction": {
+        "raw": 82.85098196731708,
+        "gzip": 81.13994969128746,
+        "brotli": 81.64801113008284
+      }
+    },
+    {
+      "id": "kanban",
+      "title": "Kanban board",
+      "group": "apps",
+      "solid": {
+        "raw": 31239,
+        "gzip": 11911,
+        "brotli": 10797
+      },
+      "solidlil": {
+        "raw": 11471,
+        "gzip": 4238,
+        "brotli": 3733
+      },
+      "reduction": {
+        "raw": 63.27987451582957,
+        "gzip": 64.41944421123331,
+        "brotli": 65.4255811799574
+      }
+    },
+    {
+      "id": "inbox",
+      "title": "Inbox",
+      "group": "apps",
+      "solid": {
+        "raw": 32264,
+        "gzip": 12549,
+        "brotli": 11370
+      },
+      "solidlil": {
+        "raw": 11967,
+        "gzip": 4575,
+        "brotli": 4012
+      },
+      "reduction": {
+        "raw": 62.90912472105133,
+        "gzip": 63.542911785799674,
+        "brotli": 64.71416007036059
+      }
+    },
+    {
+      "id": "marketplace",
+      "title": "Lil marketplace",
+      "group": "apps",
+      "solid": {
+        "raw": 33583,
+        "gzip": 12975,
+        "brotli": 11772
+      },
+      "solidlil": {
+        "raw": 13630,
+        "gzip": 5213,
+        "brotli": 4560
+      },
+      "reduction": {
+        "raw": 59.41398922073668,
+        "gzip": 59.822736030828516,
+        "brotli": 61.26401630988787
+      }
+    },
+    {
+      "id": "keyed",
+      "title": "Keyed table",
+      "group": "performance",
+      "solid": {
+        "raw": 31028,
+        "gzip": 12019,
+        "brotli": 10916
+      },
+      "solidlil": {
+        "raw": 11185,
+        "gzip": 4367,
+        "brotli": 3861
+      },
+      "reduction": {
+        "raw": 63.95191439989687,
+        "gzip": 63.665862384557784,
+        "brotli": 64.62990106266031
+      }
+    },
+    {
+      "id": "spreadsheet",
+      "title": "Spreadsheet",
+      "group": "performance",
+      "solid": {
+        "raw": 29212,
+        "gzip": 11331,
+        "brotli": 10281
+      },
+      "solidlil": {
+        "raw": 7467,
+        "gzip": 3093,
+        "brotli": 2672
+      },
+      "reduction": {
+        "raw": 74.43858688210325,
+        "gzip": 72.70320360074133,
+        "brotli": 74.01031028110106
+      }
+    },
+    {
+      "id": "svg-clock",
+      "title": "SVG clock",
+      "group": "visual",
+      "solid": {
+        "raw": 27769,
+        "gzip": 10772,
+        "brotli": 9827
+      },
+      "solidlil": {
+        "raw": 5168,
+        "gzip": 2298,
+        "brotli": 1977
+      },
+      "reduction": {
+        "raw": 81.38931902481184,
+        "gzip": 78.66691422205719,
+        "brotli": 79.88195787117127
+      }
+    },
+    {
+      "id": "portal-modal",
+      "title": "Portal modal",
+      "group": "visual",
+      "solid": {
+        "raw": 28398,
+        "gzip": 10964,
+        "brotli": 9979
+      },
+      "solidlil": {
+        "raw": 6371,
+        "gzip": 2631,
+        "brotli": 2290
+      },
+      "reduction": {
+        "raw": 77.56532150151419,
+        "gzip": 76.00328347318496,
+        "brotli": 77.0518087984768
+      }
+    }
+  ],
+  "jsFrameworkBenchmark": {
+    "status": {
+      "size": "diagnostic-only",
+      "cpu": "not-measured-for-current-artifacts",
+      "memory": "not-measured-for-current-artifacts"
+    },
+    "eligibility": {
+      "comparison": false,
+      "exactSourcePort": false,
+      "reason": "The current SolidLil runtime is a compatibility implementation, not the required file-for-file port of the pinned Solid browser runtime."
+    },
+    "generatedAt": "2026-09-02T14:59:35.921Z",
+    "source": "https://github.com/krausest/js-framework-benchmark",
+    "workloadContract": "jfb-keyed-v2-object-identity",
+    "methodology": {
+      "claim": "equivalent keyed application output, not isolated library size",
+      "source": "Both implementations use object-identity keyed rows, identical random data generation, selection reset, Array.filter removal, and matching visible text.",
+      "treeShaking": "Enabled in both production lanes. Solid uses Vite module tree shaking; SolidLil uses LilScript whole-program dead-code elimination.",
+      "finalMinifier": "Both canonical artifacts use Terser 5.43.1, three compression passes, top-level identifier mangling, and no property mangling.",
+      "limitation": "This compares complete application toolchains and runtime implementations. It does not attribute the full delta to the LilScript compressor alone."
+    },
+    "provenance": {
+      "solid": {
+        "schemaVersion": 1,
+        "implementation": "solid-v2",
+        "workloadContract": "jfb-keyed-v2-object-identity",
+        "target": "es2022",
+        "moduleFormat": "esm",
+        "frontend": {
+          "name": "@solidjs/vite-plugin",
+          "version": "3.0.0-next.30"
+        },
+        "bundler": {
+          "name": "vite",
+          "version": "8.2.1"
+        },
+        "postMinifier": {
+          "name": "terser",
+          "version": "5.43.1",
+          "compressPasses": 3,
+          "toplevelMangling": true,
+          "propertyMangling": false
+        },
+        "treeShaking": true,
+        "retainedModules": {
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/error.js": 1619,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/constants.js": 1521,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1674,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11971,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/heap.js": 2606,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/owner.js": 4402,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/graph.js": 1375,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/async.js": 8062,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/core.js": 12895,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/effect.js": 1671,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/signals.js": 1624,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/store/store.js": 266,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/map.js": 4108,
+          "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/boundaries.js": 2052,
+          "/home/azureuser/solidlil/node_modules/solid-js/dist/solid.js": 667,
+          "/home/azureuser/solidlil/node_modules/@solidjs/web/dist/web.js": 15289,
+          "src/main.jsx": 4559
+        },
+        "sourceSha256": "3eca46cf7881f1184507fac0b5d475b9a718bd2b7da810bc995a195a30740d75",
+        "artifactSha256": "8a7e084437435fa86ca3e06c43b5761aa0aba489eb91c5444417ac36583b1e39"
+      },
+      "solidlil": {
+        "schemaVersion": 1,
+        "implementation": "solidlil-v2",
+        "workloadContract": "jfb-keyed-v2-object-identity",
+        "target": "es2022",
+        "moduleFormat": "esm",
+        "frontend": {
+          "name": "lilscript",
+          "version": "lilscript 0.1.0",
+          "binarySha256": "1b9e04fc98805de3c12a8c371ececabb87dd3cb26a303408ac23d0c23017caa0",
+          "revision": "87da2deec0e3caf2aa2c212b8a5fb5bf4e2e86f8",
+          "dirty": true
+        },
+        "source": {
+          "revision": "448ada097a0d5814299aac12a2814e823d588c9a",
+          "dirty": true
+        },
+        "bundler": {
+          "name": "lilscript",
+          "mode": "single"
+        },
+        "postMinifier": {
+          "name": "terser",
+          "version": "5.43.1",
+          "compressPasses": 3,
+          "toplevelMangling": true,
+          "propertyMangling": false
+        },
+        "treeShaking": true,
+        "sourceSha256": "d009b0079149105e01d2e3d269378f72e0a174b84780776a4330363b9c72e2c3",
+        "artifactSha256": "9aed5d82980ffc45b0f78e48bfebd0bfa0ed8b3b9a9fe3915e2c045c5dedcd49"
+      },
+      "codec": {
+        "path": "../lilscript/target/release/lilscript-codec",
+        "sha256": "9dfcc9671ca5ee21d36407f35e9b5a31e32860a92acd1e9309899d4423d3e59c",
+        "gzip9": {
+          "encoder": "upstream-stock-zlib-c",
+          "libraryVersion": "1.3.1",
+          "cargoPackage": "libz-sys",
+          "cargoPackageVersion": "1.1.24",
+          "level": 9,
+          "mtime": 0
+        },
+        "brotli11": {
+          "encoder": "official-google-brotli-c",
+          "libraryVersion": "1.1.0",
+          "cargoPackage": "compu-brotli-sys",
+          "cargoPackageVersion": "1.1.0",
+          "quality": 11,
+          "lgwin": 22,
+          "mode": "generic"
+        }
+      }
+    },
+    "sizes": {
+      "solid": {
+        "raw": 32401,
+        "gzip": 12319,
+        "brotli": 11255
+      },
+      "solidlil": {
+        "raw": 9305,
+        "gzip": 3789,
+        "brotli": 3414
+      }
+    },
+    "diagnostics": {
+      "nativeProduction": {
+        "description": "Each frontend's native production output: Vite/Oxc for Solid and LilScript without the shared Terser pass.",
+        "solid": {
+          "raw": 32177,
+          "gzip": 12288,
+          "brotli": 11182
+        },
+        "solidlil": {
+          "raw": 10415,
+          "gzip": 3949,
+          "brotli": 3515
+        }
+      },
+      "sharedPrivatePropertyMangle": {
+        "description": "The canonical input on both sides with the same additional /^_/ property-mangle rule.",
+        "solid": {
+          "raw": 32345,
+          "gzip": 12346,
+          "brotli": 11222
+        },
+        "solidlil": {
+          "raw": 9305,
+          "gzip": 3796,
+          "brotli": 3409
+        }
+      },
+      "solidWithoutTreeShaking": {
+        "description": "Solid-only diagnostic built from the same entry with Vite tree shaking disabled, then the canonical Terser pass.",
+        "solid": {
+          "raw": 37073,
+          "gzip": 13873,
+          "brotli": 12705
+        }
+      },
+      "solidRetainedModules": {
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/error.js": 1619,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/constants.js": 1521,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/lanes.js": 1674,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/scheduler.js": 11971,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/heap.js": 2606,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/owner.js": 4402,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/graph.js": 1375,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/async.js": 8062,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/core.js": 12895,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/core/effect.js": 1671,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/signals.js": 1624,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/store/store.js": 266,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/map.js": 4108,
+        "/home/azureuser/solidlil/node_modules/@solidjs/signals/dist/prod/boundaries.js": 2052,
+        "/home/azureuser/solidlil/node_modules/solid-js/dist/solid.js": 667,
+        "/home/azureuser/solidlil/node_modules/@solidjs/web/dist/web.js": 15289,
+        "src/main.jsx": 4559
+      }
+    },
+    "geomean": {
+      "cpu": null
+    },
+    "cpu": [],
+    "memory": []
+  }
+}

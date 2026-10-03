@@ -494,8 +494,9 @@ export void show(
     if (dispose != null) {
       dispose.dispose();
     }
-    if (current != null) {
-      removeNode(current);
+    Element? previous = current;
+    if (previous != null) {
+      removeNode(previous);
     }
     removeNode(marker);
   });
@@ -519,16 +520,18 @@ export void switchIndex(
       }
       return fallback();
     });
-    if (current != null) {
-      removeNode(current);
+    Element? previous = current;
+    if (previous != null) {
+      removeNode(previous);
     }
     Element? after = marker.nextSibling;
     attach(parent, next, after);
     current = next;
   });
   onCleanup(() => {
-    if (current != null) {
-      removeNode(current);
+    Element? previous = current;
+    if (previous != null) {
+      removeNode(previous);
     }
     removeNode(marker);
   });
@@ -1080,8 +1083,9 @@ export void loading(
       if (!revealAllowed(currentSlot)) {
         if (revealShowFallback(currentSlot)) {
           Element held = untrack(fallback);
-          if (current != null) {
-            removeNode(current);
+          Element? previousNode1 = current;
+          if (previousNode1 != null) {
+            removeNode(previousNode1);
           }
           attach(parent, held, marker.nextSibling);
           current = held;
@@ -1091,8 +1095,9 @@ export void loading(
     }
     enablePendingThrows(true);
     try {
-      if (current != null) {
-        removeNode(current);
+      Element? previousNode2 = current;
+      if (previousNode2 != null) {
+        removeNode(previousNode2);
         current = null;
       }
       ready();
@@ -1104,8 +1109,9 @@ export void loading(
         revealSetReady(slot, false);
       }
       Element next = untrack(fallback);
-      if (current != null) {
-        removeNode(current);
+      Element? previousNode3 = current;
+      if (previousNode3 != null) {
+        removeNode(previousNode3);
       }
       attach(parent, next, marker.nextSibling);
       current = next;
@@ -1114,8 +1120,9 @@ export void loading(
     }
   });
   onCleanup(() => {
-    if (current != null) {
-      removeNode(current);
+    Element? previous = current;
+    if (previous != null) {
+      removeNode(previous);
     }
     removeNode(marker);
   });
@@ -1145,8 +1152,9 @@ export void errored(
     if (failed.read()) {
       string text = message.read();
       Element next = untrack(() => fallback(text, reset));
-      if (current != null) {
-        removeNode(current);
+      Element? previousNode4 = current;
+      if (previousNode4 != null) {
+        removeNode(previousNode4);
       }
       Element? after = marker.nextSibling;
       attach(parent, next, after);
@@ -1171,8 +1179,9 @@ export void errored(
     });
   });
   onCleanup(() => {
-    if (current != null) {
-      removeNode(current);
+    Element? previous = current;
+    if (previous != null) {
+      removeNode(previous);
     }
     removeNode(marker);
   });

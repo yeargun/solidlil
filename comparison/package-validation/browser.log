@@ -1,0 +1,115 @@
+TAP version 13
+# Subtest: counter: Counter
+ok 1 - counter: Counter
+  ---
+  duration_ms: 1225.012488
+  ...
+# Subtest: effects: Split effects
+ok 2 - effects: Split effects
+  ---
+  duration_ms: 495.964672
+  ...
+# Subtest: form-binding: Form binding
+ok 3 - form-binding: Form binding
+  ---
+  duration_ms: 468.843166
+  ...
+# Subtest: context-theme: Context
+ok 4 - context-theme: Context
+  ---
+  duration_ms: 391.528859
+  ...
+# Subtest: async-profile: Async memo
+ok 5 - async-profile: Async memo
+  ---
+  duration_ms: 1059.619035
+  ...
+# Subtest: optimistic-save: Optimistic action
+ok 6 - optimistic-save: Optimistic action
+  ---
+  duration_ms: 1560.240214
+  ...
+# Subtest: reveal-feed: Reveal feed
+ok 7 - reveal-feed: Reveal feed
+  ---
+  duration_ms: 2329.478526
+  ...
+# Subtest: projection-filter: Projection
+ok 8 - projection-filter: Projection
+  ---
+  duration_ms: 418.060658
+  ...
+# Subtest: show-switch: Show / Switch
+ok 9 - show-switch: Show / Switch
+  ---
+  duration_ms: 656.568838
+  ...
+# Subtest: repeat-grid: Repeat grid
+ok 10 - repeat-grid: Repeat grid
+  ---
+  duration_ms: 530.484426
+  ...
+# Subtest: nested-tree: Nested tree
+ok 11 - nested-tree: Nested tree
+  ---
+  duration_ms: 470.679445
+  ...
+# Subtest: error-reset: Error reset
+ok 12 - error-reset: Error reset
+  ---
+  duration_ms: 502.62631
+  ...
+# Subtest: todolist: Todo list
+ok 13 - todolist: Todo list
+  ---
+  duration_ms: 770.397238
+  ...
+# Subtest: store-cart: Store cart
+ok 14 - store-cart: Store cart
+  ---
+  duration_ms: 499.375317
+  ...
+# Subtest: kanban: Kanban board
+ok 15 - kanban: Kanban board
+  ---
+  duration_ms: 662.667458
+  ...
+# Subtest: inbox: Inbox
+ok 16 - inbox: Inbox
+  ---
+  duration_ms: 615.321728
+  ...
+# Subtest: marketplace: Lil marketplace
+ok 17 - marketplace: Lil marketplace
+  ---
+  duration_ms: 698.950379
+  ...
+# Subtest: keyed: Keyed table
+ok 18 - keyed: Keyed table
+  ---
+  duration_ms: 891.417749
+  ...
+# Subtest: spreadsheet: Spreadsheet
+ok 19 - spreadsheet: Spreadsheet
+  ---
+  duration_ms: 529.799721
+  ...
+# Subtest: svg-clock: SVG clock
+ok 20 - svg-clock: SVG clock
+  ---
+  duration_ms: 336.17346
+  ...
+# Subtest: portal-modal: Portal modal
+ok 21 - portal-modal: Portal modal
+  ---
+  duration_ms: 467.082601
+  ...
+1..21
+# tests 21
+# suites 0
+# pass 21
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16217.440605

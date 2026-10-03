@@ -1,0 +1,10 @@
+import extern {ChildProperties, DOMElements, DelegatedEvents, SVGElements, MathMLElements, VoidElements, RawTextElements, Namespaces, DOMWithState} from "../dom-tables.mjs";
+export extern JsValue ChildProperties;
+export extern JsValue DOMElements;
+export extern JsValue DelegatedEvents;
+export extern JsValue SVGElements;
+export extern JsValue MathMLElements;
+export extern JsValue VoidElements;
+export extern JsValue RawTextElements;
+export extern JsValue Namespaces;
+export extern JsValue DOMWithState;
